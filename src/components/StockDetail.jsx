@@ -234,12 +234,25 @@ const StockDetail = () => {
   const fetchStockData = async () => {
     try {
       setLoading(true);
-      const response = await fetch(API_HOST + `/stock/stockDetail/dayKLine/${stockCode}`);
+      const response = await fetch(API_HOST + `/stock/stockDetail/dayKLine/${stockCode}/compress`);
       if (!response.ok) {
         throw new Error('网络请求失败');
       }
       const data = await response.json();
-      const sorted = data.slice().sort((a, b) => a.date.localeCompare(b.date));
+      // 解析紧凑数据格式：日期、OpenPrice、ClosePrice、MinPrice、MaxPrice、ChenJiaoLiang、ZhangDieFu
+      const parsedData = data.map(item => {
+        const [date, openPrice, closePrice, minPrice, maxPrice, chenJiaoLiang, zhangDieFu] = item.split(',');
+        return {
+          date,
+          openPrice: parseFloat(openPrice),
+          closePrice: parseFloat(closePrice),
+          minPrice: parseFloat(minPrice),
+          maxPrice: parseFloat(maxPrice),
+          chenJiaoLiang: parseFloat(chenJiaoLiang),
+          zhangDieFu: parseFloat(zhangDieFu)
+        };
+      });
+      const sorted = parsedData.slice().sort((a, b) => a.date.localeCompare(b.date));
       setAllStockData(sorted);
       setOriginalData(sorted); // 保存原始数据
     } catch (err) {
@@ -248,6 +261,8 @@ const StockDetail = () => {
       setLoading(false);
     }
   };
+
+
 
   // 生成未来30天模拟上涨数据
   function generateSimulatedUpData(lastData, days = 15) {
