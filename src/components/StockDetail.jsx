@@ -234,7 +234,26 @@ const StockDetail = () => {
   const fetchStockData = async () => {
     try {
       setLoading(true);
-      const response = await fetch(API_HOST + `/stock/stockDetail/dayKLine/${stockCode}/compress`);
+      
+ 
+      const warmUpStockCodes = getWarmUpStockCodes();
+      
+      // 构建URL参数
+      const url = new URL(API_HOST + `/stock/stockDetail/dayKLine/${stockCode}/compress`);
+      if (warmUpStockCodes.length > 0) {
+        // 将数组转换为URL参数格式
+        warmUpStockCodes.forEach(code => {
+          url.searchParams.append('warmUpStockCodes', code);
+        });
+      }
+      
+      const response = await fetch(url.toString(), {
+        headers: {
+          'Accept-Encoding': 'gzip, deflate, br',
+          'Content-Type': 'application/json'
+        }
+      });
+      
       if (!response.ok) {
         throw new Error('网络请求失败');
       }
@@ -261,6 +280,31 @@ const StockDetail = () => {
       setLoading(false);
     }
   };
+
+// 获取当前股票前后10条股票的code作为预热参数
+const getWarmUpStockCodes = () => {
+  if (!stockList.length) return [];
+  
+  const currentIdx = currentIndex;
+  const warmUpCodes = [];
+  
+  // 获取前10条
+  for (let i = Math.max(0, currentIdx - 10); i < currentIdx; i++) {
+    if (stockList[i]?.stockCode) {
+      warmUpCodes.push(stockList[i].stockCode);
+    }
+  }
+  
+  // 获取后10条
+  for (let i = currentIdx + 1; i < Math.min(stockList.length, currentIdx + 11); i++) {
+    if (stockList[i]?.stockCode) {
+      warmUpCodes.push(stockList[i].stockCode);
+    }
+  }
+  
+  return warmUpCodes;
+};
+
 
 
 
