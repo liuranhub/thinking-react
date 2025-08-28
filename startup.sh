@@ -1,5 +1,6 @@
 #! /bin/bash
 
-npm install
+pm2 delete StockApp
 
-nohup npm start > stock.log 2>&1 &
+pm2 start npm --name "StockApp" -- run start
+
