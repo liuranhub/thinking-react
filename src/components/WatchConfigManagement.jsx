@@ -126,7 +126,7 @@ const WatchConfigManagement = () => {
         body: JSON.stringify({
           stockCode: values.stockCode,
           watchModel: values.watchModel,
-          targetMiniPrice: values.targetMiniPrice,
+          targetPrice: values.targetPrice,
           startDate: values.startDate.format('YYYY-MM-DD'),
           ...(editingRecord && { id: editingRecord.id }),
         }),
@@ -239,8 +239,8 @@ const WatchConfigManagement = () => {
     },
     {
       title: '目标价格',
-      dataIndex: 'targetMiniPrice',
-      key: 'targetMiniPrice',
+      dataIndex: 'targetPrice',
+      key: 'targetPrice',
       render: (text) => text || '-',
     },
     {
@@ -432,7 +432,7 @@ const WatchConfigManagement = () => {
           </Form.Item>
 
           <Form.Item
-            name="targetMiniPrice"
+            name="targetPrice"
             label="目标价格"
             rules={[
               { required: true, message: '请输入目标价格' },

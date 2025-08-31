@@ -186,31 +186,21 @@ const StockDetail = () => {
 
   // 创建监控配置
   const createWatchConfig = async (values) => {
-    try {
-      const response = await fetch(`${API_HOST}/stock/watch/createOrUpdateWatchConfig`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...values,
-          stockCode: stockCode,
-          startDate: values.startDate.format('YYYY-MM-DD'),
-        }),
-      });
+    const response = await fetch(`${API_HOST}/stock/watch/createOrUpdateWatchConfig`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        ...values,
+        stockCode: stockCode,
+        startDate: values.startDate.format('YYYY-MM-DD'),
+      }),
+    });
 
-      const result = await response.json();
-      if (response.ok) {
-        message.success('监控配置创建成功');
-        setShowWatchConfigModal(false);
-        watchConfigForm.resetFields();
-      } else {
-        message.error('创建失败');
-      }
-    } catch (error) {
-      console.error('创建监控配置失败:', error);
-      message.error('网络错误，请稍后重试');
-    }
+    setShowWatchConfigModal(false);
+    watchConfigForm.resetFields();
+    
   };
 
   // 计算区间（最近N年）并筛选数据
@@ -1747,7 +1737,7 @@ const getWarmUpStockCodes = () => {
           </Form.Item>
 
           <Form.Item
-            name="targetMiniPrice"
+            name="targetPrice"
             label="目标价格"
             rules={[
               { required: true, message: '请输入目标价格' },
