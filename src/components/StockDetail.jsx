@@ -2,11 +2,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import * as echarts from 'echarts';
 import { calcStockStats, incrementalDecline, calcScore } from '../utils/calcVolatility';
-import { message, Select, Spin, Rate, Tooltip } from 'antd';
+import { message, Select, Spin, Rate, Tooltip, Modal, Form, DatePicker, Input, Button } from 'antd';
 import 'antd/dist/reset.css';
 import '../App.css';
 import { pinyin } from 'pinyin-pro';
 import { API_HOST } from '../config/config';
+import dayjs from 'dayjs';
 
 const MA_CONFIG = [
     { key: 5, label: 'MA5', color: '#e4c441', default: false },
@@ -81,6 +82,11 @@ const StockDetail = () => {
   const [favoriteStars, setFavoriteStars] = useState(3);
   const [originalData, setOriginalData] = useState([]); // 保存原始K线数据
   const [apiScoreResult, setApiScoreResult] = useState({}); // API分数结果
+  
+  // 监控配置相关状态
+  const [showWatchConfigModal, setShowWatchConfigModal] = useState(false);
+  const [watchConfigForm] = Form.useForm();
+  const [watchModelOptions, setWatchModelOptions] = useState([]);
 
     // 高亮标签关键词配置
   const HIGHLIGHT_TAG_CONFIG = [
@@ -151,6 +157,61 @@ const StockDetail = () => {
     setChartEndDate(currentStock.date);
     chartEndDateHistory.current = [];
   }, [currentStock]);
+
+  // 获取监控模式选项
+  const fetchWatchModelOptions = async () => {
+    try {
+      const response = await fetch(`${API_HOST}/stock/watch/getWatchModelMap`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const result = await response.json();
+      if (result && typeof result === 'object') {
+        const options = Object.entries(result).map(([key, value]) => ({
+          value: key,
+          label: value
+        }));
+        setWatchModelOptions(options);
+      } else {
+        setWatchModelOptions([]);
+      }
+    } catch (error) {
+      console.error('获取监控模式选项失败:', error);
+      setWatchModelOptions([]);
+    }
+  };
+
+  // 创建监控配置
+  const createWatchConfig = async (values) => {
+    try {
+      const response = await fetch(`${API_HOST}/stock/watch/createOrUpdateWatchConfig`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...values,
+          stockCode: stockCode,
+          startDate: values.startDate.format('YYYY-MM-DD'),
+        }),
+      });
+
+      const result = await response.json();
+      if (response.ok) {
+        message.success('监控配置创建成功');
+        setShowWatchConfigModal(false);
+        watchConfigForm.resetFields();
+      } else {
+        message.error('创建失败');
+      }
+    } catch (error) {
+      console.error('创建监控配置失败:', error);
+      message.error('网络错误，请稍后重试');
+    }
+  };
 
   // 计算区间（最近N年）并筛选数据
   useEffect(() => {
@@ -1367,6 +1428,40 @@ const getWarmUpStockCodes = () => {
             >
               监控配置
             </button>
+            {/* 添加监控配置按钮 */}
+            <button
+              onClick={() => {
+                setShowWatchConfigModal(true);
+                fetchWatchModelOptions();
+                watchConfigForm.setFieldsValue({
+                  stockCode: stockCode,
+                  startDate: dayjs(),
+                });
+              }}
+              style={{
+                marginRight: 8,
+                padding: '2px 8px',
+                background: '#23263a',
+                color: '#fff',
+                border: '1px solid #444',
+                borderRadius: '3px',
+                cursor: 'pointer',
+                fontWeight: 'normal',
+                fontSize: '12px',
+                outline: 'none',
+                transition: 'all 0.2s',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '24px',
+                height: '24px',
+              }}
+              onMouseOver={e => e.target.style.background = '#333'}
+              onMouseOut={e => e.target.style.background = '#23263a'}
+              title="添加监控配置"
+            >
+              +
+            </button>
             {/* 后退按钮（极简风格，仅箭头SVG，无背景无边框） */}
             <button
               onClick={handleBackChartEndDate}
@@ -1598,6 +1693,130 @@ const getWarmUpStockCodes = () => {
           <div id="magnifier-kline" style={{ width: '100%', height: '100%' }}></div>
         </div>
       </div>
+
+      {/* 添加监控配置弹窗 */}
+      <Modal
+        title="添加监控配置"
+        open={showWatchConfigModal}
+        onCancel={() => {
+          setShowWatchConfigModal(false);
+          watchConfigForm.resetFields();
+        }}
+        footer={null}
+        width={500}
+        centered
+        destroyOnClose
+        maskClosable={false}
+        className="watch-config-modal"
+      >
+        <Form
+          form={watchConfigForm}
+          layout="vertical"
+          onFinish={createWatchConfig}
+        >
+          <Form.Item
+            name="stockCode"
+            label="股票代码"
+            rules={[{ required: true, message: '请输入股票代码' }]}
+          >
+            <Input disabled />
+          </Form.Item>
+
+          <Form.Item
+            name="watchModel"
+            label="监控模式"
+            rules={[
+              { required: true, message: '请选择监控模式' },
+              {
+                validator: (_, value) => {
+                  if (value && !watchModelOptions.find(option => option.value === value)) {
+                    return Promise.reject(new Error('请选择有效的监控模式'));
+                  }
+                  return Promise.resolve();
+                }
+              }
+            ]}
+          >
+            <Select placeholder="请选择监控模式">
+              {watchModelOptions.map(option => (
+                <Select.Option key={option.value} value={option.value}>
+                  {option.label}
+                </Select.Option>
+              ))}
+            </Select>
+          </Form.Item>
+
+          <Form.Item
+            name="targetMiniPrice"
+            label="目标价格"
+            rules={[
+              { required: true, message: '请输入目标价格' },
+              {
+                validator: (_, value) => {
+                  if (value && parseFloat(value) <= 0) {
+                    return Promise.reject(new Error('目标价格必须大于0'));
+                  }
+                  return Promise.resolve();
+                }
+              }
+            ]}
+          >
+            <Input placeholder="请输入目标价格" />
+          </Form.Item>
+
+          <Form.Item
+            name="startDate"
+            label="开始日期"
+            rules={[
+              { required: true, message: '请选择开始日期' },
+              {
+                validator: (_, value) => {
+                  if (value && value.isBefore(dayjs(), 'day')) {
+                    return Promise.reject(new Error('开始日期不能早于今天'));
+                  }
+                  return Promise.resolve();
+                }
+              }
+            ]}
+          >
+            <DatePicker 
+              style={{ width: '100%' }} 
+              disabledDate={(current) => {
+                // 禁用今天之前的日期
+                return current && current < dayjs().startOf('day');
+              }}
+            />
+          </Form.Item>
+
+          <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
+            <Button
+              onClick={() => {
+                setShowWatchConfigModal(false);
+                watchConfigForm.resetFields();
+              }}
+              style={{ marginRight: 8 }}
+            >
+              取消
+            </Button>
+            <Button 
+              type="primary" 
+              htmlType="submit"
+              onClick={() => {
+                // 手动触发表单验证
+                watchConfigForm.validateFields()
+                  .then(() => {
+                    // 验证通过，表单会自动调用 onFinish
+                  })
+                  .catch((errorInfo) => {
+                    console.log('表单验证失败:', errorInfo);
+                  });
+              }}
+            >
+              确定
+            </Button>
+          </Form.Item>
+        </Form>
+      </Modal>
     </>
   );
 };

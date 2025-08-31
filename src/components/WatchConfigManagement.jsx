@@ -410,7 +410,17 @@ const WatchConfigManagement = () => {
           <Form.Item
             name="watchModel"
             label="监控模式"
-            rules={[{ required: true, message: '请选择监控模式' }]}
+            rules={[
+              { required: true, message: '请选择监控模式' },
+              {
+                validator: (_, value) => {
+                  if (value && !watchModelOptions.find(option => option.value === value)) {
+                    return Promise.reject(new Error('请选择有效的监控模式'));
+                  }
+                  return Promise.resolve();
+                }
+              }
+            ]}
           >
             <Select placeholder="请选择监控模式">
               {watchModelOptions.map(option => (
@@ -424,22 +434,61 @@ const WatchConfigManagement = () => {
           <Form.Item
             name="targetMiniPrice"
             label="目标价格"
-            rules={[{ required: true, message: '请输入目标价格' }]}
+            rules={[
+              { required: true, message: '请输入目标价格' },
+              {
+                validator: (_, value) => {
+                  if (value && parseFloat(value) <= 0) {
+                    return Promise.reject(new Error('目标价格必须大于0'));
+                  }
+                  return Promise.resolve();
+                }
+              }
+            ]}
           >
-            <Input type="number" placeholder="请输入目标价格" />
+            <Input placeholder="请输入目标价格" />
           </Form.Item>
 
           <Form.Item
             name="startDate"
             label="开始日期"
-            rules={[{ required: true, message: '请选择开始日期' }]}
+            rules={[
+              { required: true, message: '请选择开始日期' },
+              {
+                validator: (_, value) => {
+                  if (value && value.isBefore(dayjs(), 'day')) {
+                    return Promise.reject(new Error('开始日期不能早于今天'));
+                  }
+                  return Promise.resolve();
+                }
+              }
+            ]}
           >
-            <DatePicker style={{ width: '100%' }} />
+            <DatePicker 
+              style={{ width: '100%' }} 
+              disabledDate={(current) => {
+                // 禁用今天之前的日期
+                return current && current < dayjs().startOf('day');
+              }}
+            />
           </Form.Item>
 
           <Form.Item>
             <Space>
-              <Button type="primary" htmlType="submit">
+              <Button 
+                type="primary" 
+                htmlType="submit"
+                onClick={() => {
+                  // 手动触发表单验证
+                  form.validateFields()
+                    .then(() => {
+                      // 验证通过，表单会自动调用 onFinish
+                    })
+                    .catch((errorInfo) => {
+                      console.log('表单验证失败:', errorInfo);
+                    });
+                }}
+              >
                 {editingRecord ? '更新' : '创建'}
               </Button>
               <Button onClick={() => {
