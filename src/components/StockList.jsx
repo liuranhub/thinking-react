@@ -930,6 +930,23 @@ const StockList = () => {
             市场趋势
           </Link>
 
+          <Link 
+            to="/watch-config" 
+            // target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              textDecoration: 'none',
+              padding: '4px 15px',
+              borderRadius: '4px',
+              transition: 'background-color 0.3s',
+              marginLeft: '10px',
+            }}
+            onMouseEnter={(e) => e.target.style.backgroundColor = '#f0f5ff'}
+            onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+          >
+            监控配置
+          </Link>
+
           <span style={{ marginLeft: '10px' }}>标签:</span>
           <span style={{ marginLeft: '10px', color: '#555' }}>
             {matchedTags?.join(', ')}

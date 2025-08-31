@@ -4,6 +4,7 @@ import './App.css';
 import StockList from './components/StockList';
 import MarketTrend from './components/MarketTrend';
 import StockDetail from './components/StockDetail';
+import WatchConfigManagement from './components/WatchConfigManagement';
 
 function Navigation() {
   const location = useLocation();
@@ -35,6 +36,7 @@ function App() {
           <Route path="/" element={<StockList />} />
           <Route path="/market-trend" element={<MarketTrend />} />
           <Route path="/stock-detail/:stockCode/:date" element={<StockDetail />} />
+          <Route path="/watch-config" element={<WatchConfigManagement />} />
         </Routes>
       </div>
     </Router>

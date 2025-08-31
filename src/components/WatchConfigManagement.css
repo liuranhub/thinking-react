@@ -1,0 +1,329 @@
+/* 监控配置管理页面样式 */
+.watch-config-management {
+  padding: 0;
+  background-color: #f5f5f5;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 页面头部 */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0;
+  background: white;
+  padding: 16px 24px;
+  border-radius: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.page-title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+  color: #262626;
+}
+
+.header-actions {
+  display: flex;
+  gap: 12px;
+}
+
+/* 搜索区域 */
+.search-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  background: white;
+  padding: 16px 24px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.search-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.search-right {
+  display: flex;
+  gap: 12px;
+}
+
+/* 表格样式 */
+.watch-config-table {
+  background: white;
+  border-radius: 0;
+  box-shadow: none;
+  overflow: hidden;
+  margin-top: 0;
+  flex: 1;
+}
+
+/* 表格样式 */
+.ant-table {
+  border-radius: 0;
+}
+
+.ant-table-thead > tr > th {
+  background-color: #fafafa;
+  border-bottom: 1px solid #f0f0f0;
+  font-weight: 600;
+  color: #262626;
+}
+
+.ant-table-tbody > tr > td {
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.ant-table-tbody > tr:hover > td {
+  background-color: #f5f5f5;
+}
+
+/* 分页容器 */
+.pagination-container {
+  background: white;
+  padding: 16px 24px;
+  border-radius: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-top: 0;
+}
+
+/* 分页样式 */
+.ant-pagination {
+  margin: 0;
+  text-align: right;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+/* 按钮样式 */
+.ant-btn {
+  border-radius: 6px;
+  font-weight: 500;
+}
+
+.ant-btn-primary {
+  background-color: #1890ff;
+  border-color: #1890ff;
+}
+
+.ant-btn-primary:hover {
+  background-color: #40a9ff;
+  border-color: #40a9ff;
+}
+
+/* 输入框样式 */
+.ant-input {
+  border-radius: 6px;
+}
+
+.ant-input:focus,
+.ant-input-focused {
+  border-color: #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+/* 选择器样式 */
+.ant-select {
+  border-radius: 6px;
+}
+
+.ant-select-focused .ant-select-selector {
+  border-color: #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+/* 模态框样式 */
+.ant-modal {
+  border-radius: 8px;
+}
+
+.ant-modal-header {
+  border-bottom: 1px solid #f0f0f0;
+  padding: 16px 24px;
+}
+
+.ant-modal-title {
+  font-weight: 600;
+  color: #262626;
+}
+
+.ant-modal-body {
+  padding: 24px;
+}
+
+.ant-modal-footer {
+  border-top: 1px solid #f0f0f0;
+  padding: 16px 24px;
+}
+
+/* 表单样式 */
+.ant-form-item-label > label {
+  font-weight: 500;
+  color: #262626;
+}
+
+/* 开关样式 */
+.ant-switch {
+  background-color: #d9d9d9;
+}
+
+.ant-switch-checked {
+  background-color: #1890ff;
+}
+
+/* 操作按钮样式 */
+.ant-btn-text {
+  color: #595959;
+}
+
+.ant-btn-text:hover {
+  color: #1890ff;
+  background-color: #f0f5ff;
+}
+
+/* 状态标签样式 */
+.status-tag {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.status-enable {
+  background-color: #f6ffed;
+  color: #52c41a;
+  border: 1px solid #b7eb8f;
+}
+
+.status-disable {
+  background-color: #fff2f0;
+  color: #ff4d4f;
+  border: 1px solid #ffccc7;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .watch-config-management {
+    padding: 0;
+  }
+  
+  .page-header {
+    flex-direction: column;
+    gap: 16px;
+    align-items: flex-start;
+    border-radius: 0;
+  }
+  
+  .watch-config-table {
+    border-radius: 0;
+  }
+  
+  .pagination-container {
+    border-radius: 0;
+  }
+  
+  .search-section {
+    flex-direction: column;
+    gap: 16px;
+    align-items: stretch;
+  }
+  
+  .search-left {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .search-right {
+    justify-content: flex-end;
+  }
+}
+
+/* 加载状态 */
+.ant-spin-container {
+  min-height: 200px;
+}
+
+/* 空状态 */
+.ant-empty {
+  padding: 40px 0;
+}
+
+/* 工具提示 */
+.ant-tooltip {
+  font-size: 12px;
+}
+
+/* 确认框样式 */
+.ant-popconfirm {
+  font-size: 14px;
+}
+
+.ant-popconfirm-buttons {
+  margin-top: 12px;
+}
+
+/* 表格操作列 */
+.ant-table-cell .ant-space {
+  gap: 4px;
+}
+
+/* 股票代码链接样式 */
+.stock-code-link {
+  color: #1890ff;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.stock-code-link:hover {
+  color: #40a9ff;
+  text-decoration: underline;
+}
+
+/* 表格行悬停效果 */
+.ant-table-tbody > tr:hover > td {
+  background-color: #f0f5ff;
+}
+
+/* 分页器样式优化 */
+.ant-pagination-item {
+  border-radius: 4px;
+}
+
+.ant-pagination-item-active {
+  border-color: #1890ff;
+  background-color: #1890ff;
+}
+
+.ant-pagination-item-active a {
+  color: white;
+}
+
+/* 搜索框图标样式 */
+.ant-input-prefix {
+  color: #bfbfbf;
+}
+
+/* 按钮组样式 */
+.ant-btn-group {
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+/* 表格头部设置图标 */
+.table-header-settings {
+  color: #bfbfbf;
+  cursor: pointer;
+  margin-left: 8px;
+}
+
+.table-header-settings:hover {
+  color: #1890ff;
+}

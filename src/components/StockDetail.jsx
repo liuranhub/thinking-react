@@ -42,6 +42,7 @@ function debounce(fn, delay) {
 
 const StockDetail = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { stockCode: paramStockCode } = useParams();
   // 股票列表
   const [stockList, setStockList] = useState(location.state?.stockList || []);
@@ -1341,6 +1342,31 @@ const getWarmUpStockCodes = () => {
             padding: '6px 14px',
             boxShadow: '0 2px 8px #0003',
           }}>
+            {/* 监控配置按钮 */}
+            <button
+              onClick={() => navigate(`/watch-config?stockCode=${stockCode}`)}
+              style={{
+                marginRight: 8,
+                padding: '2px 8px',
+                background: '#23263a',
+                color: '#fff',
+                border: '1px solid #444',
+                borderRadius: '3px',
+                cursor: 'pointer',
+                fontWeight: 'normal',
+                fontSize: '12px',
+                outline: 'none',
+                transition: 'all 0.2s',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+              }}
+              onMouseOver={e => e.target.style.background = '#333'}
+              onMouseOut={e => e.target.style.background = '#23263a'}
+              title="查看监控配置"
+            >
+              监控配置
+            </button>
             {/* 后退按钮（极简风格，仅箭头SVG，无背景无边框） */}
             <button
               onClick={handleBackChartEndDate}
