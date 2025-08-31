@@ -82,6 +82,7 @@ const StockDetail = () => {
   const [favoriteStars, setFavoriteStars] = useState(3);
   const [originalData, setOriginalData] = useState([]); // 保存原始K线数据
   const [apiScoreResult, setApiScoreResult] = useState({}); // API分数结果
+  const [stockDetailLoaded, setStockDetailLoaded] = useState(false); // 股票详情加载状态
   
   // 监控配置相关状态
   const [showWatchConfigModal, setShowWatchConfigModal] = useState(false);
@@ -184,6 +185,34 @@ const StockDetail = () => {
     }
   };
 
+  // 获取最近5年最低价格
+  const getMinClosePrice = () => {
+    if (allStockData.length === 0) return null;
+    
+    // 获取最近5年的数据
+    const fiveYearsAgo = new Date();
+    fiveYearsAgo.setFullYear(fiveYearsAgo.getFullYear() - 5);
+    const fiveYearsAgoStr = fiveYearsAgo.toISOString().slice(0, 10);
+    
+    // 过滤最近5年的数据
+    const recentData = allStockData.filter(item => item.date >= fiveYearsAgoStr);
+    
+    if (recentData.length === 0) {
+      // 如果没有最近5年数据，使用所有数据
+      const allPrices = allStockData.map(item => parseFloat(item.closePrice)).filter(price => !isNaN(price));
+      if (allPrices.length === 0) return null;
+      const minPrice = Math.min(...allPrices);
+      return minPrice.toFixed(2);
+    }
+    
+    // 找到最低的closePrice
+    const prices = recentData.map(item => parseFloat(item.closePrice)).filter(price => !isNaN(price));
+    if (prices.length === 0) return null;
+    
+    const minPrice = Math.min(...prices);
+    return minPrice.toFixed(2);
+  };
+
   // 创建监控配置
   const createWatchConfig = async (values) => {
     const response = await fetch(`${API_HOST}/stock/watch/createOrUpdateWatchConfig`, {
@@ -220,10 +249,10 @@ const StockDetail = () => {
 
   // 渲染图表
   useEffect(() => {
-    if (chartData.length > 0) {
+    if (chartData.length > 0 && stockDetailLoaded) {
       return renderCharts();
     }
-  }, [chartData, selectedMAs]);
+  }, [chartData, selectedMAs, stockDetailLoaded]);
 
   // 获取API分数
   const fetchApiScore = async () => {
@@ -253,6 +282,11 @@ const StockDetail = () => {
     fetchApiScore();
   }, [stockCode, chartEndDate]);
 
+  // 当股票代码变化时重置股票详情加载状态
+  useEffect(() => {
+    setStockDetailLoaded(false);
+  }, [stockCode]);
+
   // 拉取当前股票详情，获取yaoGu等
   const fetchDetail = async () => {
     if (!stockCode) return;
@@ -264,17 +298,20 @@ const StockDetail = () => {
         setYaoGu(!!detail.yaoGu);
         setIsFavorite(!!detail.favorite); // 新增收藏状态
         setFavoriteStars(detail.favoriteStar || 0); // 新增星级
+        setStockDetailLoaded(true); // 标记股票详情已加载完成
       } else {
         setStockDetail({});
         setYaoGu(false);
         setIsFavorite(false);
         setFavoriteStars(0);
+        setStockDetailLoaded(true); // 即使失败也标记为已加载
       }
     } catch {
       setStockDetail({});
       setYaoGu(false);
       setIsFavorite(false);
       setFavoriteStars(0);
+      setStockDetailLoaded(true); // 即使异常也标记为已加载
     }
   };
 
@@ -602,7 +639,25 @@ const getWarmUpStockCodes = () => {
           showSymbol: false,
           lineStyle: { width: 1.5, color: ma.color },
           emphasis: { lineStyle: { width: 2 } },
-        }))
+        })),
+        // 目标价格虚线
+        ...(stockDetail.breakBelowPriceWatch ? [{
+          name: '目标价格',
+          type: 'line',
+          data: new Array(dates.length).fill(stockDetail.breakBelowPriceWatch.targetPrice),
+          showSymbol: false,
+          lineStyle: { 
+            width: 1, 
+            color: 'red', 
+            type: 'dashed' 
+          },
+          emphasis: { lineStyle: { width: 1.5 } },
+          tooltip: {
+            formatter: function() {
+              return `目标价格: ${stockDetail.breakBelowPriceWatch.targetPrice}`;
+            }
+          }
+        }] : [])
       ]
     };
     klineChart.setOption(klineOption);
@@ -1399,7 +1454,11 @@ const getWarmUpStockCodes = () => {
               style={{
                 marginRight: 8,
                 padding: '2px 8px',
-                background: '#23263a',
+                background: (() => {
+                  if (!stockDetail.breakBelowPriceWatch) return '#666'; // 灰色
+                  if (stockDetail.breakBelowPriceWatch.processStatus === 'PENDING') return '#ff4d4f'; // 红色
+                  return '#52c41a'; // 绿色
+                })(),
                 color: '#fff',
                 border: '1px solid #444',
                 borderRadius: '3px',
@@ -1412,9 +1471,22 @@ const getWarmUpStockCodes = () => {
                 alignItems: 'center',
                 gap: '4px',
               }}
-              onMouseOver={e => e.target.style.background = '#333'}
-              onMouseOut={e => e.target.style.background = '#23263a'}
-              title="查看监控配置"
+              onMouseOver={e => {
+                const currentBg = e.target.style.background;
+                e.target.style.background = currentBg === 'rgb(102, 102, 102)' ? '#888' : 
+                                           currentBg === 'rgb(255, 77, 79)' ? '#ff7875' : 
+                                           currentBg === 'rgb(82, 196, 26)' ? '#73d13d' : '#333';
+              }}
+              onMouseOut={e => {
+                if (!stockDetail.breakBelowPriceWatch) e.target.style.background = '#666';
+                else if (stockDetail.breakBelowPriceWatch.processStatus === 'PENDING') e.target.style.background = '#ff4d4f';
+                else e.target.style.background = '#52c41a';
+              }}
+              title={(() => {
+                if (!stockDetail.breakBelowPriceWatch) return '暂无监控配置';
+                if (stockDetail.breakBelowPriceWatch.processStatus === 'PENDING') return '监控配置处理中';
+                return '查看监控配置';
+              })()}
             >
               监控配置
             </button>
@@ -1423,10 +1495,16 @@ const getWarmUpStockCodes = () => {
               onClick={() => {
                 setShowWatchConfigModal(true);
                 fetchWatchModelOptions();
-                watchConfigForm.setFieldsValue({
-                  stockCode: stockCode,
-                  startDate: dayjs(),
-                });
+                
+                // 延迟设置表单值，确保数据已加载
+                setTimeout(() => {
+                  const minPrice = getMinClosePrice();
+                  watchConfigForm.setFieldsValue({
+                    stockCode: stockCode,
+                    startDate: dayjs(),
+                    targetPrice: minPrice || '',
+                  });
+                }, 100);
               }}
               style={{
                 marginRight: 8,
