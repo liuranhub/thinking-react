@@ -1499,10 +1499,12 @@ const getWarmUpStockCodes = () => {
                 // 延迟设置表单值，确保数据已加载
                 setTimeout(() => {
                   const minPrice = getMinClosePrice();
+                  const defaultWatchModel = watchModelOptions.length > 0 ? watchModelOptions[0].value : '';
                   watchConfigForm.setFieldsValue({
                     stockCode: stockCode,
                     startDate: dayjs(),
                     targetPrice: minPrice || '',
+                    watchModel: defaultWatchModel,
                   });
                 }, 100);
               }}
