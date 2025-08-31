@@ -1703,7 +1703,7 @@ const getWarmUpStockCodes = () => {
           watchConfigForm.resetFields();
         }}
         footer={null}
-        width={500}
+        width={400}
         centered
         destroyOnClose
         maskClosable={false}
