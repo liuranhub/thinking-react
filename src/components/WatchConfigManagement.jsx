@@ -78,7 +78,7 @@ const WatchConfigManagement = () => {
   };
 
   // 获取监控配置列表
-  const fetchWatchConfigList = async (pageNum = 1, pageSize = 10, stockCode = '') => {
+  const fetchWatchConfigList = async (pageIndex = 1, pageSize = 10, stockCode = '') => {
     setLoading(true);
     try {
       const response = await fetch(`${API_HOST}/stock/watch/getWatchConfigList`, {
@@ -87,7 +87,7 @@ const WatchConfigManagement = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          pageNum,
+          pageIndex,
           pageSize,
           stockCode: stockCode || undefined,
         }),
@@ -99,11 +99,12 @@ const WatchConfigManagement = () => {
       // 根据实际返回数据结构处理
       if (result.records && Array.isArray(result.records)) {
         setData(result.records);
-        setPagination({
-          ...pagination,
-          current: pageNum,
+        setPagination(prevPagination => ({
+          ...prevPagination,
+          current: pageIndex,
+          pageSize: pageSize,
           total: result.total || 0,
-        });
+        }));
       } else {
         message.error('数据格式错误');
       }
@@ -361,7 +362,9 @@ const WatchConfigManagement = () => {
           showQuickJumper={true}
           showTotal={(total) => `共 ${total} 条记录`}
           pageSizeOptions={['10', '20', '50', '100']}
-          onChange={handleTableChange}
+          onChange={(page, pageSize) => {
+            fetchWatchConfigList(page, pageSize, searchText);
+          }}
         />
       </div>
 
