@@ -26,6 +26,12 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
+    "start:dev": "NODE_ENV=development DEV_API_HOST=http://localhost:18888 react-scripts start",
+    "start:prod": "NODE_ENV=production PROD_API_HOST=http://118.190.147.162:13000 react-scripts start",
+    "start:test": "NODE_ENV=test TEST_API_HOST=http://test-server:13000 react-scripts start",
+    "build:dev": "NODE_ENV=development DEV_API_HOST=http://localhost:18888 react-scripts build",
+    "build:prod": "NODE_ENV=production PROD_API_HOST=http://118.190.147.162:13000 react-scripts build",
+    "build:test": "NODE_ENV=test TEST_API_HOST=http://test-server:13000 react-scripts build",
     "electron-dev": "concurrently \"BROWSER=none npm start\" \"wait-on http://localhost:3000 && electron .\"",
     "electron-pack": "npm run build && electron-builder -m",
     "electron-build": "electron-builder -m"
