@@ -2,9 +2,9 @@ import React, { useState, useEffect, useMemo, memo, useCallback } from 'react';
 import axios from 'axios';
 import '../App.css';
 import { FixedSizeList as List } from 'react-window';
-import SideBar from './SideBar';
+import SearchModal from './SearchModal';
 import debounce from 'lodash/debounce';
-import { Select } from 'antd';
+import { Select, Button } from 'antd';
 import 'antd/dist/reset.css';
 import { Link, useNavigate } from 'react-router-dom';
 import { API_HOST } from '../config/config';
@@ -26,8 +26,8 @@ const StockList = () => {
   // 控制页签状态
   const [activeTab, setActiveTab] = useState(TAB_ALL); // 'all' 为所有股票，'favorites' 为我的收藏
 
-  // 控制侧边栏状态
-  const [sideBarSwitch, setSideBarSwitch] = useState(false);
+  // 控制搜索弹窗状态
+  const [searchModalVisible, setSearchModalVisible] = useState(false);
 
   // 表头
   const [stockFieldConfigType, setStockFieldConfigType] = useState('default');
@@ -309,9 +309,9 @@ const StockList = () => {
     removeFavorite(row.stockCode)// 显示弹窗
   };
 
-  const handleSideBarSwitch = ()=> {
-    setSideBarSwitch(!sideBarSwitch);
-  }
+  const handleSearchModalToggle = () => {
+    setSearchModalVisible(!searchModalVisible);
+  };
 
   // 页签切换函数
   const handleTabChange = (tab) => {
@@ -365,7 +365,7 @@ const StockList = () => {
       }, 0);
     }, [operations]);
     
-    const SIDE_BAR_WIDTH = sideBarSwitch ? 150 : 0;
+    const SIDE_BAR_WIDTH = 0; // 不再使用侧边栏
 
     const PADDING_AND_BORDER = columns.length * 1;
     
@@ -735,10 +735,10 @@ const StockList = () => {
     );
   };
 
-  // 处理 SideBar 的查询
-  const handleSideBarSearch = useCallback((values) => {
+  // 处理搜索弹窗的查询
+  const handleSearchModalSearch = useCallback((values) => {
     // 更新所有状态
-    console.log("handleSideBarSearch", values);
+    console.log("handleSearchModalSearch", values);
     setStockFieldConfigType(values.stockFieldConfigType);
     setDate(values.date);
     setStockCode(values.stockCode);
@@ -758,28 +758,29 @@ const StockList = () => {
 
   return (
     <div style={{ 
-      display: 'flex', 
-      justifyContent: 'space-between',
       height: '100vh',
+      fontSize:'12px', 
+      fontWeight: 'bold' 
     }}>
-      {sideBarSwitch && (
-        <SideBar
-          stockFieldConfigTypes={stockFieldConfigTypes}
-          dates={dates}
-          initialValues={{
-            stockFieldConfigType,
-            date,
-            stockCode,
-            fieldQueries,
-            pageIndex,
-            pageSize
-          }}
-          onSearch={handleSideBarSearch}
-          total={total}
-        />
-      )}
+      {/* 搜索弹窗 */}
+      <SearchModal
+        visible={searchModalVisible}
+        onCancel={() => setSearchModalVisible(false)}
+        stockFieldConfigTypes={stockFieldConfigTypes}
+        dates={dates}
+        initialValues={{
+          stockFieldConfigType,
+          date,
+          stockCode,
+          fieldQueries,
+          pageIndex,
+          pageSize
+        }}
+        onSearch={handleSearchModalSearch}
+        total={total}
+      />
       
-      <div style={{ flexGrow: 1, overflowY: 'hidden', fontSize:'12px', fontWeight: 'bold' }}>
+      <div style={{ overflowY: 'hidden' }}>
         <div style={{ borderBottom: '1px solid #BEBEBE', marginBottom: '2px'}}>
           <button
             onClick={() => handleTabChange(TAB_ALL)}
@@ -812,12 +813,13 @@ const StockList = () => {
             {activeTab === TAB_DECLINE ? '增量下跌' : '增量下跌'}
           </button>
 
-          <button
+          {/* <Button
+            type="primary"
             style={{marginLeft: '10px'}}
-            onClick={() => handleSideBarSwitch()}
+            onClick={handleSearchModalToggle}
           >
-            {sideBarSwitch===true ? '隐藏': '显示'}
-          </button>
+            高级搜索
+          </Button> */}
 
           <span style={{ 
             marginLeft: '10px',
