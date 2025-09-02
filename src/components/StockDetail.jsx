@@ -142,7 +142,16 @@ const StockDetail = () => {
   useEffect(() => {
     if (!stockList.length) {
       alert('请从股票列表进入详情页');
-      window.location.href = '/';
+      // 从URL参数获取Tab状态
+      const urlParams = new URLSearchParams(window.location.search);
+      const tab = urlParams.get('tab') || 'all';
+      const state = urlParams.get('state');
+      
+      if (state) {
+        window.location.href = `/?tab=${tab}&state=${state}`;
+      } else {
+        window.location.href = '/';
+      }
     }
   }, [stockList]);
 
@@ -1157,7 +1166,20 @@ const getWarmUpStockCodes = () => {
             {/* 返回按钮 */}
             <div>
               <button
-                onClick={() => window.location.href = '/'}
+                onClick={() => {
+                  // 从URL获取Tab状态并传递回去
+                  const urlParams = new URLSearchParams(window.location.search);
+                  const tab = urlParams.get('tab') || 'all';
+                  const state = urlParams.get('state');
+                  
+                  if (state) {
+                    // 如果有保存的状态，直接跳转回去
+                    window.location.href = `/?tab=${tab}&state=${state}`;
+                  } else {
+                    // 否则跳转到默认页面
+                    window.location.href = '/';
+                  }
+                }}
                 style={{
                   marginRight: '12px',
                   background: 'none',

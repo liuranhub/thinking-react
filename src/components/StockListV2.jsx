@@ -3,10 +3,10 @@ import axios from 'axios';
 import '../App.css';
 import { FixedSizeList as List } from 'react-window';
 import SearchModal from './SearchModal';
-import debounce from 'lodash/debounce';
-import { Select, Button } from 'antd';
+
+import { Select } from 'antd';
 import 'antd/dist/reset.css';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { API_HOST } from '../config/config';
 
 const StockList = () => {
@@ -14,17 +14,78 @@ const StockList = () => {
 
   const MODAL_TYPE_CONFIRM = 'CONFIRM'
 
+  // Tab配置常量
+  const TAB_CONFIG = useMemo(() => ({
+    all: {
+      key: 'all',
+      label: '所有股票',
+      fieldConfigType: 'default',
+      operations: [{
+        modalType: MODAL_TYPE_CONFIRM,
+        name: "收藏",
+        handler: 'handleAddFavoriteClick',
+      }]
+    },
+    favorites: {
+      key: 'favorites',
+      label: '我的收藏',
+      fieldConfigType: 'favorite',
+      operations: [{
+        modalType: MODAL_TYPE_CONFIRM,
+        name: "取消收藏",
+        handler: 'handleRemoveFavoriteClick',
+        width: 60
+      }]
+    },
+    algorithm: {
+      key: 'algorithm',
+      label: '算法推荐',
+      fieldConfigType: 'favorite',
+      operations: [{
+        modalType: MODAL_TYPE_CONFIRM,
+        name: "收藏",
+        handler: 'handleAddFavoriteClick',
+        width: 40
+      }]
+    },
+    yaogu: {
+      key: 'yaogu',
+      label: '妖股',
+      fieldConfigType: 'simple',
+      operations: [],
+      showDateSelector: false // 妖股Tab不显示日期选择器
+    },
+    decline: {
+      key: 'decline',
+      label: '跌幅榜',
+      fieldConfigType: 'simple',
+      operations: [{
+        modalType: MODAL_TYPE_CONFIRM,
+        name: "收藏",
+        handler: 'handleAddFavoriteClick',
+        width: 40
+      }]
+    }
+  }), []);
+
+  // Tab常量（保持向后兼容）
   const TAB_ALL = 'all';
   const TAB_FAVORITES = 'favorites';
   const TAB_ALGORITHM = 'algorithm';
   const TAB_YAOGU = 'yaogu';
   const TAB_DECLINE = 'decline';
 
+
+
+  // URL状态管理
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+
   // 初始化完成控制
   const [isInitFinished, setIsInitFinished] = useState(false);
 
   // 控制页签状态
-  const [activeTab, setActiveTab] = useState(TAB_ALL); // 'all' 为所有股票，'favorites' 为我的收藏
+  const [activeTab, setActiveTab] = useState(TAB_ALL);
 
   // 控制搜索弹窗状态
   const [searchModalVisible, setSearchModalVisible] = useState(false);
@@ -54,47 +115,142 @@ const StockList = () => {
 
   const [nextClosePriceAnalysis, setNextClosePriceAnalysis] = useState('');
   
-  // 初始化
-  useEffect(() => {
-    loadInitialData();
+  // Tab状态管理 - 为每个Tab维护独立的查询参数和UI状态
+  const [tabStates, setTabStates] = useState(() => {
+    const initialState = {};
+    Object.keys(TAB_CONFIG).forEach(tabKey => {
+      initialState[tabKey] = {
+        date: '',
+        stockCode: '',
+        fieldQueries: {},
+        pageIndex: 1,
+        orderByField: 'stockCode',
+        orderRule: 'ASC',
+        selectedDates: [],
+        searchKeyword: ''
+      };
+    });
+    return initialState;
+  });
+
+  // 数据缓存 - 避免重复请求
+  const [dataCache, setDataCache] = useState(new Map());
+
+  // 缓存相关函数
+  const generateCacheKey = useCallback((tab, params) => {
+    return `${tab}_${params.date}_${params.stockCode}_${JSON.stringify(params.fieldQueries)}_${params.pageIndex}_${params.orderByField}_${params.orderRule}`;
   }, []);
 
-  // 获取表头配置
-  useEffect(() => {
-    getFieldConfigDetail();
-  }, [stockFieldConfigType]);
-
-  useEffect(() => {
-    if (isInitFinished) {
-      fetchData();
+  const getCachedData = useCallback((cacheKey) => {
+    const cached = dataCache.get(cacheKey);
+    if (!cached) return null;
+    
+    // 缓存5分钟内有效
+    const now = Date.now();
+    if ((now - cached.timestamp) > 5 * 60 * 1000) {
+      dataCache.delete(cacheKey);
+      return null;
     }
-  }, [isInitFinished, stockFieldConfigType, date, stockCode, fieldQueries, pageIndex, pageSize, orderByField, orderRule]);
+    
+    return cached.data;
+  }, [dataCache]);
 
-  const loadInitialData = async () => {
-    try {
-      await getAllFieldConfigType();
-      await getAllDate();
-      setIsInitFinished(true);
-    } catch (error) {
-      console.error('Error loading initial data:', error);
+  const setCachedData = useCallback((cacheKey, data) => {
+    setDataCache(prev => new Map(prev).set(cacheKey, {
+      data,
+      timestamp: Date.now()
+    }));
+  }, []);
+
+
+
+  const saveUIToCurrentTab = useCallback(() => {
+    setTabStates(prev => ({
+      ...prev,
+      [activeTab]: {
+        ...prev[activeTab],
+        date,
+        stockCode,
+        selectedDates,
+        fieldQueries,
+        pageIndex,
+        orderByField,
+        orderRule
+      }
+    }));
+  }, [activeTab, date, stockCode, selectedDates, fieldQueries, pageIndex, orderByField, orderRule]);
+
+
+
+  // URL状态管理函数
+  const saveStateToUrl = useCallback((tab, params) => {
+    const newSearchParams = new URLSearchParams(searchParams);
+    newSearchParams.set('tab', tab);
+    newSearchParams.set('state', encodeURIComponent(JSON.stringify({
+      ...params,
+      activeTab: tab, // 明确保存当前Tab
+      date: params.date || date,
+      stockCode: params.stockCode || stockCode,
+      selectedDates: params.selectedDates || selectedDates
+    })));
+    navigate(`?${newSearchParams.toString()}`, { replace: true });
+  }, [searchParams, navigate, date, stockCode, selectedDates]);
+
+  const restoreStateFromUrl = useCallback(() => {
+    const tabFromUrl = searchParams.get('tab') || TAB_ALL;
+    const savedState = searchParams.get('state');
+    
+    if (savedState) {
+      try {
+        const parsedState = JSON.parse(decodeURIComponent(savedState));
+        
+        // 恢复Tab状态
+        setTabStates(prev => ({
+          ...prev,
+          [tabFromUrl]: parsedState
+        }));
+        
+        // 恢复UI状态
+        setActiveTab(parsedState.activeTab || tabFromUrl);
+        setDate(parsedState.date || '');
+        setStockCode(parsedState.stockCode || '');
+        setSelectedDates(parsedState.selectedDates || []);
+        
+        // 根据配置设置fieldConfigType
+        const fieldConfigType = getTabFieldConfigType(tabFromUrl);
+        setStockFieldConfigType(fieldConfigType);
+        
+        // 恢复其他状态
+        setFieldQueries(parsedState.fieldQueries || {});
+        setPageIndex(parsedState.pageIndex || 1);
+        setOrderByField(parsedState.orderByField || 'stockCode');
+        setOrderRule(parsedState.orderRule || 'ASC');
+      } catch (e) {
+        console.error('Failed to restore state:', e);
+        setActiveTab(tabFromUrl);
+      }
+    } else {
+      setActiveTab(tabFromUrl);
     }
-  };
+  }, [searchParams]);
 
-  const getAllFieldConfigType = async () => {
+
+
+  const getAllFieldConfigType = useCallback(async () => {
     const response = await axios.get(host + '/stock/stockFieldConfig/allType');
     setStockFieldConfigTypes(response.data);
-  }
+  }, [host]);
 
-  const getAllDate = async () => { 
+  const getAllDate = useCallback(async () => { 
     const response = await axios.get(host + '/stock/getAllDate');
     const dates = [...response.data];
     // dates.unshift('');
     setDates(dates);
     setSelectedDates([dates[0]]); // 默认选择第一个有效日期
     setDate(dates[0]); // 保持向后兼容
-  }
+  }, [host]);
 
-  const getFieldConfigDetail = async () => { 
+  const getFieldConfigDetail = useCallback(async () => { 
     axios.get(host + '/stock/stockFieldConfig/' + stockFieldConfigType)
     .then(response => {
       setColumns(response.data.map(col => ({
@@ -116,7 +272,17 @@ const StockList = () => {
       });
       setFieldQueries(newFieldQueries);
     });
-  }
+  }, [stockFieldConfigType, host]);
+
+  const loadInitialData = useCallback(async () => {
+    try {
+      await getAllFieldConfigType();
+      await getAllDate();
+      setIsInitFinished(true);
+    } catch (error) {
+      console.error('Error loading initial data:', error);
+    }
+  }, [getAllFieldConfigType, getAllDate]);
 
   const getStockDetail = async (stockCode) => {
     const response = await axios.get(host + '/stock/stockDetail/' + stockCode);
@@ -135,10 +301,34 @@ const StockList = () => {
     await axios.post(host + '/stock/removeFavorite/' + stockCode, {});
   };
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
+    const params = {
+      date,
+      stockCode,
+      fieldQueries,
+      pageIndex,
+      orderByField,
+      orderRule
+    };
+    
+    const cacheKey = generateCacheKey(activeTab, params);
+    
+    // 检查缓存
+    const cachedData = getCachedData(cacheKey);
+    if (cachedData) {
+      setData(cachedData.records);
+      setTotal(cachedData.total);
+      setRiseCount(cachedData.extInfo?.riseCount || 0);
+      setZhangTingCount(cachedData.extInfo?.zhangTingCount || 0);
+      setMatchedTags(cachedData.extInfo?.matchedTags || []);
+      return;
+    }
+    
     console.log(activeTab);
-    if(activeTab===TAB_ALL) {
-      const response = await axios.post(host + '/stock/stockDataAnalysisPage', {
+    let response;
+    
+    if(activeTab === TAB_ALL) {
+      response = await axios.post(host + '/stock/stockDataAnalysisPage', {
         pageSize,
         pageIndex,
         date,
@@ -147,13 +337,8 @@ const StockList = () => {
         orderRule,
         fieldQuery: fieldQueries
       });
-      setData(response.data.records);
-      setMatchedTags(response.data.extInfo?.matchedTags)
-      setTotal(response.data.total);
-      setRiseCount(response.data.extInfo?.riseCount);
-      setZhangTingCount(response.data.extInfo?.zhangTingCount);
     } else if(activeTab === TAB_FAVORITES) {
-      const response = await axios.post(host + '/stock/stockDataFavoritePage', {
+      response = await axios.post(host + '/stock/stockDataFavoritePage', {
         pageSize,
         pageIndex,
         date,
@@ -162,11 +347,8 @@ const StockList = () => {
         orderRule,
         fieldQuery: fieldQueries
       });
-      setData(response.data.records);
-      setMatchedTags(response.data.extInfo?.matchedTags)
-      setTotal(response.data.total);
     } else if (activeTab === TAB_ALGORITHM) {
-      const response = await axios.post(host + '/stock/stockDataAnalysisMatchAlgorithmPage', {
+      response = await axios.post(host + '/stock/stockDataAnalysisMatchAlgorithmPage', {
         pageSize,
         pageIndex,
         date,
@@ -175,11 +357,8 @@ const StockList = () => {
         orderRule,
         fieldQuery: fieldQueries
       });
-      setData(response.data.records);
-      setMatchedTags(response.data.extInfo?.matchedTags)
-      setTotal(response.data.total);
     } else if (activeTab === TAB_YAOGU) {
-      const response = await axios.post(host + '/stock/stockDataYaoguPage', {
+      response = await axios.post(host + '/stock/stockDataYaoguPage', {
         pageSize,
         pageIndex,
         date,
@@ -188,11 +367,8 @@ const StockList = () => {
         orderRule,
         fieldQuery: fieldQueries
       });
-      setData(response.data.records);
-      setMatchedTags(response.data.extInfo?.matchedTags)
-      setTotal(response.data.total);
     } else if (activeTab === TAB_DECLINE) {
-      const response = await axios.post(host + '/stock/stockDataAnalysisPage', {
+      response = await axios.post(host + '/stock/stockDataAnalysisPage', {
         pageSize,
         pageIndex,
         date,
@@ -202,11 +378,25 @@ const StockList = () => {
         fieldQuery: fieldQueries,
         matchedAlgorithm: "INCREMENTAL_DECLINE"
       });
-      setData(response.data.records);
-      setMatchedTags(response.data.extInfo?.matchedTags)
-      setTotal(response.data.total);
     }
-  };
+    
+    if (response) {
+      const result = {
+        records: response.data.records,
+        total: response.data.total,
+        extInfo: response.data.extInfo
+      };
+      
+      setData(result.records);
+      setMatchedTags(result.extInfo?.matchedTags || []);
+      setTotal(result.total);
+      setRiseCount(result.extInfo?.riseCount || 0);
+      setZhangTingCount(result.extInfo?.zhangTingCount || 0);
+      
+      // 缓存数据
+      setCachedData(cacheKey, result);
+    }
+  }, [activeTab, date, stockCode, fieldQueries, pageIndex, pageSize, orderByField, orderRule, host, generateCacheKey, getCachedData, setCachedData]);
 
   /**
    * 根据字段名、行数据、颜色规则，获取单元格背景颜色
@@ -309,34 +499,116 @@ const StockList = () => {
     removeFavorite(row.stockCode)// 显示弹窗
   };
 
+  // 根据Tab配置生成operations
+  const getTabOperations = useCallback((tabKey) => {
+    const config = TAB_CONFIG[tabKey];
+    if (!config || !config.operations) return [];
+    
+    return config.operations.map(operation => {
+      // 将字符串handler转换为实际函数
+      let handler;
+      switch (operation.handler) {
+        case 'handleAddFavoriteClick':
+          handler = handleAddFavoriteClick;
+          break;
+        case 'handleRemoveFavoriteClick':
+          handler = handleRemoveFavoriteClick;
+          break;
+        default:
+          handler = handleAddFavoriteClick; // 默认处理
+      }
+      
+      return {
+        ...operation,
+        handler
+      };
+    });
+  }, [handleAddFavoriteClick, handleRemoveFavoriteClick, TAB_CONFIG]);
+
+  // 根据Tab配置获取fieldConfigType
+  const getTabFieldConfigType = useCallback((tabKey) => {
+    const config = TAB_CONFIG[tabKey];
+    return config ? config.fieldConfigType : 'default';
+  }, [TAB_CONFIG]);
+
   const handleSearchModalToggle = () => {
     setSearchModalVisible(!searchModalVisible);
   };
 
+  // 初始化
+  useEffect(() => {
+    loadInitialData();
+  }, [loadInitialData]);
+
+  // URL状态恢复
+  useEffect(() => {
+    if (isInitFinished) {
+      restoreStateFromUrl();
+    }
+  }, [isInitFinished, searchParams, restoreStateFromUrl]);
+
+  // 获取表头配置
+  useEffect(() => {
+    getFieldConfigDetail();
+  }, [getFieldConfigDetail]);
+
+  useEffect(() => {
+    if (isInitFinished) {
+      fetchData();
+    }
+  }, [isInitFinished, stockFieldConfigType, date, stockCode, fieldQueries, pageIndex, pageSize, orderByField, orderRule, fetchData]);
+
+  // 监听UI变化并自动保存到当前Tab状态
+  useEffect(() => {
+    if (isInitFinished) {
+      setTabStates(prev => ({
+        ...prev,
+        [activeTab]: {
+          ...prev[activeTab],
+          date,
+          selectedDates
+        }
+      }));
+    }
+  }, [date, selectedDates, activeTab, isInitFinished]);
+
+  useEffect(() => {
+    if (isInitFinished) {
+      setTabStates(prev => ({
+        ...prev,
+        [activeTab]: {
+          ...prev[activeTab],
+          stockCode
+        }
+      }));
+    }
+  }, [stockCode, activeTab, isInitFinished]);
+
   // 页签切换函数
-  const handleTabChange = (tab) => {
-    if(tab === TAB_ALL) {
-        setStockFieldConfigType('default');
-        setPageSize(5000);
-    } 
-    if(tab === TAB_FAVORITES) {
-      setStockFieldConfigType('favorite');
-      setPageSize(5000);
+  const handleTabChange = useCallback((tab) => {
+    // 保存当前Tab的UI状态
+    saveUIToCurrentTab();
+    
+    // 恢复目标Tab的UI状态
+    const targetState = tabStates[tab];
+    if (targetState) {
+      setDate(targetState.date);
+      setStockCode(targetState.stockCode);
+      setSelectedDates(targetState.selectedDates || []);
+      setFieldQueries(targetState.fieldQueries || {});
+      setPageIndex(targetState.pageIndex || 1);
+      setOrderByField(targetState.orderByField || 'stockCode');
+      setOrderRule(targetState.orderRule || 'ASC');
     }
-    if(tab === TAB_ALGORITHM) {
-      setStockFieldConfigType('favorite');
-      setPageSize(5000);
-    }
-    if(tab === TAB_YAOGU) {
-      setStockFieldConfigType('simple');
-      setPageSize(5000);
-    }
-    if(tab === TAB_DECLINE) {
-      setStockFieldConfigType('simple');
-      setPageSize(5000);
-    }
+    
+    // 根据配置设置fieldConfigType
+    const fieldConfigType = getTabFieldConfigType(tab);
+    setStockFieldConfigType(fieldConfigType);
     setActiveTab(tab);
-  };
+    
+    // 保存状态到URL
+    saveStateToUrl(tab, targetState || {});
+  }, [activeTab, tabStates, saveUIToCurrentTab, saveStateToUrl, getTabFieldConfigType]);
   
   const StockTable = ({ columns, data, operations}) => {
     const ROW_HEIGHT = 24;
@@ -540,7 +812,16 @@ const StockList = () => {
             >
               {column.field === 'stockCode' ? (
                 <Link
-                  to={`/stock-detail/${row.stockCode}/${row.date}`}
+                  to={`/stock-detail/${row.stockCode}/${row.date}?tab=${activeTab}&state=${encodeURIComponent(JSON.stringify({
+                    activeTab,
+                    date,
+                    stockCode,
+                    selectedDates,
+                    fieldQueries,
+                    pageIndex,
+                    orderByField,
+                    orderRule
+                  }))}`}
                   state={{ stockList: data }}
                   style={{
                     color: '#1890ff',
@@ -747,14 +1028,7 @@ const StockList = () => {
     setPageSize(values.pageSize);
   }, []);
 
-  const [searchKeyWordTmp, setSearchKeyWordTmp] = useState('')
 
-  const debouncedSetSearchKeyWord = useCallback(
-    debounce((value) => {
-      setSearchKeyWordTmp(value);
-    }, 300),
-    []
-  );
 
   return (
     <div style={{ 
@@ -782,36 +1056,16 @@ const StockList = () => {
       
       <div style={{ overflowY: 'hidden' }}>
         <div style={{ borderBottom: '1px solid #BEBEBE', marginBottom: '2px'}}>
-          <button
-            onClick={() => handleTabChange(TAB_ALL)}
-            style={{ marginRight: '2px' }}
-            className={activeTab === TAB_ALL ? 'tab-button tab-button-active' : 'tab-button'}
-          >
-            {activeTab === TAB_ALL ? '所有股票' : '所有股票'}
-          </button>
-          <button
-            style={{ marginRight: '2px' }}
-            onClick={() => handleTabChange(TAB_FAVORITES)}
-            className={activeTab === TAB_FAVORITES ? 'tab-button tab-button-active' : 'tab-button'}
-          >
-            {activeTab === TAB_FAVORITES ? '我的收藏' : '我的收藏'}
-          </button>
-
-          <button
-            style={{ marginRight: '2px' }}
-            onClick={() => handleTabChange(TAB_YAOGU)}
-            className={activeTab === TAB_YAOGU ? 'tab-button tab-button-active' : 'tab-button'}
-          >
-            {activeTab === TAB_YAOGU ? '妖股' : '妖股'}
-          </button>
-
-          <button
-            style={{ marginRight: '2px' }}
-            onClick={() => handleTabChange(TAB_DECLINE)}
-            className={activeTab === TAB_DECLINE ? 'tab-button tab-button-active' : 'tab-button'}
-          >
-            {activeTab === TAB_DECLINE ? '增量下跌' : '增量下跌'}
-          </button>
+          {Object.entries(TAB_CONFIG).map(([tabKey, config]) => (
+            <button
+              key={tabKey}
+              onClick={() => handleTabChange(tabKey)}
+              style={{ marginRight: '2px' }}
+              className={activeTab === tabKey ? 'tab-button tab-button-active' : 'tab-button'}
+            >
+              {config.label}
+            </button>
+          ))}
 
           {/* <Button
             type="primary"
@@ -838,8 +1092,8 @@ const StockList = () => {
             ))}
           </select>
 
-          {/* 日期选择，仅非妖股tab显示 */}
-          {activeTab !== TAB_YAOGU && (
+          {/* 日期选择，根据Tab配置决定是否显示 */}
+          {TAB_CONFIG[activeTab]?.showDateSelector !== false && (
             <>
               <span style={{ 
                 marginLeft: '10px',
@@ -956,63 +1210,11 @@ const StockList = () => {
 
         </div>
 
-        {activeTab === TAB_ALL && 
-          (<StockTable
-            columns={columns}
-            data={data}
-            operations={[{
-              modalType: MODAL_TYPE_CONFIRM,
-              name: "收藏",
-              handler: handleAddFavoriteClick,
-            }]}
-          />)
-        }
-
-        {activeTab ===TAB_FAVORITES && 
-          (<StockTable
-            columns={columns}
-            data={data}
-            operations={[{
-              modalType: MODAL_TYPE_CONFIRM,
-              name: "取消收藏",
-              handler: handleRemoveFavoriteClick,
-              width: 60
-            }]}
-          />)
-        }
-
-        {activeTab === TAB_YAOGU && (
-          <StockTable
-            columns={columns}
-            data={data}
-            operations={[]}
-          />
-        )}
-
-        {activeTab === TAB_ALGORITHM && 
-          (<StockTable
-            columns={columns}
-            data={data}
-            operations={[{
-              modalType: MODAL_TYPE_CONFIRM,
-              name: "收藏",
-              handler: handleAddFavoriteClick,
-              width: 40
-            }]}
-          />)
-        }
-        {activeTab === TAB_DECLINE && 
-          (<StockTable
-            columns={columns}
-            data={data}
-            operations={[{
-              modalType: MODAL_TYPE_CONFIRM,
-              name: "收藏",
-              handler: handleAddFavoriteClick,
-              width: 40
-            }]}
-          />)
-        }
+        <StockTable
+          columns={columns}
+          data={data}
+          operations={getTabOperations(activeTab)}
+        />
       </div>
     </div>
   );
