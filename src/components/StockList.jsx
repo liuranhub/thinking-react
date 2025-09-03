@@ -45,6 +45,14 @@ const StockList = () => {
 
   const MODAL_TYPE_CONFIRM = 'CONFIRM'
 
+  // 股票类型常量
+  const STOCK_TYPE_OPTIONS = [
+    { label: '主板', value: 'MAIN' },
+    { label: '科创', value: 'TECH' },
+    { label: '创业板', value: 'GEM' },
+    { label: '已退市', value: 'ST' }
+  ];
+
   // Tab配置常量
   const TAB_CONFIG = useMemo(() => ({
     latestMain: {
@@ -100,16 +108,17 @@ const StockList = () => {
       orderByField: 'stockCode',
       orderRule: 'ASC'
     },
-    algorithm: {
-      key: 'algorithm',
-      label: '算法推荐',
-      fieldConfigType: 'simple',
+    watched: {
+      key: 'watched',
+      label: '监控列表',
+      fieldConfigType: 'watched',
       operations: [{
         modalType: MODAL_TYPE_CONFIRM,
         name: "收藏",
         handler: 'handleAddFavoriteClick',
         width: 40
       }],
+      stockTypes: ['MAIN'],
       orderByField: 'stockCode',
       orderRule: 'ASC'
     },
@@ -161,7 +170,7 @@ const StockList = () => {
   const [searchModalVisible, setSearchModalVisible] = useState(false);
 
   // 表头
-  const [stockFieldConfigType, setStockFieldConfigType] = useState('default');
+  const [stockFieldConfigType, setStockFieldConfigType] = useState('simple');
   const [stockFieldConfigTypes, setStockFieldConfigTypes] = useState([]);
   const [columns, setColumns] = useState([]);
 
@@ -178,6 +187,7 @@ const StockList = () => {
   const [date, setDate] = useState(''); // date查询条件
   const [fieldQueries, setFieldQueries] = useState({}); // 存储字段查询条件
   const [keywords, setKeywords] = useState(''); // keywords查询条件
+  const [stockTypes, setStockTypes] = useState([]); // 股票类型查询条件
   const [pageIndex, setPageIndex] = useState(1);
   const [pageSize, setPageSize] = useState(5000);
   // 获取默认Tab的排序配置
@@ -368,6 +378,9 @@ const StockList = () => {
     console.log(activeTab);
     let response;
     
+    // 确定要使用的股票类型
+    const currentStockTypes = TAB_CONFIG[activeTab]?.stockTypes || stockTypes;
+    
     if(activeTab === TAB_CONFIG.latestMain.key 
       || activeTab === TAB_CONFIG.latestTechGem.key) {
       response = await axios.post(host + '/stock/stockDataAnalysisPage', {
@@ -375,7 +388,7 @@ const StockList = () => {
         pageIndex,
         date,
         keywords,
-        stockTypes: TAB_CONFIG[activeTab].stockTypes,
+        stockTypes: currentStockTypes,
         orderByField,
         orderRule,
         fieldQuery: fieldQueries,
@@ -387,6 +400,7 @@ const StockList = () => {
         pageIndex,
         date,
         keywords,
+        stockTypes: currentStockTypes,
         orderByField,
         orderRule,
         fieldQuery: fieldQueries
@@ -397,16 +411,17 @@ const StockList = () => {
         pageIndex,
         date,
         keywords,
+        stockTypes: currentStockTypes,
         orderByField,
         orderRule,
         fieldQuery: fieldQueries
       });
-    } else if (activeTab === TAB_CONFIG.algorithm.key) {
-      response = await axios.post(host + '/stock/stockDataAnalysisMatchAlgorithmPage', {
+    } else if (activeTab === TAB_CONFIG.watched.key) {
+      response = await axios.post(host + '/stock/stockDataWatchedPage', {
         pageSize,
         pageIndex,
-        date,
         keywords,
+        stockTypes: currentStockTypes,
         orderByField,
         orderRule,
         fieldQuery: fieldQueries
@@ -417,6 +432,7 @@ const StockList = () => {
         pageIndex,
         date,
         keywords,
+        stockTypes: currentStockTypes,
         orderByField,
         orderRule,
         fieldQuery: fieldQueries
@@ -427,6 +443,7 @@ const StockList = () => {
         pageIndex,
         date,
         keywords,
+        stockTypes: currentStockTypes,
         orderByField,
         orderRule,
         fieldQuery: fieldQueries,
@@ -471,7 +488,7 @@ const StockList = () => {
   // 监听数据变更依赖，当相关条件变化时更新dataChanged
   useEffect(() => {
     fetchData()
-  }, [activeTab, date, keywords, fieldQueries, pageIndex, pageSize, orderByField, orderRule, host]);
+  }, [activeTab, date, keywords, stockTypes, fieldQueries, pageIndex, pageSize, orderByField, orderRule, host]);
 
   /**
    * 根据字段名、行数据、颜色规则，获取单元格背景颜色
@@ -643,6 +660,12 @@ const StockList = () => {
     setOrderByField(TAB_CONFIG[tab].orderByField);
     setOrderRule(TAB_CONFIG[tab].orderRule);
     setStockFieldConfigType(TAB_CONFIG[tab].fieldConfigType);
+    
+    // 重置股票类型选择
+    if (TAB_CONFIG[tab]?.stockTypes) {
+      // 如果Tab配置中有默认股票类型，清空用户选择
+      setStockTypes([]);
+    }
     
     // 根据配置设置fieldConfigType
     const fieldConfigType = getTabFieldConfigType(tab);
@@ -1172,6 +1195,56 @@ const StockList = () => {
             </>
           )}
 
+          {/* 股票类型选择，根据Tab配置决定是否显示 */}
+          {!TAB_CONFIG[activeTab]?.stockTypes ? (
+            <>
+              <span style={{ 
+                marginLeft: '10px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                height: '24px'
+              }}>股票类型:</span>
+              <Select
+                mode="multiple"
+                value={stockTypes}
+                onChange={(values) => {
+                  setStockTypes(values);
+                }}
+                style={{
+                  width: '80px',
+                  maxWidth: '80px',
+                  fontSize: '12px',
+                  verticalAlign: 'middle',
+                  height: '25px'
+                }}
+                options={STOCK_TYPE_OPTIONS}
+                maxTagCount={2}
+                maxTagPlaceholder={(omittedValues) => `+${omittedValues.length}`}
+                popupMatchSelectWidth={false}
+                virtual={true}
+                listHeight={512}
+                className="custom-select"
+                allowClear
+                showArrow={true}
+                showSearch={false}
+                // placeholder="请选择股票类型"
+              />
+            </>
+          ) : (
+            <span style={{ 
+              marginLeft: '10px',
+              display: 'inline-flex',
+              alignItems: 'center',
+              height: '24px',
+              color: '#666',
+              fontSize: '12px'
+            }}>
+              股票类型: {TAB_CONFIG[activeTab].stockTypes.map(type => 
+                STOCK_TYPE_OPTIONS.find(option => option.value === type)?.label || type
+              ).join(', ')}
+            </span>
+          )}
+
           <span style={{ marginLeft: '10px' }}>关键字:</span>
           <input
             style={{ 
@@ -1243,10 +1316,10 @@ const StockList = () => {
             监控配置
           </Link>
 
-          <span style={{ marginLeft: '10px' }}>标签:</span>
+          {/* <span style={{ marginLeft: '10px' }}>标签:</span>
           <span style={{ marginLeft: '10px', color: '#555' }}>
             {matchedTags?.join(', ')}
-          </span>
+          </span> */}
 
         </div>
 

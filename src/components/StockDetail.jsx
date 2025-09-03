@@ -656,11 +656,11 @@ const getWarmUpStockCodes = () => {
           data: new Array(dates.length).fill(stockDetail.breakBelowPriceWatch.targetPrice),
           showSymbol: false,
           lineStyle: { 
-            width: 1, 
+            width: 2, 
             color: 'red', 
             type: 'dashed' 
           },
-          emphasis: { lineStyle: { width: 1.5 } },
+          emphasis: { lineStyle: { width: 1 } },
           tooltip: {
             formatter: function() {
               return `目标价格: ${stockDetail.breakBelowPriceWatch.targetPrice}`;
