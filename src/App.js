@@ -2,7 +2,6 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
 import './App.css';
 import StockList from './components/StockList';
-import StockListV2 from './components/StockListV2';
 import MarketTrend from './components/MarketTrend';
 import StockDetail from './components/StockDetail';
 import WatchConfigManagement from './components/WatchConfigManagement';
