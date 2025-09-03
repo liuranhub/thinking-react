@@ -50,23 +50,27 @@ const StockList = () => {
     latest: {
       key: 'latest',
       label: '最新数据',
-      fieldConfigType: 'default',
+      fieldConfigType: 'simple',
       operations: [{
         modalType: MODAL_TYPE_CONFIRM,
         name: "收藏",
         handler: 'handleAddFavoriteClick',
       }],
+      orderByField: 'score',
+      orderRule: 'desc',
       showDateSelector: false // 妖股Tab不显示日期选择器
     },
     all: {
       key: 'all',
       label: '所有股票',
-      fieldConfigType: 'default',
+      fieldConfigType: 'simple',
       operations: [{
         modalType: MODAL_TYPE_CONFIRM,
         name: "收藏",
         handler: 'handleAddFavoriteClick',
-      }]
+      }],
+      orderByField: 'stockCode',
+      orderRule: 'ASC'
     },
     favorites: {
       key: 'favorites',
@@ -77,18 +81,22 @@ const StockList = () => {
         name: "取消收藏",
         handler: 'handleRemoveFavoriteClick',
         width: 60
-      }]
+      }],
+      orderByField: 'stockCode',
+      orderRule: 'ASC'
     },
     algorithm: {
       key: 'algorithm',
       label: '算法推荐',
-      fieldConfigType: 'favorite',
+      fieldConfigType: 'simple',
       operations: [{
         modalType: MODAL_TYPE_CONFIRM,
         name: "收藏",
         handler: 'handleAddFavoriteClick',
         width: 40
-      }]
+      }],
+      orderByField: 'stockCode',
+      orderRule: 'ASC'
     },
     yaogu: {
       key: 'yaogu',
@@ -100,6 +108,8 @@ const StockList = () => {
         handler: 'notSupportClick',
         width: 40
       }],
+      orderByField: 'stockCode',
+      orderRule: 'ASC',
       showDateSelector: false // 妖股Tab不显示日期选择器
     },
     incrementalDecline : {
@@ -111,7 +121,9 @@ const StockList = () => {
         name: "收藏",
         handler: 'handleAddFavoriteClick',
         width: 40
-      }]
+      }],
+      orderByField: 'stockCode',
+      orderRule: 'asc'
     }
   }), []);
 
@@ -153,8 +165,10 @@ const StockList = () => {
   const [keywords, setKeywords] = useState(''); // keywords查询条件
   const [pageIndex, setPageIndex] = useState(1);
   const [pageSize, setPageSize] = useState(5000);
-  const [orderByField, setOrderByField] = useState('stockCode'); // 存储排序字段
-  const [orderRule, setOrderRule] = useState('ASC'); // 存储排序规则，'ASC' 或 'DESC'
+  // 获取默认Tab的排序配置
+  const defaultSort = TAB_CONFIG.latest;
+  const [orderByField, setOrderByField] = useState(defaultSort.orderByField); // 存储排序字段
+  const [orderRule, setOrderRule] = useState(defaultSort.orderRule); // 存储排序规则，'ASC' 或 'DESC'
 
   const [nextClosePriceAnalysis, setNextClosePriceAnalysis] = useState('');
   
@@ -162,13 +176,14 @@ const StockList = () => {
   const [tabStates, setTabStates] = useState(() => {
     const initialState = {};
     Object.keys(TAB_CONFIG).forEach(tabKey => {
+      const tabConfig = TAB_CONFIG[tabKey];
       initialState[tabKey] = {
         date: '',
         keywords: '',
         fieldQueries: {},
         pageIndex: 1,
-        orderByField: 'stockCode',
-        orderRule: 'ASC',
+        orderByField: tabConfig.orderByField || 'stockCode',
+        orderRule: tabConfig.orderRule || 'ASC',
         selectedDates: [],
         searchKeyword: ''
       };
@@ -602,8 +617,13 @@ const StockList = () => {
       setSelectedDates(targetState.selectedDates || []);
       setFieldQueries(targetState.fieldQueries || {});
       setPageIndex(targetState.pageIndex || 1);
-      setOrderByField(targetState.orderByField || 'stockCode');
-      setOrderRule(targetState.orderRule || 'ASC');
+      setOrderByField(targetState.orderByField);
+      setOrderRule(targetState.orderRule);
+    } else {
+      // 如果没有保存的状态，使用Tab配置的默认排序设置
+      setOrderByField(TAB_CONFIG[tab].orderByField);
+      setOrderRule(TAB_CONFIG[tab].orderRule);
+      setStockFieldConfigType(TAB_CONFIG[tab].fieldConfigType);
     }
     
     // 根据配置设置fieldConfigType
