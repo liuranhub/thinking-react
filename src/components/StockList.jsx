@@ -47,15 +47,30 @@ const StockList = () => {
 
   // Tab配置常量
   const TAB_CONFIG = useMemo(() => ({
-    latest: {
-      key: 'latest',
-      label: '最新数据',
+    latestMain: {
+      key: 'latestMain',
+      label: '最新数据(主)',
       fieldConfigType: 'simple',
       operations: [{
         modalType: MODAL_TYPE_CONFIRM,
         name: "收藏",
         handler: 'handleAddFavoriteClick',
       }],
+      stockTypes: ['MAIN'],
+      orderByField: 'score',
+      orderRule: 'desc',
+      showDateSelector: false // 妖股Tab不显示日期选择器
+    },
+    latestTechGem: {
+      key: 'latestTechGem',
+      label: '最新数据(科创)',
+      fieldConfigType: 'simple',
+      operations: [{
+        modalType: MODAL_TYPE_CONFIRM,
+        name: "收藏",
+        handler: 'handleAddFavoriteClick',
+      }],
+      stockTypes: ['TECH','GEM'],
       orderByField: 'score',
       orderRule: 'desc',
       showDateSelector: false // 妖股Tab不显示日期选择器
@@ -128,7 +143,7 @@ const StockList = () => {
   }), []);
 
   // Tab常量（保持向后兼容）
-  const TAB_LATEST = TAB_CONFIG.latest.key;
+  const TAB_LATEST = TAB_CONFIG.latestMain.key;
 
 
 
@@ -166,9 +181,8 @@ const StockList = () => {
   const [pageIndex, setPageIndex] = useState(1);
   const [pageSize, setPageSize] = useState(5000);
   // 获取默认Tab的排序配置
-  const defaultSort = TAB_CONFIG.latest;
-  const [orderByField, setOrderByField] = useState(defaultSort.orderByField); // 存储排序字段
-  const [orderRule, setOrderRule] = useState(defaultSort.orderRule); // 存储排序规则，'ASC' 或 'DESC'
+  const [orderByField, setOrderByField] = useState("stockCode"); // 存储排序字段
+  const [orderRule, setOrderRule] = useState("asc"); // 存储排序规则，'ASC' 或 'DESC'
 
   const [nextClosePriceAnalysis, setNextClosePriceAnalysis] = useState('');
   
@@ -354,12 +368,14 @@ const StockList = () => {
     console.log(activeTab);
     let response;
     
-    if(activeTab === TAB_CONFIG.latest.key) {
+    if(activeTab === TAB_CONFIG.latestMain.key 
+      || activeTab === TAB_CONFIG.latestTechGem.key) {
       response = await axios.post(host + '/stock/stockDataAnalysisPage', {
         pageSize,
         pageIndex,
         date,
         keywords,
+        stockTypes: TAB_CONFIG[activeTab].stockTypes,
         orderByField,
         orderRule,
         fieldQuery: fieldQueries,
@@ -610,28 +626,30 @@ const StockList = () => {
     setActiveTab(tab);
     
     // 恢复目标Tab的UI状态
-    const targetState = tabStates[tab];
-    if (targetState) {
-      setDate(targetState.date);
-      setKeywords(targetState.keywords);
-      setSelectedDates(targetState.selectedDates || []);
-      setFieldQueries(targetState.fieldQueries || {});
-      setPageIndex(targetState.pageIndex || 1);
-      setOrderByField(targetState.orderByField);
-      setOrderRule(targetState.orderRule);
-    } else {
-      // 如果没有保存的状态，使用Tab配置的默认排序设置
-      setOrderByField(TAB_CONFIG[tab].orderByField);
-      setOrderRule(TAB_CONFIG[tab].orderRule);
-      setStockFieldConfigType(TAB_CONFIG[tab].fieldConfigType);
-    }
+    // const targetState = tabStates[tab];
+    // if (targetState) {
+    //   setDate(targetState.date);
+    //   setKeywords(targetState.keywords);
+    //   setSelectedDates(targetState.selectedDates || []);
+    //   setFieldQueries(targetState.fieldQueries || {});
+    //   setPageIndex(targetState.pageIndex || 1);
+    //   setOrderByField(targetState.orderByField);
+    //   setOrderRule(targetState.orderRule);
+    // } else {
+      
+    // }
+
+    // 如果没有保存的状态，使用Tab配置的默认排序设置
+    setOrderByField(TAB_CONFIG[tab].orderByField);
+    setOrderRule(TAB_CONFIG[tab].orderRule);
+    setStockFieldConfigType(TAB_CONFIG[tab].fieldConfigType);
     
     // 根据配置设置fieldConfigType
     const fieldConfigType = getTabFieldConfigType(tab);
     setStockFieldConfigType(fieldConfigType);
     
     // 保存状态到URL
-    saveStateToUrl(tab, targetState || {});
+    // saveStateToUrl(tab, targetState || {});
   }, [tabStates, saveUIToCurrentTab, saveStateToUrl, getTabFieldConfigType]);
   
   const StockTable = ({ columns, data, operations}) => {
