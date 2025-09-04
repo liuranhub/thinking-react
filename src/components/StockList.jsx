@@ -8,7 +8,6 @@ import { Select } from 'antd';
 import 'antd/dist/reset.css';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { API_HOST } from '../config/config';
-import { incrementalDecline } from '../utils/calcVolatility';
 
 class MutexLock {
   constructor() {
@@ -158,9 +157,6 @@ const StockList = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
-  // 数据变更控制
-  const [dataChanged, setDataChanged] = useState(true);
-
   // 控制页签状态
   const [activeTab, setActiveTab] = useState(() => {
     // 尝试从URL恢复Tab状态
@@ -172,11 +168,6 @@ const StockList = () => {
   const [searchModalVisible, setSearchModalVisible] = useState(false);
 
   // 表头
-  const [stockFieldConfigType, setStockFieldConfigType] = useState(() => {
-    // 尝试从URL恢复表头配置
-    const tabFromUrl = searchParams.get('tab');
-    return TAB_CONFIG[tabFromUrl]?.fieldConfigType || 'simple';
-  });
   const [stockFieldConfigTypes, setStockFieldConfigTypes] = useState([]);
   const [columns, setColumns] = useState([]);
 
@@ -203,7 +194,8 @@ const StockList = () => {
       pageSize: 5000,
       orderByField: TAB_CONFIG[initialTab]?.orderByField || 'stockCode',
       orderRule: TAB_CONFIG[initialTab]?.orderRule || 'asc',
-      selectedDates: []
+      selectedDates: [],
+      stockFieldConfigType: TAB_CONFIG[initialTab]?.fieldConfigType || 'simple'
     };
 
     console.log("initialParams", initialParams);
@@ -221,24 +213,6 @@ const StockList = () => {
   // 数据缓存 - 避免重复请求
   const [dataCache, setDataCache] = useState(new Map());
 
-  // 缓存相关函数
-  const generateCacheKey = useCallback((tab, params) => {
-    return `${tab}_${params.date}_${params.keywords}_${JSON.stringify(params.fieldQueries)}_${params.pageIndex}_${params.orderByField}_${params.orderRule}`;
-  }, []);
-
-  const getCachedData = useCallback((cacheKey) => {
-    const cached = dataCache.get(cacheKey);
-    if (!cached) return null;
-    
-    // 缓存5分钟内有效
-    const now = Date.now();
-    if ((now - cached.timestamp) > 5 * 60 * 1000) {
-      dataCache.delete(cacheKey);
-      return null;
-    }
-    
-    return cached.data;
-  }, [dataCache]);
 
   const setCachedData = useCallback((cacheKey, data) => {
     setDataCache(prev => new Map(prev).set(cacheKey, {
@@ -249,7 +223,17 @@ const StockList = () => {
 
   // 重构：统一查询参数更新函数
   const updateQueryParams = useCallback((updates) => {
-    setQueryParams(prev => ({ ...prev, ...updates }));
+    setQueryParams(prev => {
+      // 如果stockFieldConfigType发生变化，清空fieldQueries
+      if (updates.stockFieldConfigType && updates.stockFieldConfigType !== prev.stockFieldConfigType) {
+        return {
+          ...prev,
+          ...updates,
+          fieldQueries: {} // 清空fieldQueries
+        };
+      }
+      return { ...prev, ...updates };
+    });
   }, []);
 
   // 重构：保存Tab参数到缓存
@@ -281,7 +265,8 @@ const StockList = () => {
       pageSize: 5000,
       orderByField: tabConfig?.orderByField || 'stockCode',
       orderRule: tabConfig?.orderRule || 'ASC',
-      selectedDates: []
+      selectedDates: [],
+      stockFieldConfigType: tabConfig?.fieldConfigType || 'simple'
     };
   }, [TAB_CONFIG]);
 
@@ -295,36 +280,6 @@ const StockList = () => {
     return getTabDefaultParams(tabKey);
   }, [getTabDefaultParams]);
 
-  // 重构：初始化状态恢复（简化版，因为已经在useState初始化中处理）
-  useEffect(() => {
-    const tabFromUrl = searchParams.get('tab');
-    if (tabFromUrl && TAB_CONFIG[tabFromUrl]) {
-      setStockFieldConfigType(TAB_CONFIG[tabFromUrl].fieldConfigType);
-    }
-  }, [searchParams, TAB_CONFIG]);
-
-  // 重构：监听URL变化，自动恢复状态（简化版）
-  // useEffect(() => {
-  //   const tabFromUrl = searchParams.get('tab');
-    
-  //   if (tabFromUrl && activeTab !== tabFromUrl) {
-  //     // 只在Tab真正改变时才更新
-  //     setActiveTab(tabFromUrl);
-      
-  //     // 从缓存获取Tab参数，如果没有则使用默认参数
-  //     const targetParams = getTabParamsFromCache(tabFromUrl);
-  //     setQueryParams(targetParams);
-      
-  //     // 更新表头配置
-  //     setStockFieldConfigType(TAB_CONFIG[tabFromUrl]?.fieldConfigType || 'simple');
-  //   }
-  // }, [searchParams, activeTab, TAB_CONFIG, getTabParamsFromCache]);
-
-  // 根据Tab配置获取fieldConfigType
-  const getTabFieldConfigType = useCallback((tabKey) => {
-    const config = TAB_CONFIG[tabKey];
-    return config ? config.fieldConfigType : 'default';
-  }, [TAB_CONFIG]);
 
   // 重构：生成StockDetail链接 - 只传递tab标签
   const generateStockDetailLink = useCallback((row) => {
@@ -357,7 +312,7 @@ const StockList = () => {
   }, [host]);
 
   const getFieldConfigDetail = useCallback(async () => { 
-    axios.get(host + '/stock/stockFieldConfig/' + stockFieldConfigType)
+    axios.get(host + '/stock/stockFieldConfig/' + queryParams.stockFieldConfigType)
     .then(response => {
       setColumns(response.data.map(col => ({
         field: col.field,
@@ -388,7 +343,7 @@ const StockList = () => {
         return prev;
       });
     });
-  }, [stockFieldConfigType, host]);
+  }, [queryParams.stockFieldConfigType, host]);
 
   const loadInitialData = useCallback(async () => {
     try {
@@ -425,8 +380,6 @@ const StockList = () => {
       orderByField: queryParams.orderByField,
       orderRule: queryParams.orderRule
     };
-    
-    const cacheKey = generateCacheKey(activeTab, params);
     
     // 检查缓存
     // const cachedData = getCachedData(cacheKey);
@@ -528,27 +481,9 @@ const StockList = () => {
       setTotal(result.total);
       setRiseCount(result.extInfo?.riseCount || 0);
       setZhangTingCount(result.extInfo?.zhangTingCount || 0);
-      
-      // 缓存数据
-      setCachedData(cacheKey, result);
     }
-  }, [activeTab, queryParams, host, generateCacheKey, setCachedData, TAB_CONFIG]);
+  }, [queryParams, host]);
 
-  const asyncSetDataChanged = async (status) => {
-    await globalLock.acquire();
-  
-    try {
-      // 模拟一些工作
-      if(dataChanged) {
-        return;
-      } else {
-        setDataChanged(status);
-        console.log("dataChanged", status);
-      }
-    } finally {
-      globalLock.release();
-    }
-  }
 
   // 重构：监听查询参数变化 - 只由queryParams触发fetchData
   const prevQueryParamsRef = useRef(queryParams);
@@ -723,11 +658,11 @@ const StockList = () => {
     setQueryParams(targetParams);
     
     // 4. 更新表头配置
-    setStockFieldConfigType(TAB_CONFIG[tab].fieldConfigType);
+    updateQueryParams({ stockFieldConfigType: TAB_CONFIG[tab].fieldConfigType });
     
     // 5. 保存状态到URL（只保存tab信息）
     saveStateToUrl(tab, { activeTab: tab });
-  }, [activeTab, queryParams, getTabParamsFromCache, TAB_CONFIG, saveStateToUrl, saveTabParamsToCache]);
+  }, [activeTab, queryParams, getTabParamsFromCache, TAB_CONFIG, saveStateToUrl, saveTabParamsToCache, updateQueryParams]);
   
   const StockTable = ({ columns, data, operations}) => {
     const ROW_HEIGHT = 24;
@@ -1130,8 +1065,8 @@ const StockList = () => {
   const handleSearchModalSearch = (values) => {
     // 更新所有状态
     console.log("handleSearchModalSearch", values);
-    setStockFieldConfigType(values.stockFieldConfigType);
     updateQueryParams({
+      stockFieldConfigType: values.stockFieldConfigType,
       date: values.date,
       keywords: values.keywords,
       fieldQueries: values.fieldQueries,
@@ -1192,8 +1127,8 @@ const StockList = () => {
             height: '24px'
           }}>表头:</span>
           <select 
-            value={stockFieldConfigType} 
-            onChange={(e) => setStockFieldConfigType(e.target.value)}
+            value={queryParams.stockFieldConfigType} 
+            onChange={(e) => updateQueryParams({ stockFieldConfigType: e.target.value })}
           >
             {stockFieldConfigTypes.map((option) => (
               <option key={option} value={option}>
