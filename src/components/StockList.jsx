@@ -210,17 +210,6 @@ const StockList = () => {
   // 重构：Tab参数缓存 - 使用普通Map缓存不同Tab的queryParams
   const tabQueryParamCache = useRef(new Map());
 
-  // 数据缓存 - 避免重复请求
-  const [dataCache, setDataCache] = useState(new Map());
-
-
-  const setCachedData = useCallback((cacheKey, data) => {
-    setDataCache(prev => new Map(prev).set(cacheKey, {
-      data,
-      timestamp: Date.now()
-    }));
-  }, []);
-
   // 重构：统一查询参数更新函数
   const updateQueryParams = useCallback((updates) => {
     setQueryParams(prev => {
@@ -372,27 +361,6 @@ const StockList = () => {
 
   // 重构：fetchData函数使用统一查询参数
   const fetchData = useCallback(async () => {
-    const params = {
-      date: queryParams.date,
-      keywords: queryParams.keywords,
-      fieldQueries: queryParams.fieldQueries,
-      pageIndex: queryParams.pageIndex,
-      orderByField: queryParams.orderByField,
-      orderRule: queryParams.orderRule
-    };
-    
-    // 检查缓存
-    // const cachedData = getCachedData(cacheKey);
-    const cachedData = null;
-    if (cachedData) {
-      setData(cachedData.records);
-      setTotal(cachedData.total);
-      setRiseCount(cachedData.extInfo?.riseCount || 0);
-      setZhangTingCount(cachedData.extInfo?.zhangTingCount || 0);
-      setMatchedTags(cachedData.extInfo?.matchedTags || []);
-      return;
-    }
-    
     console.log(activeTab);
     let response;
     

@@ -1162,47 +1162,7 @@ const getWarmUpStockCodes = () => {
           flexWrap: 'wrap',
         }}>
           {/* 股票基本信息 Header */}
-          <div style={{marginLeft: '12px', display: 'flex', alignItems: 'center', width: '40vw', maxHeight: '10vh'}}> 
-            {/* 返回按钮 */}
-            <div>
-              <button
-                onClick={() => {
-                  // 从URL获取Tab状态并传递回去
-                  const urlParams = new URLSearchParams(window.location.search);
-                  const tab = urlParams.get('tab') || 'all';
-                  const state = urlParams.get('state');
-                  
-                  if (state) {
-                    // 如果有保存的状态，直接跳转回去
-                    window.location.href = `/?tab=${tab}&state=${state}`;
-                  } else {
-                    // 否则跳转到默认页面
-                    window.location.href = '/';
-                  }
-                }}
-                style={{
-                  marginRight: '12px',
-                  background: 'none',
-                  border: 'none',
-                  padding: 0,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  outline: 'none',
-                  color: TEXT_COLOR,
-                  fontSize: '22px',
-                  transition: 'color 0.2s',
-                }}
-                onMouseOver={e => e.target.style.color = '#1e90ff'}
-                onMouseOut={e => e.target.style.color = TEXT_COLOR}
-                aria-label="返回"
-              >
-                <svg width="40" height="35" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M15.5 19L9 12L15.5 5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </button>
-            </div>
-            
+          <div style={{marginLeft: '12px', display: 'flex', alignItems: 'center', width: '40vw', maxHeight: '10vh'}}>             
             {/* 股票基本信息 */}
             <div>
               {/* 股票名称 */}
