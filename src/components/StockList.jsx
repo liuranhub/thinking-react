@@ -84,7 +84,7 @@ const StockList = () => {
     },
     all: {
       key: 'all',
-      label: '所有股票',
+      label: '所有数据',
       fieldConfigType: 'simple',
       operations: [{
         modalType: MODAL_TYPE_CONFIRM,
@@ -98,6 +98,8 @@ const StockList = () => {
       key: 'favorites',
       label: '我的收藏',
       fieldConfigType: 'favorite',
+      dateType: 'latest',
+      showDateSelector: false,
       operations: [{
         modalType: MODAL_TYPE_CONFIRM,
         name: "取消收藏",
@@ -111,6 +113,7 @@ const StockList = () => {
       key: 'watched',
       label: '监控列表',
       fieldConfigType: 'watched',
+      showDateSelector: false,
       operations: [{
         modalType: MODAL_TYPE_CONFIRM,
         name: "收藏",
@@ -177,6 +180,7 @@ const StockList = () => {
   const [total, setTotal] = useState(0);
   const [riseCount, setRiseCount] = useState(0);
   const [zhangTingCount, setZhangTingCount] = useState(0);
+  const [searchKeyWordTmp, setSearchKeyWordTmp] = useState('');
 
   // 重构：统一查询参数状态管理 - 基于缓存机制
   const [queryParams, setQueryParams] = useState(() => {
@@ -395,6 +399,7 @@ const StockList = () => {
       response = await axios.post(host + '/stock/stockDataFavoritePage', {
         pageSize: queryParams.pageSize,
         pageIndex: queryParams.pageIndex,
+        dateType: queryParams.dateType,
         date: queryParams.date,
         keywords: queryParams.keywords,
         stockTypes: currentStockTypes,
@@ -624,9 +629,11 @@ const StockList = () => {
     // 3. 从缓存获取目标Tab的参数，如果没有则使用默认参数
     const targetParams = getTabParamsFromCache(tab);
     setQueryParams(targetParams);
+    setSearchKeyWordTmp(targetParams.keywords);
     
     // 4. 更新表头配置
     updateQueryParams({ stockFieldConfigType: TAB_CONFIG[tab].fieldConfigType });
+
     
     // 5. 保存状态到URL（只保存tab信息）
     saveStateToUrl(tab, { activeTab: tab });
@@ -1073,6 +1080,7 @@ const StockList = () => {
               <button
                 key={tabKey}
                 onClick={() => handleTabChange(tabKey)}
+                onDoubleClick={() => fetchData()}
                 style={{ marginRight: '2px' }}
                 className={activeTab === tabKey ? 'tab-button tab-button-active' : 'tab-button'}
               >
@@ -1211,16 +1219,17 @@ const StockList = () => {
                 boxShadow: 'none'
               }
             }}
-            value={queryParams.keywords}
+            value={searchKeyWordTmp}
             onChange={(e) => {
-              const value = e.target.value;
+              setSearchKeyWordTmp(e.target.value);
+              // e.target.value = value;
               // 实时更新输入框显示，但不触发查询
-              updateQueryParams({ keywords: value });
             }}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 e.preventDefault();
                 // Enter键时触发查询，这里不需要额外操作，因为onChange已经更新了状态
+                updateQueryParams({ keywords: searchKeyWordTmp });
               }
             }}
           />
