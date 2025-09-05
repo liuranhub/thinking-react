@@ -939,9 +939,17 @@ const getWarmUpStockCodes = () => {
     let touchStartTime = 0;
     let lastCloseTime = 0; // 记录上次关闭时间，防止重复触发
     
+    // iPad双击检测相关变量
+    let firstTapTime = 0;
+    let firstTapX = 0;
+    let firstTapY = 0;
+    let doubleTapTimer = null;
+    
     const LONG_PRESS_DELAY = 800; // 长按延迟时间（毫秒）
     const MAX_MOVE_DISTANCE = 15; // 长按期间最大移动距离（像素）
     const CLOSE_DEBOUNCE_TIME = 300; // 关闭防抖时间（毫秒）
+    const DOUBLE_TAP_DELAY = 300; // 双击检测延迟时间（毫秒）
+    const DOUBLE_TAP_DISTANCE = 50; // 双击最大距离（像素）
     
     // 鼠标移动处理（PC端）
     const handleMouseMove = (e) => {
@@ -1018,15 +1026,58 @@ const getWarmUpStockCodes = () => {
       touchStartY = e.touches[0].clientY;
       touchStartTime = Date.now();
       
-      // 设置长按定时器
+      // 检查触摸位置是否在K线图内
+      const rect = klineDom.getBoundingClientRect();
+      const isInKline = touchStartX >= rect.left && touchStartX <= rect.right && 
+                       touchStartY >= rect.top && touchStartY <= rect.bottom;
+      
+      // 双击检测逻辑
+      if (isInKline) {
+        const currentTime = Date.now();
+        const timeDiff = currentTime - firstTapTime;
+        const distance = Math.sqrt(
+          Math.pow(touchStartX - firstTapX, 2) + Math.pow(touchStartY - firstTapY, 2)
+        );
+        
+        if (timeDiff < DOUBLE_TAP_DELAY && distance < DOUBLE_TAP_DISTANCE) {
+          // 检测到双击，清除长按定时器
+          if (longPressTimer) {
+            clearTimeout(longPressTimer);
+            longPressTimer = null;
+          }
+          
+          // 执行双击切换日期功能
+          const x = touchStartX - rect.left;
+          const y = touchStartY - rect.top;
+          const chart = echarts.getInstanceByDom(klineDom);
+          if (chart) {
+            const pointInGrid = chart.convertFromPixel({gridIndex: 0}, [x, y]);
+            const xIndex = Math.round(pointInGrid[0]);
+            const dates = chartData.map(item => item.date);
+            if (dates[xIndex]) {
+              // 记录历史
+              chartEndDateHistory.current.push(chartEndDateRef.current);
+              setChartEndDate(dates[xIndex]);
+            }
+          }
+          
+          // 重置双击检测变量
+          firstTapTime = 0;
+          firstTapX = 0;
+          firstTapY = 0;
+          return;
+        } else {
+          // 第一次点击或距离太远，记录位置和时间
+          firstTapTime = currentTime;
+          firstTapX = touchStartX;
+          firstTapY = touchStartY;
+        }
+      }
+      
+      设置长按定时器
       longPressTimer = setTimeout(() => {
         // 长按激活放大镜功能
         setIsMagnifierActive(true);
-        
-        // 检查触摸位置是否在K线图内
-        const rect = klineDom.getBoundingClientRect();
-        const isInKline = touchStartX >= rect.left && touchStartX <= rect.right && 
-                         touchStartY >= rect.top && touchStartY <= rect.bottom;
         
         if (isInKline) {
           // 在K线图内，计算相对位置并显示放大镜
@@ -1086,7 +1137,12 @@ const getWarmUpStockCodes = () => {
         clearTimeout(longPressTimer);
         longPressTimer = null;
       }
-      // 抬手不关闭弹窗，保持放大镜显示
+      
+      // 双击检测超时清理
+      if (doubleTapTimer) {
+        clearTimeout(doubleTapTimer);
+        doubleTapTimer = null;
+      }
     };
     
     // 点击屏幕关闭放大镜（iPad）
@@ -1111,6 +1167,9 @@ const getWarmUpStockCodes = () => {
     return () => {
       if (longPressTimer) {
         clearTimeout(longPressTimer);
+      }
+      if (doubleTapTimer) {
+        clearTimeout(doubleTapTimer);
       }
       klineDom.removeEventListener('mousemove', handleMouseMove);
       klineDom.removeEventListener('mouseleave', handleMouseLeave);
