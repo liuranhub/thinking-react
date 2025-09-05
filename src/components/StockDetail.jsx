@@ -614,7 +614,7 @@ const getWarmUpStockCodes = () => {
           `;
         }
       },
-      grid: { left: '5%', right: '5%', top: '15%', bottom: '5%' },
+      grid: { left: '5%', right: '0%', top: '5%', bottom: '5%' },
       xAxis: {
         type: 'category',
         data: dates,
@@ -732,15 +732,21 @@ const getWarmUpStockCodes = () => {
         borderColor: '#333',
         textStyle: { color: TEXT_COLOR },
         formatter: function (params) {
-        //   return `
-        //     <div style=\"color: #fff;\">
-        //       <div>日期: ${params[0].axisValue}</div>
-        //       <div>成交量: ${params[0].value.toLocaleString()}</div>
-        //     </div>
-        //   `;
+          const value = params[0].value;
+          let formattedValue;
+          if (value >= 100000000) {
+            formattedValue = (value / 100000000).toFixed(1) + '亿';
+          } else if (value >= 10000000) {
+            formattedValue = (value / 10000000).toFixed(1) + '千万';
+          } else if (value >= 10000) {
+            formattedValue = (value / 10000).toFixed(1) + '万';
+          } else {
+            formattedValue = value.toFixed(0);
+          }
+          return `成交量: ${formattedValue}`;
         }
       },
-      grid: { left: '5%', right: '5%', top: '5%', bottom: '20%' },
+      grid: { left: '5%', right: '0%', top: '5%', bottom: '20%' },
       xAxis: {
         type: 'category',
         data: dates,
@@ -766,7 +772,24 @@ const getWarmUpStockCodes = () => {
       yAxis: {
         scale: true,
         axisLine: { lineStyle: { color: AXIS_COLOR } },
-        axisLabel: { color: TEXT_COLOR },
+        axisLabel: { 
+          color: TEXT_COLOR,
+          formatter: function(value) {
+            if (value >= 100000000) {
+              // 大于等于1亿，显示为亿
+              return (value / 100000000).toFixed(0) + '亿';
+            } else if (value >= 10000000) {
+              // 大于等于1千万，显示为千万
+              return (value / 10000000).toFixed(0) + '千万';
+            } else if (value >= 10000) {
+              // 大于等于1万，显示为万
+              return (value / 10000).toFixed(0) + '万';
+            } else {
+              // 小于1万，直接显示
+              return value.toFixed(0);
+            }
+          }
+        },
         splitLine: { lineStyle: { color: '#23263a' } },
         splitArea: { show: false }
       },
@@ -1374,7 +1397,7 @@ const getWarmUpStockCodes = () => {
                   // background: '#23263a',
                   // color: '#fff',
                   borderRadius: 6,
-                  padding: '8px 12px',
+                  // padding: '8px 12px',
                   // border: '1px solid #444',
                   minWidth: '25vw',
                 }}>
@@ -1707,7 +1730,7 @@ const getWarmUpStockCodes = () => {
           </div>
           {/* 交易量图区域 */}
           <div style={{
-            flex: '1',
+            flex: '2',
             backgroundColor: BG_COLOR,
             border: '1px solid #23263a',
             borderRadius: '4px',
