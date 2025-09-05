@@ -182,6 +182,8 @@ const StockList = () => {
   const [zhangTingCount, setZhangTingCount] = useState(0);
   const [searchKeyWordTmp, setSearchKeyWordTmp] = useState('');
 
+  const [maxWidth, setMaxWidth] = useState(window.width);
+
   // 重构：统一查询参数状态管理 - 基于缓存机制
   const [queryParams, setQueryParams] = useState(() => {
     // 获取初始Tab
@@ -683,6 +685,7 @@ const StockList = () => {
       
       columns.forEach(column => {
         let maxWidth = column.fieldName.length * CHAR_WIDTH;
+       
         const sampleSize = Math.min(500, data.length);
         for (let i = 0; i < sampleSize; i++) {
           const content = String(data[i][column.field]);
@@ -690,6 +693,8 @@ const StockList = () => {
           maxWidth = Math.max(maxWidth, contentWidth);
         }
         
+        setMaxWidth(maxWidth);
+
         widths.set(
           column.field,
           Math.min(Math.max(maxWidth + PADDING, MIN_WIDTH), MAX_WIDTH)
@@ -1075,13 +1080,14 @@ const StockList = () => {
       /> */}
       
       <div style={{ overflowY: 'hidden' }}>
-                  <div style={{ borderBottom: '1px solid #BEBEBE', marginBottom: '2px'}}>
+        <div style={{ borderBottom: '1px solid #BEBEBE', marginBottom: '2px'}}>
             {Object.entries(TAB_CONFIG).map(([tabKey, config]) => (
               <button
                 key={tabKey}
                 onClick={() => handleTabChange(tabKey)}
                 onDoubleClick={() => fetchData()}
-                style={{ marginRight: '2px' }}
+                style={{ marginRight: '2px'}}
+                width={maxWidth}
                 className={activeTab === tabKey ? 'tab-button tab-button-active' : 'tab-button'}
               >
                 {config.label}
@@ -1236,13 +1242,6 @@ const StockList = () => {
 
           <span style={{ marginLeft: '10px' }}>
             总数:{total}
-          </span>
-          
-          <span style={{ marginLeft: '10px' }}>
-            上涨:{riseCount}
-          </span>
-          <span style={{ marginLeft: '10px' }}>
-            涨停:{zhangTingCount}
           </span>
 
           <Link 

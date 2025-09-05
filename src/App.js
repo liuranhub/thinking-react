@@ -5,6 +5,7 @@ import StockList from './components/StockList';
 import MarketTrend from './components/MarketTrend';
 import StockDetail from './components/StockDetail';
 import WatchConfigManagement from './components/WatchConfigManagement';
+import WatchStockH5 from './components/WatchStockH5';
 
 function Navigation() {
   const location = useLocation();
@@ -34,6 +35,7 @@ function App() {
         {/* <Navigation /> */}
         <Routes>
           <Route path="/" element={<StockList />} />
+          <Route path="/h5/watchStock" element={<WatchStockH5 />} />
           <Route path="/market-trend" element={<MarketTrend />} />
           <Route path="/stock-detail/:stockCode/:date" element={<StockDetail />} />
           <Route path="/watch-config" element={<WatchConfigManagement />} />
