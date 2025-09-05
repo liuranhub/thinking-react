@@ -1074,31 +1074,30 @@ const getWarmUpStockCodes = () => {
         }
       }
       
-      //设置长按定时器
-    //   longPressTimer = setTimeout(() => {
-    //     // 长按激活放大镜功能
-    //     setIsMagnifierActive(true);
+      // longPressTimer = setTimeout(() => {
+      //   // 长按激活放大镜功能
+      //   setIsMagnifierActive(true);
         
-    //     if (isInKline) {
-    //       // 在K线图内，计算相对位置并显示放大镜
-    //       const x = touchStartX - rect.left;
-    //       const y = touchStartY - rect.top;
-    //       lastMousePositionRef.current = { x, y };
+      //   if (isInKline) {
+      //     // 在K线图内，计算相对位置并显示放大镜
+      //     const x = touchStartX - rect.left;
+      //     const y = touchStartY - rect.top;
+      //     lastMousePositionRef.current = { x, y };
           
-    //       const chart = echarts.getInstanceByDom(klineDom);
-    //       if (chart) {
-    //         const pointInGrid = chart.convertFromPixel({gridIndex: 0}, [x, y]);
-    //         const idx = Math.round(pointInGrid[0]);
-    //         if (idx >= 0 && idx < chartData.length) {
-    //           setMagnifier({ visible: true, x: touchStartX, y: touchStartY, idx });
-    //         }
-    //       }
-    //     } else {
-    //       // 不在K线图内，只激活功能但不显示放大镜
-    //       mouseInKline.current = false;
-    //     }
-    //   }, LONG_PRESS_DELAY);
-    // };
+      //     const chart = echarts.getInstanceByDom(klineDom);
+      //     if (chart) {
+      //       const pointInGrid = chart.convertFromPixel({gridIndex: 0}, [x, y]);
+      //       const idx = Math.round(pointInGrid[0]);
+      //       if (idx >= 0 && idx < chartData.length) {
+      //         setMagnifier({ visible: true, x: touchStartX, y: touchStartY, idx });
+      //       }
+      //     }
+      //   } else {
+      //     // 不在K线图内，只激活功能但不显示放大镜
+      //     mouseInKline.current = false;
+      //   }
+      // }, LONG_PRESS_DELAY);
+    };
     
     // iPad触摸移动处理（取消长按）
     const handleTouchMove = (e) => {
