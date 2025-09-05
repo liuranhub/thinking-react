@@ -89,6 +89,23 @@ const StockDetail = () => {
   const [watchConfigForm] = Form.useForm();
   const [watchModelOptions, setWatchModelOptions] = useState([]);
 
+  const [windowHeight, setWindowHeight] = useState(window.innerHeight);
+  const [headerHeight, setHeaderHeight] = useState(calculateHeaderHeight());
+
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowHeight(window.innerHeight);
+      setHeaderHeight(calculateHeaderHeight());
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  function calculateHeaderHeight() {
+    return window.innerHeight > 600 ? window.innerHeight * 0.15 : '100px';
+  }
+
     // 高亮标签关键词配置
   const HIGHLIGHT_TAG_CONFIG = [
     { tagName: '国企', color: '#1ecb8c' },    // 明亮青绿
@@ -1155,6 +1172,7 @@ const getWarmUpStockCodes = () => {
           // padding: '8px 20px 8px 20px',
           backgroundColor: BG_COLOR,
           borderRadius: '6px',
+          maxHeight: `${headerHeight}px`,
           border: 'none',
           display: 'flex',
           alignItems: 'center',
@@ -1408,18 +1426,19 @@ const getWarmUpStockCodes = () => {
             })()}
           </div>
         </div>
-        <div style={{ 
-          display: 'flex', 
-          flexDirection: 'column', 
-          height: 'calc(100vh - 15vh)',
-          padding: '10px',
-          gap: '10px',
-          position: 'relative'
+        <div 
+          style={{ 
+            display: 'flex', 
+            flexDirection: 'column', 
+            height:  `${windowHeight - headerHeight - 20}px`,
+            padding: '10px',
+            gap: '10px',
+            position: 'relative'
         }}>
           {/* 右上角操作区：MA线选择、区间选择、重置 */}
           <div style={{
             position: 'absolute',
-            top: 5,
+            top: 10,
             right: 20,
             zIndex: 10,
             display: 'flex',
@@ -1678,7 +1697,7 @@ const getWarmUpStockCodes = () => {
           </div>
           {/* K线图区域 */}
           <div style={{ 
-            flex: '2',
+            flex: '5',
             backgroundColor: BG_COLOR,
             border: '1px solid #23263a',
             borderRadius: '4px'
