@@ -104,6 +104,7 @@ const StockDetail = () => {
 
   function calculateHeaderHeight() {
     return window.innerHeight > 600 ? window.innerHeight * 0.15 : '100px';
+    // return '100px';
   }
 
     // 高亮标签关键词配置
@@ -614,7 +615,7 @@ const getWarmUpStockCodes = () => {
           `;
         }
       },
-      grid: { left: '5%', right: '0%', top: '5%', bottom: '5%' },
+      grid: { left: '4%', right: '0%', top: '5%', bottom: '5%' },
       xAxis: {
         type: 'category',
         data: dates,
@@ -746,7 +747,7 @@ const getWarmUpStockCodes = () => {
           return `成交量: ${formattedValue}`;
         }
       },
-      grid: { left: '5%', right: '0%', top: '5%', bottom: '20%' },
+      grid: { left: '4%', right: '0%', top: '5%', bottom: '20%' },
       xAxis: {
         type: 'category',
         data: dates,
@@ -1454,7 +1455,7 @@ const getWarmUpStockCodes = () => {
           style={{ 
             display: 'flex', 
             flexDirection: 'column', 
-            height:  `${windowHeight - headerHeight - 20}px`,
+            height:  `${window.innerHeight - headerHeight - 20}px`,
             padding: '10px',
             gap: '10px',
             position: 'relative'
