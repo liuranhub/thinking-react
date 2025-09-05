@@ -927,11 +927,23 @@ const getWarmUpStockCodes = () => {
     }
   };
 
-  // 放大镜事件监听
+  // 放大镜事件监听 - 支持PC和iPad
   useEffect(() => {
     const klineDom = document.getElementById('kline-chart');
     if (!klineDom) return;
-    // 鼠标移动
+    
+    // 长按检测相关变量
+    let longPressTimer = null;
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let touchStartTime = 0;
+    let lastCloseTime = 0; // 记录上次关闭时间，防止重复触发
+    
+    const LONG_PRESS_DELAY = 800; // 长按延迟时间（毫秒）
+    const MAX_MOVE_DISTANCE = 15; // 长按期间最大移动距离（像素）
+    const CLOSE_DEBOUNCE_TIME = 300; // 关闭防抖时间（毫秒）
+    
+    // 鼠标移动处理（PC端）
     const handleMouseMove = (e) => {
       mouseInKline.current = true;
       // 记录鼠标在k线图上的最新位置
@@ -954,12 +966,14 @@ const getWarmUpStockCodes = () => {
       }
       setMagnifier({ visible: true, x: e.clientX, y: e.clientY, idx });
     };
-    // 鼠标离开
+    
+    // 鼠标离开处理（PC端）
     const handleMouseLeave = () => {
       mouseInKline.current = false;
       setMagnifier(m => ({ ...m, visible: false }));
     };
-    // Ctrl键监听
+    
+    // Ctrl键监听（PC端）
     const handleKeyDown = (e) => {
       if (e.key === 'Control') {
         ctrlDownTime.current = Date.now();
@@ -990,17 +1004,124 @@ const getWarmUpStockCodes = () => {
         }
       }
     };
+    
+    // iPad触摸开始处理
+    const handleTouchStart = (e) => {
+      // 清除之前的定时器
+      if (longPressTimer) {
+        clearTimeout(longPressTimer);
+        longPressTimer = null;
+      }
+      
+      // 记录触摸开始位置和时间
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+      touchStartTime = Date.now();
+      
+      // 设置长按定时器
+      longPressTimer = setTimeout(() => {
+        // 长按激活放大镜功能
+        setIsMagnifierActive(true);
+        
+        // 检查触摸位置是否在K线图内
+        const rect = klineDom.getBoundingClientRect();
+        const isInKline = touchStartX >= rect.left && touchStartX <= rect.right && 
+                         touchStartY >= rect.top && touchStartY <= rect.bottom;
+        
+        if (isInKline) {
+          // 在K线图内，计算相对位置并显示放大镜
+          const x = touchStartX - rect.left;
+          const y = touchStartY - rect.top;
+          lastMousePositionRef.current = { x, y };
+          
+          const chart = echarts.getInstanceByDom(klineDom);
+          if (chart) {
+            const pointInGrid = chart.convertFromPixel({gridIndex: 0}, [x, y]);
+            const idx = Math.round(pointInGrid[0]);
+            if (idx >= 0 && idx < chartData.length) {
+              setMagnifier({ visible: true, x: touchStartX, y: touchStartY, idx });
+            }
+          }
+        } else {
+          // 不在K线图内，只激活功能但不显示放大镜
+          mouseInKline.current = false;
+        }
+      }, LONG_PRESS_DELAY);
+    };
+    
+    // iPad触摸移动处理（取消长按）
+    const handleTouchMove = (e) => {
+      if (longPressTimer) {
+        const currentX = e.touches[0].clientX;
+        const currentY = e.touches[0].clientY;
+        const moveDistance = Math.sqrt(
+          Math.pow(currentX - touchStartX, 2) + Math.pow(currentY - touchStartY, 2)
+        );
+        
+        // 如果移动距离超过阈值，取消长按
+        if (moveDistance > MAX_MOVE_DISTANCE) {
+          clearTimeout(longPressTimer);
+          longPressTimer = null;
+        }
+      }
+    };
+    
+    // 关闭放大镜的统一函数（带防抖）
+    const closeMagnifier = () => {
+      const now = Date.now();
+      if (now - lastCloseTime < CLOSE_DEBOUNCE_TIME) {
+        return; // 防抖，避免重复触发
+      }
+      lastCloseTime = now;
+      
+      if (isMagnifierActive && magnifier.visible) {
+        setIsMagnifierActive(false);
+        setMagnifier(m => ({ ...m, visible: false }));
+      }
+    };
+    
+    // iPad触摸结束处理
+    const handleTouchEnd = (e) => {
+      if (longPressTimer) {
+        clearTimeout(longPressTimer);
+        longPressTimer = null;
+      }
+      // 抬手不关闭弹窗，保持放大镜显示
+    };
+    
+    // 点击屏幕关闭放大镜（iPad）
+    const handleClick = (e) => {
+      closeMagnifier();
+      closeMagnifier();
+    };
+    
+    // 添加事件监听器
     klineDom.addEventListener('mousemove', handleMouseMove);
     klineDom.addEventListener('mouseleave', handleMouseLeave);
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
+    
+    // iPad触摸事件监听
+    document.addEventListener('touchstart', handleTouchStart, { passive: true });
+    document.addEventListener('touchmove', handleTouchMove, { passive: true });
+    document.addEventListener('touchend', handleTouchEnd, { passive: true });
+    document.addEventListener('click', handleClick);
+    
+    // 清理函数
     return () => {
+      if (longPressTimer) {
+        clearTimeout(longPressTimer);
+      }
       klineDom.removeEventListener('mousemove', handleMouseMove);
       klineDom.removeEventListener('mouseleave', handleMouseLeave);
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
+      document.removeEventListener('touchstart', handleTouchStart);
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handleTouchEnd);
+      document.removeEventListener('click', handleClick);
     };
-  }, [chartData, magnifier.idx, isMagnifierActive]);
+  }, [chartData, magnifier.idx, isMagnifierActive, magnifier.visible]);
 
   // 渲染放大镜K线图
   useEffect(() => {
