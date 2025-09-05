@@ -1169,18 +1169,19 @@ const getWarmUpStockCodes = () => {
         {/* PAGE DIV*/}
         <div style={{
           // margin: '24px 0 12px 0',
-          // padding: '8px 20px 8px 20px',
+          padding: '8px 20px 8px 20px',
           backgroundColor: BG_COLOR,
           borderRadius: '6px',
           maxHeight: `${headerHeight}px`,
           border: 'none',
           display: 'flex',
-          alignItems: 'center',
+          alignItems: 'flex-start',  // 改为置顶对齐
+          justifyContent: 'flex-start',  // 改为靠左对齐
           fontSize: '12px',
           flexWrap: 'wrap',
         }}>
           {/* 股票基本信息 Header */}
-          <div style={{marginLeft: '12px', display: 'flex', alignItems: 'center', width: '40vw', maxHeight: '10vh'}}>             
+          <div style={{marginLeft: '12px', display: 'flex', alignItems: 'flex-start', width: '40vw', maxHeight: '10vh'}}>             
             {/* 股票基本信息 */}
             <div>
               {/* 股票名称 */}
