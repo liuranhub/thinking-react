@@ -136,6 +136,73 @@ const StockDetail = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [stockList]);
 
+  // 平板左右快速滑动切换股票
+  // 实现原理：通过监听touchstart和touchend事件，计算滑动距离、时间和速度
+  // 只有满足快速水平滑动条件时才切换股票，避免误触和与页面滚动冲突
+  useEffect(() => {
+    // 触摸状态变量
+    let touchStartX = 0;      // 触摸开始X坐标
+    let touchStartY = 0;      // 触摸开始Y坐标
+    let touchStartTime = 0;   // 触摸开始时间
+    let touchEndX = 0;        // 触摸结束X坐标
+    let touchEndY = 0;        // 触摸结束Y坐标
+    let touchEndTime = 0;     // 触摸结束时间
+    
+    // 滑动检测参数
+    const minSwipeDistance = 80; // 最小滑动距离（增加距离要求）
+    const maxVerticalDistance = 120; // 最大垂直滑动距离
+    const maxSwipeTime = 800; // 最大滑动时间（毫秒）- 快速滑动
+    const minSwipeVelocity = 0.5; // 最小滑动速度（像素/毫秒）
+
+    // 触摸开始：记录起始位置和时间
+    const handleTouchStart = (e) => {
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+      touchStartTime = Date.now();
+    };
+
+    // 触摸结束：计算滑动参数并判断是否切换股票
+    const handleTouchEnd = (e) => {
+      if (!stockList.length) return;
+      
+      // 获取触摸结束位置和时间
+      touchEndX = e.changedTouches[0].clientX;
+      touchEndY = e.changedTouches[0].clientY;
+      touchEndTime = Date.now();
+      
+      // 计算滑动参数
+      const deltaX = touchEndX - touchStartX;           // 水平滑动距离
+      const deltaY = Math.abs(touchEndY - touchStartY); // 垂直滑动距离
+      const deltaTime = touchEndTime - touchStartTime;  // 滑动时间
+      const velocity = Math.abs(deltaX) / deltaTime;    // 滑动速度（像素/毫秒）
+      
+      // 双重检测：水平滑动 + 快速滑动
+      const isHorizontalSwipe = Math.abs(deltaX) > minSwipeDistance && deltaY < maxVerticalDistance;
+      const isQuickSwipe = deltaTime < maxSwipeTime && velocity > minSwipeVelocity;
+      
+      // 只有同时满足水平滑动和快速滑动才切换股票
+      if (isHorizontalSwipe && isQuickSwipe) {
+        if (deltaX > 0) {
+          // 向右快速滑动 - 上一个股票
+          setCurrentIndex(idx => (idx > 0 ? idx - 1 : stockList.length - 1));
+        } else {
+          // 向左快速滑动 - 下一个股票
+          setCurrentIndex(idx => (idx < stockList.length - 1 ? idx + 1 : 0));
+        }
+      }
+    };
+
+    // 监听整个页面的触摸事件（使用passive提高性能）
+    document.addEventListener('touchstart', handleTouchStart, { passive: true });
+    document.addEventListener('touchend', handleTouchEnd, { passive: true });
+
+    // 清理事件监听器
+    return () => {
+      document.removeEventListener('touchstart', handleTouchStart);
+      document.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [stockList]);
+
   // 鼠标滚轮切换股票，屏蔽K线图缩放
   useEffect(() => {
     const klineDom = document.getElementById('kline-chart');
@@ -1302,14 +1369,14 @@ const getWarmUpStockCodes = () => {
             </div>
           </div>
           <div style={{display: 'flex', alignItems: 'flex-start', flexWrap: 'wrap', flexDirection: 'column', 
-                        minWidth: '30vw', textAlign: 'left'}}>
+                        maxWidth: '30vw', textAlign: 'left'}}>
             <div style={{display: 'flex', flexWrap: 'wrap'}}>
               <span style={{color: TEXT_COLOR}}>综合波动系数: <span style={{color: '#11d1e4'}}>{stockStats.volatility}</span></span>
-              <span style={{color: TEXT_COLOR}}>（</span>
-              <span style={{color: TEXT_COLOR}}>标准差/均值: <span style={{color: '#11d1e4'}}>{stockStats.stdOverMean}</span></span>
+              <span style={{color: TEXT_COLOR}}>(</span>
+              <span style={{color: TEXT_COLOR}}>标准差: <span style={{color: '#11d1e4'}}>{stockStats.stdOverMean}</span></span>
               <span style={{color: TEXT_COLOR}}>|</span>
               <span style={{color: TEXT_COLOR}}>最大涨跌幅: <span style={{color: '#ff00ff'}}>{stockStats.maxFluct}</span></span>
-              <span style={{color: TEXT_COLOR}}>）</span>
+              <span style={{color: TEXT_COLOR}}>)</span>
             </div>
             <div style={{display: 'flex', flexWrap: 'wrap'}}>
               <span style={{color: TEXT_COLOR}}>综合波动系数V2: <span style={{color: '#11d1e4'}}>{stockStats.volatilityV2?.volatility || 0}</span></span>
