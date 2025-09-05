@@ -307,6 +307,11 @@ const StockDetail = () => {
     return minPrice.toFixed(2);
   };
 
+  // 判断是否有监控配置
+  const hasWatchConfig = () => {
+    return stockDetail.breakBelowPriceWatch !== null;
+  };
+
   // 创建监控配置
   const createWatchConfig = async (values) => {
     const response = await fetch(`${API_HOST}/stock/watch/createOrUpdateWatchConfig`, {
@@ -1721,7 +1726,7 @@ const getWarmUpStockCodes = () => {
             boxShadow: '0 2px 8px #0003',
           }}>
             {/* 监控配置按钮 */}
-            <button
+            {/* <button
               onClick={() => navigate(`/watch-config?stockCode=${stockCode}`)}
               style={{
                 marginRight: 8,
@@ -1761,7 +1766,7 @@ const getWarmUpStockCodes = () => {
               })()}
             >
               监控配置
-            </button>
+            </button> */}
             {/* 添加监控配置按钮 */}
             <button
               onClick={() => {
@@ -1785,7 +1790,7 @@ const getWarmUpStockCodes = () => {
                 padding: '2px 8px',
                 background: '#23263a',
                 color: '#fff',
-                border: '1px solid #444',
+                border: hasWatchConfig() ? '1px solid #52c41a' : '1px solid #444',
                 borderRadius: '3px',
                 cursor: 'pointer',
                 fontWeight: 'normal',
@@ -1798,9 +1803,15 @@ const getWarmUpStockCodes = () => {
                 width: '24px',
                 height: '24px',
               }}
-              onMouseOver={e => e.target.style.background = '#333'}
-              onMouseOut={e => e.target.style.background = '#23263a'}
-              title="添加监控配置"
+              onMouseOver={e => {
+                e.target.style.background = '#333';
+                e.target.style.borderColor = hasWatchConfig() ? '#73d13d' : '#666';
+              }}
+              onMouseOut={e => {
+                e.target.style.background = '#23263a';
+                e.target.style.borderColor = hasWatchConfig() ? '#52c41a' : '#444';
+              }}
+              title={hasWatchConfig() ? '已有监控配置，点击修改' : '添加监控配置'}
             >
               +
             </button>
