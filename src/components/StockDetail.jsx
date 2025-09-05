@@ -63,7 +63,7 @@ const StockDetail = () => {
   const [error, setError] = useState(null);
   const [selectedMAs, setSelectedMAs] = useState(MA_CONFIG.filter(ma => ma.default).map(ma => ma.key));
   // 区间选择：最近N年
-  const [rangeYears, setRangeYears] = useState(5); // 默认5年
+  const [rangeYears, setRangeYears] = useState(10); // 默认5年
   const [chartEndDate, setChartEndDate] = useState('');
   const chartEndDateRef = useRef(chartEndDate);
   const debouncedSetChartEndDate = useRef(debounce((date) => setChartEndDate(date), 200)).current;
@@ -1464,7 +1464,7 @@ const getWarmUpStockCodes = () => {
           <div style={{
             position: 'absolute',
             top: 10,
-            right: 20,
+            right: 10,
             zIndex: 10,
             display: 'flex',
             alignItems: 'center',
@@ -1741,6 +1741,78 @@ const getWarmUpStockCodes = () => {
             <div id="volume-chart" style={{ width: '100%', height: '100%' }}></div>
           </div>
         </div>
+        
+        {/* 股票切换按钮 - 右下角 */}
+        <div style={{
+          position: 'fixed',
+          bottom: '0px',
+          right: '20px',
+          zIndex: 1000,
+          display: 'flex',
+          gap: '10px',
+          alignItems: 'center'
+        }}>
+          {/* 上一个按钮 */}
+          <button
+            onClick={() => {
+              if (stockList.length > 0) {
+                setCurrentIndex(idx => (idx > 0 ? idx - 1 : stockList.length - 1));
+              }
+            }}
+            disabled={!stockList.length}
+            style={{
+              width: '50px',
+              height: '30px',
+              borderRadius: '10%',
+              backgroundColor: 'transparent',
+              color: '#fff',
+              border: 'none',
+              cursor: stockList.length ? 'pointer' : 'not-allowed',
+              fontSize: '16px',
+              fontWeight: 'bold',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'all 0.2s',
+              opacity: stockList.length ? 1 : 0.5,
+              boxShadow: 'none'
+            }}
+            title="上一个股票 (↑)"
+          >
+            ←
+          </button>
+          
+          {/* 下一个按钮 */}
+          <button
+            onClick={() => {
+              if (stockList.length > 0) {
+                setCurrentIndex(idx => (idx < stockList.length - 1 ? idx + 1 : 0));
+              }
+            }}
+            disabled={!stockList.length}
+            style={{
+              width: '50px',
+              height: '30px',
+              borderRadius: '10%',
+              backgroundColor: 'transparent',
+              color: '#fff',
+              border: 'none',
+              cursor: stockList.length ? 'pointer' : 'not-allowed',
+              fontSize: '16px',
+              fontWeight: 'bold',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'all 0.2s',
+              opacity: stockList.length ? 1 : 0.5,
+              boxShadow: 'none'
+            }}
+            title="下一个股票 (↓)"
+          >
+            →
+          </button>
+        </div>
+        
         <div style={{
           position: 'fixed',
           left: (() => {
