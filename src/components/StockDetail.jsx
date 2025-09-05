@@ -741,7 +741,7 @@ const getWarmUpStockCodes = () => {
           data: new Array(dates.length).fill(stockDetail.breakBelowPriceWatch.targetPrice),
           showSymbol: false,
           lineStyle: { 
-            width: 2, 
+            width: 1, 
             color: 'red', 
             type: 'dashed' 
           },
