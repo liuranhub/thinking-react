@@ -572,6 +572,22 @@ const getWarmUpStockCodes = () => {
     }
   };
 
+  const chenJiaoLiangConvert = (value) => {
+    if (value >= 100000000) {
+      // 大于等于1亿，显示为亿
+      return (value / 100000000).toFixed(0) + '亿';
+    } else if (value >= 10000000) {
+      // 大于等于1千万，显示为千万
+      return (value / 10000000).toFixed(0) + '千万';
+    } else if (value >= 10000) {
+      // 大于等于1万，显示为万
+      return (value / 10000).toFixed(0) + '万';
+    } else {
+      // 小于1万，直接显示
+      return value.toFixed(0);
+    }
+  }
+
   // 保持chartEndDateRef同步
   useEffect(() => {
     chartEndDateRef.current = chartEndDate;
@@ -643,6 +659,10 @@ const getWarmUpStockCodes = () => {
       },
       tooltip: {
         trigger: 'axis',
+        position: function (point, params, dom, rect, size) {
+          // 调整tooltip位置，不返回值让echarts自动计算位置
+          return [40, 0];
+        },
         axisPointer: {
           type: 'cross',
           lineStyle: {
@@ -661,7 +681,7 @@ const getWarmUpStockCodes = () => {
             borderWidth: 1,
           }
         },
-        backgroundColor: 'rgba(24,28,38,0.95)',
+        backgroundColor: 'rgba(24,28,38,0.1)',
         borderColor: '#333',
         textStyle: { color: TEXT_COLOR },
         formatter: function (params) {
@@ -672,19 +692,20 @@ const getWarmUpStockCodes = () => {
           const zhangDieFu = currentData?.zhangDieFu ?? 0;
           const zhangDieFuColor = zhangDieFu >= 0 ? '#ef232a' : '#14b143'; // 红涨绿跌
           
-        //   return `
-        //     <div style="color: #fff;">
-        //       <div>日期: ${params[0].axisValue}</div>
-        //       <div>开盘: ${currentData.openPrice}</div>
-        //       <div>收盘: ${currentData.closePrice}</div>
-        //       <div>最低: ${currentData.minPrice}</div>
-        //       <div>最高: ${currentData.maxPrice}</div>
-        //       <div>涨跌幅: <span style="color:${zhangDieFuColor};font-weight:bold">${Number(zhangDieFu).toFixed(2)}%</span></div>
-        //     </div>
-        //   `;
           return `
-              涨跌幅: <span style="color:${zhangDieFuColor};font-weight:bold">${Number(zhangDieFu).toFixed(2)}%</span>
+            <div style="color: #fff; font-size: 12px;">
+              <div>日期: ${params[0].axisValue}</div>
+              <div>开盘: ${currentData.openPrice}</div>
+              <div>收盘: ${currentData.closePrice}</div>
+              <div>最低: ${currentData.minPrice}</div>
+              <div>最高: ${currentData.maxPrice}</div>
+              <div>涨跌幅: <span style="color:${zhangDieFuColor};font-weight:bold">${Number(zhangDieFu).toFixed(2)}%</span></div>
+              <div>成交量: ${chenJiaoLiangConvert(currentData.chenJiaoLiang)}</div>
+            </div>
           `;
+          // return `
+          //     涨跌幅: <span style="color:${zhangDieFuColor};font-weight:bold">${Number(zhangDieFu).toFixed(2)}%</span>
+          // `;
         }
       },
       grid: { left: '45px', right: '0%', top: '5%', bottom: '5%' },
@@ -781,44 +802,44 @@ const getWarmUpStockCodes = () => {
         top: '10px',
         textStyle: { fontSize: 14, fontWeight: 'bold', color: TEXT_COLOR }
       },
-      tooltip: {
-        trigger: 'axis',
-        axisPointer: {
-          type: 'cross',
-          lineStyle: {
-            color: '#444',
-            width: 1.2,
-            type: 'dashed',
-          },
-          crossStyle: {
-            color: '#444',
-            width: 1.2,
-          },
-          label: {
-            backgroundColor: '#23263a',
-            color: '#fff',
-            borderColor: '#444',
-            borderWidth: 1,
-          }
-        },
-        backgroundColor: 'rgba(24,28,38,0.95)',
-        borderColor: '#333',
-        textStyle: { color: TEXT_COLOR },
-        formatter: function (params) {
-          const value = params[0].value;
-          let formattedValue;
-          if (value >= 100000000) {
-            formattedValue = (value / 100000000).toFixed(1) + '亿';
-          } else if (value >= 10000000) {
-            formattedValue = (value / 10000000).toFixed(1) + '千万';
-          } else if (value >= 10000) {
-            formattedValue = (value / 10000).toFixed(1) + '万';
-          } else {
-            formattedValue = value.toFixed(0);
-          }
-          return `成交量: ${formattedValue}`;
-        }
-      },
+      // tooltip: {
+      //   trigger: 'axis',
+      //   axisPointer: {
+      //     type: 'cross',
+      //     lineStyle: {
+      //       color: '#444',
+      //       width: 1.2,
+      //       type: 'dashed',
+      //     },
+      //     crossStyle: {
+      //       color: '#444',
+      //       width: 1.2,
+      //     },
+      //     label: {
+      //       backgroundColor: '#23263a',
+      //       color: '#fff',
+      //       borderColor: '#444',
+      //       borderWidth: 1,
+      //     }
+      //   },
+      //   backgroundColor: 'rgba(24,28,38,0.95)',
+      //   borderColor: '#333',
+      //   textStyle: { color: TEXT_COLOR },
+      //   formatter: function (params) {
+      //     const value = params[0].value;
+      //     let formattedValue;
+      //     if (value >= 100000000) {
+      //       formattedValue = (value / 100000000).toFixed(1) + '亿';
+      //     } else if (value >= 10000000) {
+      //       formattedValue = (value / 10000000).toFixed(1) + '千万';
+      //     } else if (value >= 10000) {
+      //       formattedValue = (value / 10000).toFixed(1) + '万';
+      //     } else {
+      //       formattedValue = value.toFixed(0);
+      //     }
+      //     return `成交量: ${formattedValue}`;
+      //   }
+      // },
       grid: { left: '45px', right: '0%', top: '5%', bottom: '20%' },
       xAxis: {
         type: 'category',
@@ -848,19 +869,7 @@ const getWarmUpStockCodes = () => {
         axisLabel: { 
           color: TEXT_COLOR,
           formatter: function(value) {
-            if (value >= 100000000) {
-              // 大于等于1亿，显示为亿
-              return (value / 100000000).toFixed(0) + '亿';
-            } else if (value >= 10000000) {
-              // 大于等于1千万，显示为千万
-              return (value / 10000000).toFixed(0) + '千万';
-            } else if (value >= 10000) {
-              // 大于等于1万，显示为万
-              return (value / 10000).toFixed(0) + '万';
-            } else {
-              // 小于1万，直接显示
-              return value.toFixed(0);
-            }
+            return chenJiaoLiangConvert(value);
           }
         },
         splitLine: { lineStyle: { color: '#23263a' } },
