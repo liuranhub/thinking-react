@@ -687,7 +687,7 @@ const getWarmUpStockCodes = () => {
           `;
         }
       },
-      grid: { left: '4%', right: '0%', top: '5%', bottom: '5%' },
+      grid: { left: '45px', right: '0%', top: '5%', bottom: '5%' },
       xAxis: {
         type: 'category',
         data: dates,
@@ -736,8 +736,8 @@ const getWarmUpStockCodes = () => {
           data: ma.data,
           smooth: true,
           showSymbol: false,
-          lineStyle: { width: 1.5, color: ma.color },
-          emphasis: { lineStyle: { width: 2 } },
+          lineStyle: { width: 1, color: ma.color },
+          emphasis: { lineStyle: { width: 1 } },
         })),
         // 目标价格虚线
         ...(stockDetail.breakBelowPriceWatch ? [{
@@ -819,7 +819,7 @@ const getWarmUpStockCodes = () => {
           return `成交量: ${formattedValue}`;
         }
       },
-      grid: { left: '4%', right: '0%', top: '5%', bottom: '20%' },
+      grid: { left: '45px', right: '0%', top: '5%', bottom: '20%' },
       xAxis: {
         type: 'category',
         data: dates,
@@ -1790,7 +1790,7 @@ const getWarmUpStockCodes = () => {
                 padding: '2px 8px',
                 background: '#23263a',
                 color: '#fff',
-                border: hasWatchConfig() ? '1px solid #52c41a' : '1px solid #444',
+                border: hasWatchConfig() ? '2px solid #1e90ff' : '1px solid #444',
                 borderRadius: '3px',
                 cursor: 'pointer',
                 fontWeight: 'normal',
@@ -1800,20 +1800,20 @@ const getWarmUpStockCodes = () => {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                width: '24px',
-                height: '24px',
+                // width: '24px',
+                // height: '24px',
               }}
               onMouseOver={e => {
                 e.target.style.background = '#333';
-                e.target.style.borderColor = hasWatchConfig() ? '#73d13d' : '#666';
+                e.target.style.borderColor = hasWatchConfig() ? '#1e90ff' : '#666';
               }}
               onMouseOut={e => {
                 e.target.style.background = '#23263a';
-                e.target.style.borderColor = hasWatchConfig() ? '#52c41a' : '#444';
+                e.target.style.borderColor = hasWatchConfig() ? '#1e90ff' : '#444';
               }}
               title={hasWatchConfig() ? '已有监控配置，点击修改' : '添加监控配置'}
             >
-              +
+              监控
             </button>
             {/* 后退按钮（极简风格，仅箭头SVG，无背景无边框） */}
             <button
@@ -1848,7 +1848,7 @@ const getWarmUpStockCodes = () => {
                 <path d="M15.5 19L9 12L15.5 5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </button>
-            <span style={{marginRight: 4, color: '#fff'}}>均线:</span>
+            <span style={{marginRight: 0, color: '#fff'}}>均线:</span>
             <Select
               mode="multiple"
               value={selectedMAs}
