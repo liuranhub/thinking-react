@@ -573,6 +573,9 @@ const getWarmUpStockCodes = () => {
   };
 
   const chenJiaoLiangConvert = (value) => {
+    if(value == NaN) {
+      return 0;
+    }
     if (value >= 100000000) {
       // 大于等于1亿，显示为亿
       return (value / 100000000).toFixed(0) + '亿';
@@ -655,7 +658,7 @@ const getWarmUpStockCodes = () => {
         // text: `${chartData[0]?.stockName || '股票'} (${stockCode}) 日K线图`,
         left: 'center',
         top: '10px',
-        textStyle: { fontSize: 16, fontWeight: 'bold', color: TEXT_COLOR }
+        textStyle: { fontSize: 12, fontWeight: 'bold', color: TEXT_COLOR }
       },
       tooltip: {
         trigger: 'axis',
@@ -681,8 +684,8 @@ const getWarmUpStockCodes = () => {
             borderWidth: 1,
           }
         },
-        backgroundColor: 'rgba(24,28,38,0.1)',
-        borderColor: '#333',
+        backgroundColor: 'rgba(24,28,38,0.3)',
+        borderColor: 'rgba(35,38,58,0.95)',
         textStyle: { color: TEXT_COLOR },
         formatter: function (params) {
           const data = params[0].data;
@@ -692,17 +695,17 @@ const getWarmUpStockCodes = () => {
           const zhangDieFu = currentData?.zhangDieFu ?? 0;
           const zhangDieFuColor = zhangDieFu >= 0 ? '#ef232a' : '#14b143'; // 红涨绿跌
           
-          return `
-            <div style="color: #fff; font-size: 12px;">
-              <div>日期: ${params[0].axisValue}</div>
-              <div>开盘: ${currentData.openPrice}</div>
-              <div>收盘: ${currentData.closePrice}</div>
-              <div>最低: ${currentData.minPrice}</div>
-              <div>最高: ${currentData.maxPrice}</div>
-              <div>涨跌幅: <span style="color:${zhangDieFuColor};font-weight:bold">${Number(zhangDieFu).toFixed(2)}%</span></div>
-              <div>成交量: ${chenJiaoLiangConvert(currentData.chenJiaoLiang)}</div>
-            </div>
-          `;
+            return `
+             <div style="color: #fff; font-size: 12px; line-height: 1.4;">
+               <div style="margin-bottom: 2px;">日期: ${params[0].axisValue}</div>
+               <div style="margin-bottom: 2px;">开盘: ${currentData.openPrice}</div>
+               <div style="margin-bottom: 2px;">收盘: ${currentData.closePrice}</div>
+               <div style="margin-bottom: 2px;">最低: ${currentData.minPrice}</div>
+               <div style="margin-bottom: 2px;">最高: ${currentData.maxPrice}</div>
+               <div style="margin-bottom: 2px;">涨跌幅: <span style="color:${zhangDieFuColor};font-weight:bold">${Number(zhangDieFu).toFixed(2)}%</span></div>
+               <div>成交量: ${chenJiaoLiangConvert(currentData.chenJiaoLiang)}</div>
+             </div>
+            `;
           // return `
           //     涨跌幅: <span style="color:${zhangDieFuColor};font-weight:bold">${Number(zhangDieFu).toFixed(2)}%</span>
           // `;
@@ -802,44 +805,44 @@ const getWarmUpStockCodes = () => {
         top: '10px',
         textStyle: { fontSize: 14, fontWeight: 'bold', color: TEXT_COLOR }
       },
-      // tooltip: {
-      //   trigger: 'axis',
-      //   axisPointer: {
-      //     type: 'cross',
-      //     lineStyle: {
-      //       color: '#444',
-      //       width: 1.2,
-      //       type: 'dashed',
-      //     },
-      //     crossStyle: {
-      //       color: '#444',
-      //       width: 1.2,
-      //     },
-      //     label: {
-      //       backgroundColor: '#23263a',
-      //       color: '#fff',
-      //       borderColor: '#444',
-      //       borderWidth: 1,
-      //     }
-      //   },
-      //   backgroundColor: 'rgba(24,28,38,0.95)',
-      //   borderColor: '#333',
-      //   textStyle: { color: TEXT_COLOR },
-      //   formatter: function (params) {
-      //     const value = params[0].value;
-      //     let formattedValue;
-      //     if (value >= 100000000) {
-      //       formattedValue = (value / 100000000).toFixed(1) + '亿';
-      //     } else if (value >= 10000000) {
-      //       formattedValue = (value / 10000000).toFixed(1) + '千万';
-      //     } else if (value >= 10000) {
-      //       formattedValue = (value / 10000).toFixed(1) + '万';
-      //     } else {
-      //       formattedValue = value.toFixed(0);
-      //     }
-      //     return `成交量: ${formattedValue}`;
-      //   }
-      // },
+      tooltip: {
+        trigger: 'axis',
+        axisPointer: {
+          type: 'cross',
+          lineStyle: {
+            color: '#444',
+            width: 1.2,
+            type: 'dashed',
+          },
+          crossStyle: {
+            color: '#444',
+            width: 1.2,
+          },
+          label: {
+            backgroundColor: '#23263a',
+            color: '#fff',
+            borderColor: '#444',
+            borderWidth: 1,
+          }
+        },
+        backgroundColor: 'rgba(24,28,38,0.95)',
+        borderColor: '#333',
+        textStyle: { color: TEXT_COLOR },
+        formatter: function (params) {
+          // const value = params[0].value;
+          // let formattedValue;
+          // if (value >= 100000000) {
+          //   formattedValue = (value / 100000000).toFixed(1) + '亿';
+          // } else if (value >= 10000000) {
+          //   formattedValue = (value / 10000000).toFixed(1) + '千万';
+          // } else if (value >= 10000) {
+          //   formattedValue = (value / 10000).toFixed(1) + '万';
+          // } else {
+          //   formattedValue = value.toFixed(0);
+          // }
+          // return `成交量: ${formattedValue}`;
+        }
+      },
       grid: { left: '45px', right: '0%', top: '5%', bottom: '20%' },
       xAxis: {
         type: 'category',
