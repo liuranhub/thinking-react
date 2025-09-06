@@ -894,19 +894,14 @@ const getWarmUpStockCodes = () => {
         axisPointer: {
           type: 'cross',
           lineStyle: {
-            color: '#444',
-            width: 1.2,
-            type: 'dashed',
+            show: false  // 隐藏垂直向下的虚线
           },
           crossStyle: {
             color: '#444',
             width: 1.2,
           },
           label: {
-            backgroundColor: '#23263a',
-            color: '#fff',
-            borderColor: '#444',
-            borderWidth: 1,
+            show: false  // 隐藏纵坐标上的焦点标签
           }
         },
         backgroundColor: 'rgba(24,28,38,0.95)',
