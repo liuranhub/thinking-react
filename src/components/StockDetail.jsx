@@ -680,7 +680,8 @@ const getWarmUpStockCodes = () => {
         for (let j = 0; j < dayCount; j++) {
           sum += allStockData[i - j].closePrice;
         }
-        result.push((sum / dayCount).toFixed(2));
+        // 保持数值类型，避免字符串转换导致的精度问题
+        result.push(Number((sum / dayCount).toFixed(2)));
       }
       // 只取区间内部分
       return result.slice(chartStartIdx, chartEndIdx + 1);
@@ -738,7 +739,15 @@ const getWarmUpStockCodes = () => {
             color: '#fff',
             borderColor: '#444',
             borderWidth: 1,
-          }
+          },
+          // 添加防抖动配置
+          animation: false,           // 禁用动画，减少跳动
+          animationDuration: 0,      // 动画时长为0
+          animationEasing: 'linear', // 线性动画
+          // 添加精度控制
+          precision: 2,              // 设置精度为2位小数
+          // 添加节流控制
+          throttle: 50               // 节流50ms，减少频繁更新
         },
         backgroundColor: 'rgba(24,28,38,0.3)',
         borderColor: 'rgba(35,38,58,0.95)',
@@ -894,7 +903,9 @@ const getWarmUpStockCodes = () => {
         axisPointer: {
           type: 'cross',
           lineStyle: {
-            show: false  // 隐藏垂直向下的虚线
+            color: '#444',
+            width: 1.2,
+            type: 'dashed',
           },
           crossStyle: {
             color: '#444',
