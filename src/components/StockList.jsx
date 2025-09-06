@@ -401,7 +401,7 @@ const StockList = () => {
       response = await axios.post(host + '/stock/stockDataFavoritePage', {
         pageSize: queryParams.pageSize,
         pageIndex: queryParams.pageIndex,
-        dateType: queryParams.dateType,
+        dateType: 'latest',
         date: queryParams.date,
         keywords: queryParams.keywords,
         stockTypes: currentStockTypes,
