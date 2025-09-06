@@ -664,7 +664,7 @@ const getWarmUpStockCodes = () => {
         trigger: 'axis',
         position: function (point, params, dom, rect, size) {
           // 调整tooltip位置，不返回值让echarts自动计算位置
-          return [40, 0];
+          return [40, -1];
         },
         axisPointer: {
           type: 'cross',
@@ -784,6 +784,19 @@ const getWarmUpStockCodes = () => {
       ]
     };
     klineChart.setOption(klineOption);
+    
+    // 页面首次进入时显示最新一条数据的tooltip
+    setTimeout(() => {
+      if (dates.length > 0) {
+        const lastIndex = dates.length - 1;
+        klineChart.dispatchAction({
+          type: 'showTip',
+          seriesIndex: 0,
+          dataIndex: lastIndex
+        });
+      }
+    }, 100);
+    
     // 鼠标双击K线图，立即设置结束日期
     klineChart.getZr().on('dblclick', function (params) {
       const pointInGrid = klineChart.convertFromPixel({gridIndex: 0}, [params.offsetX, params.offsetY]);
