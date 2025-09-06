@@ -180,7 +180,10 @@ const StockList = () => {
   const [total, setTotal] = useState(0);
   const [riseCount, setRiseCount] = useState(0);
   const [zhangTingCount, setZhangTingCount] = useState(0);
-  const [searchKeyWordTmp, setSearchKeyWordTmp] = useState('');
+
+  // 通过ref优化数据卡顿问题
+  // 使用useState回到导致组件频繁，通过ref进行优化
+  let searchKeyWordTmp = useRef('');
 
   const [maxWidth, setMaxWidth] = useState(window.width);
 
@@ -631,7 +634,7 @@ const StockList = () => {
     // 3. 从缓存获取目标Tab的参数，如果没有则使用默认参数
     const targetParams = getTabParamsFromCache(tab);
     setQueryParams(targetParams);
-    setSearchKeyWordTmp(targetParams.keywords);
+    searchKeyWordTmp.current.value = (targetParams.keywords);
     
     // 4. 更新表头配置
     updateQueryParams({ stockFieldConfigType: TAB_CONFIG[tab].fieldConfigType });
@@ -1225,17 +1228,14 @@ const StockList = () => {
                 boxShadow: 'none'
               }
             }}
-            value={searchKeyWordTmp}
-            onChange={(e) => {
-              setSearchKeyWordTmp(e.target.value);
-              // e.target.value = value;
-              // 实时更新输入框显示，但不触发查询
-            }}
+            // 通过ref优化数据卡顿问题
+            ref={searchKeyWordTmp}
+            onChange={(e) => {}}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 e.preventDefault();
                 // Enter键时触发查询，这里不需要额外操作，因为onChange已经更新了状态
-                updateQueryParams({ keywords: searchKeyWordTmp });
+                updateQueryParams({ keywords: searchKeyWordTmp.current.value });
               }
             }}
           />

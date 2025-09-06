@@ -117,8 +117,8 @@ const StockDetail = () => {
     { tagName: '芯片', color: '#ffb86c' },    // 橙黄
     { tagName: '低空经济', color: '#23b14d' },    // 绿色
     { tagName: '无人机', color: '#f672ff' },    // 粉紫
-    // { tagName: '中字头', color: '#00bcd4' },  // 青色
-    // { tagName: '高股息', color: '#ff9800' },  // 橙色
+    { tagName: '石油', color: '#ff9800' },  // 青色
+    // { tagName: '高股息', color: '#00bcd4' },  // 橙色
   ];
 
   // 键盘上下键切换股票（循环）
