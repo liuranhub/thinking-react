@@ -719,6 +719,8 @@ const getWarmUpStockCodes = () => {
         trigger: 'axis',
         show: true,
         alwaysShowContent: true,
+        renderMode: 'html', // 使用HTML渲染模式
+        appendToBody: true, // 将tooltip渲染到body中
         position: function (point, params, dom, rect, size) {
           // 调整tooltip位置，不返回值让echarts自动计算位置
           return [40, -1];
@@ -755,6 +757,7 @@ const getWarmUpStockCodes = () => {
         backgroundColor: 'rgba(24,28,38,0.3)',
         borderColor: 'rgba(35,38,58,0.95)',
         textStyle: { color: TEXT_COLOR },
+        extraCssText: 'z-index: 1000 !important;', // 强制设置tooltip的z-index
         formatter: function (params) {
           const data = params[0].data;
           // 获取当前数据点的zhenFu字段
@@ -1586,13 +1589,16 @@ const getWarmUpStockCodes = () => {
                     background: '#23263a',
                     border: 'none',
                     borderRadius: 6,
+                    zIndex: 9999,
                   }}
                   dropdownStyle={{
                     background: '#23263a',
                     color: '#1e90ff',
                     borderRadius: 6,
                     fontSize: 14,
+                    zIndex: 9999,
                   }}
+                  getPopupContainer={() => document.body}
                   options={stockOptions}
                   placeholder="输入股票代码或名称搜索"
                   filterOption={(input, option) => {
@@ -1618,7 +1624,7 @@ const getWarmUpStockCodes = () => {
                   dropdownClassName="stock-dropdown-hover"
                   showArrow={true}
                   allowClear={false}
-                  listHeight={256}
+                  listHeight={400}
                   virtual={true}
                   keyboard={true}
                   notFoundContent="未找到匹配的股票"
