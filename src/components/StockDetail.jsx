@@ -1456,7 +1456,7 @@ const getWarmUpStockCodes = () => {
           flexWrap: 'wrap',
         }}>
           {/* 股票基本信息 Header */}
-          <div style={{marginLeft: '12px', display: 'flex', alignItems: 'flex-start', width: '40vw', maxHeight: '10vh'}}>             
+          <div style={{marginLeft: '12px', display: 'flex', alignItems: 'flex-start', width: '35vw', maxHeight: '10vh'}}>             
             {/* 股票基本信息 */}
             <div>
               {/* 股票名称 */}
@@ -1553,7 +1553,7 @@ const getWarmUpStockCodes = () => {
             </div>
           </div>
           <div style={{display: 'flex', alignItems: 'flex-start', flexWrap: 'wrap', flexDirection: 'column', 
-                        maxWidth: '30vw', textAlign: 'left'}}>
+                        width: '30vw', textAlign: 'left'}}>
             <div style={{display: 'flex', flexWrap: 'wrap'}}>
               <span style={{color: TEXT_COLOR}}>综合波动系数: <span style={{color: '#11d1e4'}}>{stockStats.volatility}</span></span>
               <span style={{color: TEXT_COLOR}}>(</span>
@@ -1641,7 +1641,7 @@ const getWarmUpStockCodes = () => {
             </div>
           </div>
           
-          <div>
+          <div style={{width: '30vw'}}>
             {/* 股票分数显示 */}
             {apiScoreResult && Object.keys(apiScoreResult).length > 0 && (() => {
               return (
