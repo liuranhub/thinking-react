@@ -885,8 +885,14 @@ const getWarmUpStockCodes = () => {
         const lastIndex = dates.length - 1;
         // 增加延迟时间，避免与ECharts内部事件冲突
         setTimeout(() => {
+          // 检查图表DOM是否存在
+          const chartDom = klineChart.getDom();
+          if (!chartDom) {
+            return; // 如果图表DOM不存在，直接返回
+          }
+          
           // 检查鼠标是否真的离开了图表区域
-          const rect = klineChart.getDom().getBoundingClientRect();
+          const rect = chartDom.getBoundingClientRect();
           const mouseX = params.offsetX;
           const mouseY = params.offsetY;
           
@@ -1015,7 +1021,8 @@ const getWarmUpStockCodes = () => {
       }
     });
     // 绑定wheel事件到canvas
-    const chartCanvas = klineChart.getDom().querySelector('canvas');
+    const chartDom = klineChart.getDom();
+    const chartCanvas = chartDom ? chartDom.querySelector('canvas') : null;
     if (chartCanvas) {
       chartCanvas.addEventListener('wheel', handleKlineWheel, { passive: false });
     }
