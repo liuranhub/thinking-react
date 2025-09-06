@@ -312,23 +312,44 @@ const StockDetail = () => {
     return stockDetail.breakBelowPriceWatch !== null;
   };
 
-  // 创建监控配置
+  // 创建或更新监控配置
   const createWatchConfig = async (values) => {
-    const response = await fetch(`${API_HOST}/stock/watch/createOrUpdateWatchConfig`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        ...values,
-        stockCode: stockCode,
-        startDate: values.startDate.format('YYYY-MM-DD'),
-      }),
-    });
+    try {
+      const response = await fetch(`${API_HOST}/stock/watch/createOrUpdateWatchConfig`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...values,
+          stockCode: stockCode,
+          startDate: values.startDate.format('YYYY-MM-DD'),
+        }),
+      });
 
-    setShowWatchConfigModal(false);
-    watchConfigForm.resetFields();
-    
+      if (response.ok) {
+        // 使用setStockDetail更新状态，触发重新渲染
+        setStockDetail(prev => ({
+          ...prev,
+          breakBelowPriceWatch: {
+            ...values,
+            startDate: values.startDate.format('YYYY-MM-DD')
+          }
+        }));
+
+        setShowWatchConfigModal(false);
+        watchConfigForm.resetFields();
+        
+        // 显示成功消息
+        const isEdit = stockDetail.breakBelowPriceWatch !== null;
+        message.success(isEdit ? '监控配置更新成功' : '监控配置创建成功');
+      } else {
+        message.error('监控配置保存失败');
+      }
+    } catch (error) {
+      console.error('保存监控配置失败:', error);
+      message.error('保存监控配置失败，请重试');
+    }
   };
 
   // 计算区间（最近N年）并筛选数据
@@ -351,7 +372,7 @@ const StockDetail = () => {
     if (chartData.length > 0 && stockDetailLoaded) {
       return renderCharts();
     }
-  }, [chartData, selectedMAs, stockDetailLoaded]);
+  }, [chartData, selectedMAs, stockDetailLoaded, stockDetail.breakBelowPriceWatch]);
 
   // 获取API分数
   const fetchApiScore = async () => {
@@ -385,6 +406,39 @@ const StockDetail = () => {
   useEffect(() => {
     setStockDetailLoaded(false);
   }, [stockCode]);
+
+  // 当弹窗打开时，设置表单初始值
+  useEffect(() => {
+    console.log('useEffect triggered:', { showWatchConfigModal, stockDetail, stockCode });
+    if (showWatchConfigModal) {
+      // 使用setTimeout确保表单完全渲染后再设置值
+      setTimeout(() => {
+        console.log('Form instance:', watchConfigForm);
+        console.log('Form methods available:', typeof watchConfigForm.setFieldsValue);
+        
+        if (stockDetail.breakBelowPriceWatch) {
+          console.log('Setting form values for existing config:', stockDetail.breakBelowPriceWatch);
+          // 如果有现有配置，回显数据
+          const formValues = {
+            stockCode: stockCode,
+            watchModel: stockDetail.breakBelowPriceWatch.watchModel,
+            targetPrice: stockDetail.breakBelowPriceWatch.targetPrice,
+            startDate: stockDetail.breakBelowPriceWatch.startDate ? dayjs(stockDetail.breakBelowPriceWatch.startDate) : null
+          };
+          console.log('Form values to set:', formValues);
+          watchConfigForm.setFieldsValue(formValues);
+        } else {
+          console.log('Setting default form values');
+          // 如果没有配置，设置默认值
+          const defaultValues = {
+            stockCode: stockCode
+          };
+          console.log('Default form values to set:', defaultValues);
+          watchConfigForm.setFieldsValue(defaultValues);
+        }
+      }, 100);
+    }
+  }, [showWatchConfigModal, stockDetail.breakBelowPriceWatch, stockCode]);
 
   // 拉取当前股票详情，获取yaoGu等
   const fetchDetail = async () => {
@@ -2163,7 +2217,7 @@ const getWarmUpStockCodes = () => {
 
       {/* 添加监控配置弹窗 */}
       <Modal
-        title="添加监控配置"
+        title={stockDetail.breakBelowPriceWatch ? "编辑监控配置" : "添加监控配置"}
         open={showWatchConfigModal}
         onCancel={() => {
           setShowWatchConfigModal(false);
@@ -2172,7 +2226,6 @@ const getWarmUpStockCodes = () => {
         footer={null}
         width={400}
         centered
-        destroyOnClose
         maskClosable={false}
         className="watch-config-modal"
       >
