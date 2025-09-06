@@ -87,7 +87,7 @@ const StockList = () => {
   const TAB_CONFIG = useMemo(() => ({
     latestMain: {
       key: 'latestMain',
-      label: '最新数据(主)',
+      label: '主板',
       fieldConfigType: 'simple',
       operations: [{
         modalType: MODAL_TYPE_CONFIRM,
@@ -101,7 +101,7 @@ const StockList = () => {
     },
     latestTechGem: {
       key: 'latestTechGem',
-      label: '最新数据(科创)',
+      label: '科创/创业',
       fieldConfigType: 'simple',
       operations: [{
         modalType: MODAL_TYPE_CONFIRM,
@@ -127,7 +127,7 @@ const StockList = () => {
     },
     favorites: {
       key: 'favorites',
-      label: '我的收藏',
+      label: '收藏列表',
       fieldConfigType: 'favorite',
       dateType: 'latest',
       showDateSelector: false,
@@ -1127,16 +1127,10 @@ const StockList = () => {
           >
             高级搜索
           </Button> */}
-
-          <span style={{ 
-            marginLeft: '10px',
-            display: 'inline-flex',
-            alignItems: 'center',
-            height: '24px'
-          }}>表头:</span>
           <select 
             value={queryParams.stockFieldConfigType} 
             onChange={(e) => updateQueryParams({ stockFieldConfigType: e.target.value })}
+            style={{width: '70px',}}
           >
             {stockFieldConfigTypes.map((option) => (
               <option key={option} value={option}>
@@ -1164,8 +1158,8 @@ const StockList = () => {
                   });
                 }}
                 style={{
-                  width: '120px',
-                  minWidth: '120px',
+                  width: '100px',
+                  minWidth: '100px',
                   fontSize: '12px',
                   verticalAlign: 'middle',
                   height: '25px'
@@ -1203,8 +1197,8 @@ const StockList = () => {
                   updateQueryParams({ stockTypes: values });
                 }}
                 style={{
-                  width: '80px',
-                  maxWidth: '80px',
+                  width: '70px',
+                  maxWidth: '70px',
                   fontSize: '12px',
                   verticalAlign: 'middle',
                   height: '25px'
@@ -1245,7 +1239,7 @@ const StockList = () => {
               borderRadius: '2px',
               padding: '2px 4px',
               outline: 'none',
-              fontSize: '12px',
+              fontSize: '13px',
               '&:focus': {
                 border: '1px solid #ccc',
                 boxShadow: 'none'
