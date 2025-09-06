@@ -4,7 +4,8 @@ import '../App.css';
 import { FixedSizeList as List } from 'react-window';
 import SearchModal from './SearchModal';
 
-import { Select } from 'antd';
+import { Select, Dropdown, Button } from 'antd';
+import { DownOutlined } from '@ant-design/icons';
 import 'antd/dist/reset.css';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { API_HOST } from '../config/config';
@@ -1266,60 +1267,47 @@ const StockList = () => {
             总数:{total}
           </span>
 
-          {/* 导出按钮 */}
-          <button
-            onClick={exportToCSV}
-            style={{
-              marginLeft: '10px',
-              padding: '4px 12px',
-              backgroundColor: '#52c41a',
-              color: '#fff',
-              border: '1px solid #52c41a',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontSize: '12px',
-              fontWeight: 'bold',
-              transition: 'background-color 0.3s'
+          {/* 其它功能下拉菜单 */}
+          <Dropdown
+            menu={{
+              items: [
+                {
+                  key: 'export',
+                  label: '导出CSV',
+                  onClick: exportToCSV,
+                },
+                {
+                  key: 'market-trend',
+                  label: '市场趋势',
+                  onClick: () => navigate('/market-trend'),
+                },
+                {
+                  key: 'watch-config',
+                  label: '监控配置',
+                  onClick: () => navigate('/watch-config'),
+                },
+              ],
             }}
-            onMouseEnter={(e) => e.target.style.backgroundColor = '#389e0d'}
-            onMouseLeave={(e) => e.target.style.backgroundColor = '#52c41a'}
-            title="导出当前列表为CSV文件"
+            trigger={['click']}
           >
-            导出CSV
-          </button>
-
-          <Link 
-            to="/market-trend" 
-            // target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              textDecoration: 'none',
-              padding: '4px 15px',
-              borderRadius: '4px',
-              transition: 'background-color 0.3s',
-            }}
-            onMouseEnter={(e) => e.target.style.backgroundColor = '#f0f5ff'}
-            onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
-          >
-            市场趋势
-          </Link>
-
-          <Link 
-            to="/watch-config" 
-            // target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              textDecoration: 'none',
-              padding: '4px 15px',
-              borderRadius: '4px',
-              transition: 'background-color 0.3s',
-              marginLeft: '10px',
-            }}
-            onMouseEnter={(e) => e.target.style.backgroundColor = '#f0f5ff'}
-            onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
-          >
-            监控配置
-          </Link>
+            <span
+              style={{
+                marginLeft: '10px',
+                padding: '4px 15px',
+                borderRadius: '4px',
+                transition: 'background-color 0.3s',
+                cursor: 'pointer',
+                textDecoration: 'none',
+                color: 'inherit',
+                fontSize: '12px',
+                fontWeight: 'bold'
+              }}
+              onMouseEnter={(e) => e.target.style.backgroundColor = '#f0f5ff'}
+              onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+            >
+              其它功能
+            </span>
+          </Dropdown>
 
           {/* <span style={{ marginLeft: '10px' }}>标签:</span>
           <span style={{ marginLeft: '10px', color: '#555' }}>
