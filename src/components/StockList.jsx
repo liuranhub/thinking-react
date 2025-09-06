@@ -52,8 +52,38 @@ const StockList = () => {
     { label: '已退市', value: 'ST' }
   ];
 
+  // 状态定义（必须在所有函数之前）
+  const [nextClosePriceAnalysis, setNextClosePriceAnalysis] = useState('');
+
+  // API函数定义（必须在事件处理函数之前）
+  const addFavorite = useCallback(async (stockCode) => {
+    await axios.post(host + '/stock/addFavorite', {
+      stockCode: stockCode,
+      nextClosePriceAnalysis: nextClosePriceAnalysis
+    });
+  }, [host, nextClosePriceAnalysis]);
+
+  const removeFavorite = useCallback(async (stockCode) => {
+    await axios.post(host + '/stock/removeFavorite/' + stockCode, {});
+  }, [host]);
+
+  // 事件处理函数定义（必须在TAB_CONFIG之前）
+  const handleNotSupportClick = useCallback(() => {
+    alert("不支持点击")
+  }, []);
+
+  const handleAddFavoriteClick = useCallback((row) => {
+    console.log("add favorite:", row)
+    addFavorite(row.stockCode);
+    setNextClosePriceAnalysis(null);
+  }, [addFavorite]);
+
+  const handleRemoveFavoriteClick = useCallback((row) => {
+    removeFavorite(row.stockCode)// 显示弹窗
+  }, [removeFavorite]);
+
   // Tab配置常量
-  const TAB_CONFIG = useMemo(() => ({
+  const TAB_CONFIG = {
     latestMain: {
       key: 'latestMain',
       label: '最新数据(主)',
@@ -61,7 +91,7 @@ const StockList = () => {
       operations: [{
         modalType: MODAL_TYPE_CONFIRM,
         name: "收藏",
-        handler: 'handleAddFavoriteClick',
+        handler: handleAddFavoriteClick,
       }],
       stockTypes: ['MAIN'],
       orderByField: 'score',
@@ -75,7 +105,7 @@ const StockList = () => {
       operations: [{
         modalType: MODAL_TYPE_CONFIRM,
         name: "收藏",
-        handler: 'handleAddFavoriteClick',
+        handler: handleAddFavoriteClick,
       }],
       stockTypes: ['TECH','GEM'],
       orderByField: 'score',
@@ -89,7 +119,7 @@ const StockList = () => {
       operations: [{
         modalType: MODAL_TYPE_CONFIRM,
         name: "收藏",
-        handler: 'handleAddFavoriteClick',
+        handler: handleAddFavoriteClick,
       }],
       orderByField: 'stockCode',
       orderRule: 'ASC'
@@ -103,7 +133,7 @@ const StockList = () => {
       operations: [{
         modalType: MODAL_TYPE_CONFIRM,
         name: "取消收藏",
-        handler: 'handleRemoveFavoriteClick',
+        handler: handleRemoveFavoriteClick,
         width: 60
       }],
       orderByField: 'stockCode',
@@ -117,7 +147,7 @@ const StockList = () => {
       operations: [{
         modalType: MODAL_TYPE_CONFIRM,
         name: "收藏",
-        handler: 'handleAddFavoriteClick',
+        handler: handleAddFavoriteClick,
         width: 40
       }],
       stockTypes: ['MAIN'],
@@ -130,8 +160,8 @@ const StockList = () => {
       fieldConfigType: 'simple',
       operations: [{
         modalType: MODAL_TYPE_CONFIRM,
-        name: "收藏",
-        handler: 'notSupportClick',
+        name: "不支持",
+        handler: handleNotSupportClick,
         width: 40
       }],
       orderByField: 'stockCode',
@@ -145,13 +175,13 @@ const StockList = () => {
       operations: [{
         modalType: MODAL_TYPE_CONFIRM,
         name: "收藏",
-        handler: 'handleAddFavoriteClick',
+        handler: handleAddFavoriteClick,
         width: 40
       }],
       orderByField: 'stockCode',
       orderRule: 'asc'
     }
-  }), []);
+  };
 
   // Tab常量（保持向后兼容）
   const TAB_LATEST = TAB_CONFIG.latestMain.key;
@@ -214,7 +244,6 @@ const StockList = () => {
 
   // 保留一些非查询相关的状态
   const [dates, setDates] = useState([]);
-  const [nextClosePriceAnalysis, setNextClosePriceAnalysis] = useState('');
   
   // 重构：Tab参数缓存 - 使用普通Map缓存不同Tab的queryParams
   const tabQueryParamCache = useRef(new Map());
@@ -357,16 +386,6 @@ const StockList = () => {
     return response.data;
   };
 
-  const addFavorite = async (stockCode) => {
-    await axios.post(host + '/stock/addFavorite', {
-      stockCode: stockCode,
-      nextClosePriceAnalysis: nextClosePriceAnalysis
-    });
-  };
-
-  const removeFavorite = async (stockCode) => {
-    await axios.post(host + '/stock/removeFavorite/' + stockCode, {});
-  };
 
   // 重构：fetchData函数使用统一查询参数
   const fetchData = useCallback(async () => {
@@ -568,46 +587,17 @@ const StockList = () => {
     });
   };
 
-  const notSupportClick = useCallback((row) => {
-    alert("不支持点击")
-  });
-
-  const handleAddFavoriteClick = useCallback((row) => {
-    console.log("add favorite:", row)
-    addFavorite(row.stockCode);
-    setNextClosePriceAnalysis(null);
-  }, [addFavorite]);
-
-  // 处理收藏按钮点击事件
-  const handleRemoveFavoriteClick = useCallback((row) => {
-    removeFavorite(row.stockCode)// 显示弹窗
-  }, [removeFavorite]);
 
   // 根据Tab配置生成operations
   const getTabOperations = useCallback((tabKey) => {
     const config = TAB_CONFIG[tabKey];
     if (!config || !config.operations) return [];
     
-    return config.operations.map(operation => {
-      // 将字符串handler转换为实际函数
-      let handler;
-      switch (operation.handler) {
-        case 'handleAddFavoriteClick':
-          handler = handleAddFavoriteClick;
-          break;
-        case 'handleRemoveFavoriteClick':
-          handler = handleRemoveFavoriteClick;
-          break;
-        default:
-          handler = handleAddFavoriteClick; // 默认处理
-      }
-      
-      return {
-        ...operation,
-        handler
-      };
-    });
-  }, [TAB_CONFIG, handleAddFavoriteClick, handleRemoveFavoriteClick]);
+    return config.operations.map(operation => ({
+      ...operation,
+      // handler已经是函数，直接使用
+    }));
+  }, [TAB_CONFIG]);
 
   const handleSearchModalToggle = () => {
     setSearchModalVisible(!searchModalVisible);
