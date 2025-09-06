@@ -662,6 +662,8 @@ const getWarmUpStockCodes = () => {
       },
       tooltip: {
         trigger: 'axis',
+        show: true,
+        alwaysShowContent: true,
         position: function (point, params, dom, rect, size) {
           // 调整tooltip位置，不返回值让echarts自动计算位置
           return [40, -1];
@@ -805,6 +807,21 @@ const getWarmUpStockCodes = () => {
         // 记录历史
         chartEndDateHistory.current.push(chartEndDateRef.current);
         setChartEndDate(dates[xIndex]);
+      }
+    });
+    
+    // 鼠标离开K线图区域时，显示最新一天的数据
+    klineChart.getZr().on('mouseout', function (params) {
+      if (dates.length > 0) {
+        const lastIndex = dates.length - 1;
+        // 使用setTimeout确保在tooltip隐藏后重新显示
+        setTimeout(() => {
+          klineChart.dispatchAction({
+            type: 'showTip',
+            seriesIndex: 0,
+            dataIndex: lastIndex
+          });
+        }, 50);
       }
     });
     // 成交量图
