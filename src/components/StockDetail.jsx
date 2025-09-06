@@ -1853,48 +1853,39 @@ const getWarmUpStockCodes = () => {
             padding: '6px 14px',
             boxShadow: '0 2px 8px #0003',
           }}>
-            {/* 监控配置按钮 */}
-            {/* <button
-              onClick={() => navigate(`/watch-config?stockCode=${stockCode}`)}
+            {/* 后退按钮（极简风格，仅箭头SVG，无背景无边框） */}
+            <button
+              onClick={handleBackChartEndDate}
+              disabled={chartEndDateHistory.current.length === 0}
               style={{
-                marginRight: 8,
-                padding: '2px 8px',
-                background: (() => {
-                  if (!stockDetail.breakBelowPriceWatch) return '#666'; // 灰色
-                  if (stockDetail.breakBelowPriceWatch.processStatus === 'PENDING') return '#ff4d4f'; // 红色
-                  return '#52c41a'; // 绿色
-                })(),
-                color: '#fff',
-                border: '1px solid #444',
-                borderRadius: '3px',
-                cursor: 'pointer',
-                fontWeight: 'normal',
-                fontSize: '12px',
+                marginRight: 6,
+                padding: 0,
+                background: 'none',
+                border: 'none',
+                cursor: chartEndDateHistory.current.length === 0 ? 'not-allowed' : 'pointer',
                 outline: 'none',
-                transition: 'all 0.2s',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '4px',
+                justifyContent: 'center',
+                transition: 'none',
               }}
-              onMouseOver={e => {
-                const currentBg = e.target.style.background;
-                e.target.style.background = currentBg === 'rgb(102, 102, 102)' ? '#888' : 
-                                           currentBg === 'rgb(255, 77, 79)' ? '#ff7875' : 
-                                           currentBg === 'rgb(82, 196, 26)' ? '#73d13d' : '#333';
-              }}
-              onMouseOut={e => {
-                if (!stockDetail.breakBelowPriceWatch) e.target.style.background = '#666';
-                else if (stockDetail.breakBelowPriceWatch.processStatus === 'PENDING') e.target.style.background = '#ff4d4f';
-                else e.target.style.background = '#52c41a';
-              }}
-              title={(() => {
-                if (!stockDetail.breakBelowPriceWatch) return '暂无监控配置';
-                if (stockDetail.breakBelowPriceWatch.processStatus === 'PENDING') return '监控配置处理中';
-                return '查看监控配置';
-              })()}
+              title="返回上一个截止期日"
+              className={chartEndDateHistory.current.length === 0 ? 'arrow-btn-disabled' : 'arrow-btn'}
             >
-              监控配置
-            </button> */}
+              <svg
+                width="20" height="20" viewBox="0 0 24 24" fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                style={{
+                  color: chartEndDateHistory.current.length === 0 ? '#888' : '#fff',
+                  transition: 'transform 0.18s cubic-bezier(.4,2,.6,1)',
+                  willChange: 'transform',
+                  pointerEvents: 'none',
+                }}
+                className="arrow-svg"
+              >
+                <path d="M15.5 19L9 12L15.5 5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
             {/* 添加监控配置按钮 */}
             <button
               onClick={() => {
@@ -1943,39 +1934,7 @@ const getWarmUpStockCodes = () => {
             >
               监控
             </button>
-            {/* 后退按钮（极简风格，仅箭头SVG，无背景无边框） */}
-            <button
-              onClick={handleBackChartEndDate}
-              disabled={chartEndDateHistory.current.length === 0}
-              style={{
-                marginRight: 6,
-                padding: 0,
-                background: 'none',
-                border: 'none',
-                cursor: chartEndDateHistory.current.length === 0 ? 'not-allowed' : 'pointer',
-                outline: 'none',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                transition: 'none',
-              }}
-              title="返回上一个截止期日"
-              className={chartEndDateHistory.current.length === 0 ? 'arrow-btn-disabled' : 'arrow-btn'}
-            >
-              <svg
-                width="20" height="20" viewBox="0 0 24 24" fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-                style={{
-                  color: chartEndDateHistory.current.length === 0 ? '#888' : '#fff',
-                  transition: 'transform 0.18s cubic-bezier(.4,2,.6,1)',
-                  willChange: 'transform',
-                  pointerEvents: 'none',
-                }}
-                className="arrow-svg"
-              >
-                <path d="M15.5 19L9 12L15.5 5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </button>
+            
             <span style={{marginRight: 0, color: '#fff'}}>均线:</span>
             <Select
               mode="multiple"
