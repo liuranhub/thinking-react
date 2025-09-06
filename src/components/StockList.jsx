@@ -76,14 +76,14 @@ const StockList = () => {
     console.log("add favorite:", row)
     addFavorite(row.stockCode);
     setNextClosePriceAnalysis(null);
-  }, [addFavorite]);
+  }, [addFavorite, setNextClosePriceAnalysis]);
 
   const handleRemoveFavoriteClick = useCallback((row) => {
     removeFavorite(row.stockCode)// 显示弹窗
   }, [removeFavorite]);
 
   // Tab配置常量
-  const TAB_CONFIG = {
+  const TAB_CONFIG = useMemo(() => ({
     latestMain: {
       key: 'latestMain',
       label: '最新数据(主)',
@@ -181,7 +181,7 @@ const StockList = () => {
       orderByField: 'stockCode',
       orderRule: 'asc'
     }
-  };
+  }), [handleAddFavoriteClick, handleRemoveFavoriteClick, handleNotSupportClick]);
 
   // Tab常量（保持向后兼容）
   const TAB_LATEST = TAB_CONFIG.latestMain.key;
@@ -244,6 +244,38 @@ const StockList = () => {
 
   // 保留一些非查询相关的状态
   const [dates, setDates] = useState([]);
+  
+  // 导出CSV功能
+  const exportToCSV = useCallback(() => {
+    if (!data || data.length === 0) {
+      alert('没有数据可以导出');
+      return;
+    }
+
+    // 生成CSV内容
+    const csvContent = [
+      // CSV头部
+      '股票代码,股票名称',
+      // 数据行
+      ...data.map(row => `"${row.stockCode}","${row.stockName}"`)
+    ].join('\n');
+
+    // 生成文件名：StockList+Tab标签+日期.csv
+    const currentDate = new Date().toISOString().slice(0, 10); // YYYY-MM-DD格式
+    const tabLabel = TAB_CONFIG[activeTab]?.label || activeTab;
+    const fileName = `StockList${tabLabel}${currentDate}.csv`;
+
+    // 创建Blob并下载
+    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', fileName);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }, [data, activeTab, TAB_CONFIG]);
   
   // 重构：Tab参数缓存 - 使用普通Map缓存不同Tab的queryParams
   const tabQueryParamCache = useRef(new Map());
@@ -1233,6 +1265,28 @@ const StockList = () => {
           <span style={{ marginLeft: '10px' }}>
             总数:{total}
           </span>
+
+          {/* 导出按钮 */}
+          <button
+            onClick={exportToCSV}
+            style={{
+              marginLeft: '10px',
+              padding: '4px 12px',
+              backgroundColor: '#52c41a',
+              color: '#fff',
+              border: '1px solid #52c41a',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '12px',
+              fontWeight: 'bold',
+              transition: 'background-color 0.3s'
+            }}
+            onMouseEnter={(e) => e.target.style.backgroundColor = '#389e0d'}
+            onMouseLeave={(e) => e.target.style.backgroundColor = '#52c41a'}
+            title="导出当前列表为CSV文件"
+          >
+            导出CSV
+          </button>
 
           <Link 
             to="/market-trend" 
