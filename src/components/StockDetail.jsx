@@ -747,7 +747,10 @@ const getWarmUpStockCodes = () => {
           // 添加精度控制
           precision: 2,              // 设置精度为2位小数
           // 添加节流控制
-          throttle: 50               // 节流50ms，减少频繁更新
+          throttle: 100,             // 增加节流到100ms，减少频繁更新
+          // 添加防抖配置
+          snap: true,                // 启用吸附功能
+          z: 10                      // 设置层级，避免与其他元素冲突
         },
         backgroundColor: 'rgba(24,28,38,0.3)',
         borderColor: 'rgba(35,38,58,0.95)',
@@ -877,14 +880,24 @@ const getWarmUpStockCodes = () => {
     klineChart.getZr().on('mouseout', function (params) {
       if (dates.length > 0) {
         const lastIndex = dates.length - 1;
-        // 使用setTimeout确保在tooltip隐藏后重新显示
+        // 增加延迟时间，避免与ECharts内部事件冲突
         setTimeout(() => {
+          // 检查鼠标是否真的离开了图表区域
+          const rect = klineChart.getDom().getBoundingClientRect();
+          const mouseX = params.offsetX;
+          const mouseY = params.offsetY;
+          
+          // 如果鼠标仍在图表区域内，不执行showTip
+          if (mouseX >= 0 && mouseX <= rect.width && mouseY >= 0 && mouseY <= rect.height) {
+            return;
+          }
+          
           klineChart.dispatchAction({
             type: 'showTip',
             seriesIndex: 0,
             dataIndex: lastIndex
           });
-        }, 50);
+        }, 100); // 增加延迟到100ms
       }
     });
     // 成交量图
