@@ -361,8 +361,6 @@ const StockDetail = () => {
       const startDate = getDateNDaysAgo(maxDate, rangeYears);
       const chartStartDate = startDate < minDate ? minDate : startDate;
       const filtered = allStockData.filter(item => item.date >= chartStartDate && item.date <= maxDate);
-      console.log(maxDate)
-      console.log(filtered)
       setChartData(filtered);
     }
   }, [allStockData, rangeYears, chartEndDate]);
@@ -694,20 +692,22 @@ const getWarmUpStockCodes = () => {
         
         return yearMonth !== prevYearMonth ? yearMonth : '';
       };
-    } else if (timeSpanYears <= 3) {
-      // 大于2年少于等于3年：每3个月显示一个坐标点，格式 2025-08
-      formatter = (value, idx) => {
-        const date = new Date(value);
-        const yearMonth = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+    } 
+    // else if (timeSpanYears <= 3) {
+    //   // 大于2年少于等于3年：每3个月显示一个坐标点，格式 2025-08
+    //   formatter = (value, idx) => {
+    //     const date = new Date(value);
+    //     const yearMonth = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
         
-        if (idx === 0) return yearMonth;
+    //     if (idx === 0) return yearMonth;
         
-        const prevDate = new Date(dates[idx - 1]);
-        const prevYearMonth = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}`;
+    //     const prevDate = new Date(dates[idx - 1]);
+    //     const prevYearMonth = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}`;
         
-        return yearMonth !== prevYearMonth ? yearMonth : '';
-      };
-    } else if (timeSpanYears <= 6) {
+    //     return yearMonth !== prevYearMonth ? yearMonth : '';
+    //   };
+    // }
+    else if (timeSpanYears <= 6) {
       // 大于3年少于等于6年：每6个月显示一个坐标点，格式 2025-01
       formatter = (value, idx) => {
         const date = new Date(value);
