@@ -650,6 +650,96 @@ const getWarmUpStockCodes = () => {
     chartEndDateRef.current = chartEndDate;
   }, [chartEndDate]);
 
+  // 计算时间跨度并生成xAxis配置
+  const getXAxisConfig = (dates) => {
+    if (!dates || dates.length === 0) {
+      return {
+        interval: 0,
+        formatter: (value) => value.slice(0, 4)
+      };
+    }
+
+    // 计算时间跨度（年）
+    const startDate = new Date(dates[0]);
+    const endDate = new Date(dates[dates.length - 1]);
+    const timeSpanYears = (endDate - startDate) / (365.25 * 24 * 60 * 60 * 1000);
+
+    let formatter;
+
+    if (timeSpanYears <= 1) {
+      // 少于等于1年：每月显示一个坐标点，格式 2025-08
+      formatter = (value, idx) => {
+        const date = new Date(value);
+        const yearMonth = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        
+        // 第一个总是显示
+        if (idx === 0) return yearMonth;
+        
+        // 检查是否与上一个不同
+        const prevDate = new Date(dates[idx - 1]);
+        const prevYearMonth = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}`;
+        
+        return yearMonth !== prevYearMonth ? yearMonth : '';
+      };
+    } else if (timeSpanYears <= 2) {
+      // 大于1年少于等于2年：每两个月显示一个坐标点，格式 2025-08
+      formatter = (value, idx) => {
+        const date = new Date(value);
+        const yearMonth = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        
+        if (idx === 0) return yearMonth;
+        
+        const prevDate = new Date(dates[idx - 1]);
+        const prevYearMonth = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}`;
+        
+        return yearMonth !== prevYearMonth ? yearMonth : '';
+      };
+    } else if (timeSpanYears <= 3) {
+      // 大于2年少于等于3年：每3个月显示一个坐标点，格式 2025-08
+      formatter = (value, idx) => {
+        const date = new Date(value);
+        const yearMonth = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        
+        if (idx === 0) return yearMonth;
+        
+        const prevDate = new Date(dates[idx - 1]);
+        const prevYearMonth = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}`;
+        
+        return yearMonth !== prevYearMonth ? yearMonth : '';
+      };
+    } else if (timeSpanYears <= 6) {
+      // 大于3年少于等于6年：每6个月显示一个坐标点，格式 2025-01
+      formatter = (value, idx) => {
+        const date = new Date(value);
+        const month = Math.floor(date.getMonth() / 6) * 6 + 1; // 1月或7月
+        const yearMonth = `${date.getFullYear()}-${String(month).padStart(2, '0')}`;
+        
+        if (idx === 0) return yearMonth;
+        
+        const prevDate = new Date(dates[idx - 1]);
+        const prevMonth = Math.floor(prevDate.getMonth() / 6) * 6 + 1;
+        const prevYearMonth = `${prevDate.getFullYear()}-${String(prevMonth).padStart(2, '0')}`;
+        
+        return yearMonth !== prevYearMonth ? yearMonth : '';
+      };
+    } else {
+      // 大于6年：每年显示一个坐标点，格式 2025
+      formatter = (value, idx) => {
+        const date = new Date(value);
+        const year = date.getFullYear().toString();
+        
+        if (idx === 0) return year;
+        
+        const prevDate = new Date(dates[idx - 1]);
+        const prevYear = prevDate.getFullYear().toString();
+        
+        return year !== prevYear ? year : '';
+      };
+    }
+
+    return { interval: 0, formatter }; // 设置interval为0，让formatter控制显示
+  };
+
   const renderCharts = () => {
     // DOM检查，防止ECharts初始化报错
     const klineDom = document.getElementById('kline-chart');
@@ -691,6 +781,7 @@ const getWarmUpStockCodes = () => {
       data: calcMA(ma.key)
     }));
     const dates = chartDates;
+    const xAxisConfig = getXAxisConfig(dates);
     const dataZoom = [
       {
         id: 'stock-zoom',
@@ -793,13 +884,8 @@ const getWarmUpStockCodes = () => {
         axisTick: { show: false }, 
         axisLabel: {
           color: TEXT_COLOR,
-          interval: 0,
-          formatter: function (value, idx) {
-            if (idx === 0) return value.slice(0, 4);
-            const prevYear = dates[idx - 1]?.slice(0, 4);
-            const currYear = value.slice(0, 4);
-            return prevYear !== currYear ? currYear : '';
-          }
+          interval: xAxisConfig.interval,
+          formatter: xAxisConfig.formatter
         },
         splitLine: { show: false },
         min: 'dataMin',
@@ -966,13 +1052,8 @@ const getWarmUpStockCodes = () => {
         axisTick: { show: false }, 
         axisLabel: {
           color: TEXT_COLOR,
-          interval: 0,
-          formatter: function (value, idx) {
-            if (idx === 0) return value.slice(0, 4);
-            const prevYear = dates[idx - 1]?.slice(0, 4);
-            const currYear = value.slice(0, 4);
-            return prevYear !== currYear ? currYear : '';
-          }
+          interval: xAxisConfig.interval,
+          formatter: xAxisConfig.formatter
         },
         splitLine: { show: false },
         min: 'dataMin',
