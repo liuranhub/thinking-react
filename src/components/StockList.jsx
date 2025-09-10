@@ -583,6 +583,27 @@ const StockList = () => {
         backgroundColor: "white",
         color: "#EE7621"
       };
+    }
+
+    // zhangDieFu字段颜色逻辑
+    if(field === 'zhangDieFu') {
+      const zhangDieFuValue = parseFloat(value);
+      if (zhangDieFuValue > 0) {
+        return {
+          backgroundColor: "white",
+          color: "#FF0000" // 红色
+        };
+      } else if (zhangDieFuValue < 0) {
+        return {
+          backgroundColor: "white",
+          color: "#00FF00" // 绿色
+        };
+      } else {
+        return {
+          backgroundColor: "white",
+          color: "inherit" // 默认颜色
+        };
+      }
     } 
 
     // 规则不存在使用默认颜色 
