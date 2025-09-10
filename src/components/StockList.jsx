@@ -585,24 +585,6 @@ const StockList = () => {
       };
     }
 
-    // zhangDieFu字段颜色逻辑
-    if(field === 'zhangDieFu') {
-      const zhangDieFuValue = parseFloat(value);
-      if (zhangDieFuValue > 0) {
-        return {
-          backgroundColor: "#FF0000"
-        };
-      } else if (zhangDieFuValue < 0) {
-        return {
-          backgroundColor: "#00FF00"
-        };
-      } else {
-        return {
-          backgroundColor: "white"
-        };
-      }
-    } 
-
     // 规则不存在使用默认颜色 
     if (!colorRules || colorRules.length === 0) {
       return {
