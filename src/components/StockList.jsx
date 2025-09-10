@@ -590,18 +590,15 @@ const StockList = () => {
       const zhangDieFuValue = parseFloat(value);
       if (zhangDieFuValue > 0) {
         return {
-          backgroundColor: "white",
-          color: "#FF0000" // 红色
+          backgroundColor: "#FF0000"
         };
       } else if (zhangDieFuValue < 0) {
         return {
-          backgroundColor: "white",
-          color: "#00FF00" // 绿色
+          backgroundColor: "#00FF00"
         };
       } else {
         return {
-          backgroundColor: "white",
-          color: "inherit" // 默认颜色
+          backgroundColor: "white"
         };
       }
     } 
