@@ -152,7 +152,7 @@ const StockList = () => {
         width: 40
       }],
       stockTypes: ['MAIN'],
-      orderByField: 'stockCode',
+      orderByField: 'targetPriceIntervalPrecent',
       orderRule: 'ASC'
     },
     yaogu: {
