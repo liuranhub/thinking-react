@@ -50,6 +50,7 @@ const StockList = () => {
     { label: '主板', value: 'MAIN' },
     { label: '科创', value: 'TECH' },
     { label: '创业板', value: 'GEM' },
+    { label: '板块', value: 'BK' },
     { label: '已退市', value: 'ST' }
   ];
 
@@ -111,6 +112,20 @@ const StockList = () => {
       stockTypes: ['TECH','GEM'],
       orderByField: 'score',
       orderRule: 'desc',
+      showDateSelector: false // 妖股Tab不显示日期选择器
+    },
+    stockSector: {
+      key: 'stockSector',
+      label: '板块',
+      fieldConfigType: 'simple',
+      operations: [{
+        modalType: MODAL_TYPE_CONFIRM,
+        name: "收藏",
+        handler: handleAddFavoriteClick,
+      }],
+      stockTypes: ['BK'],
+      orderByField: 'stockCode',
+      orderRule: 'asc',
       showDateSelector: false // 妖股Tab不显示日期选择器
     },
     all: {
@@ -429,7 +444,8 @@ const StockList = () => {
     const currentStockTypes = TAB_CONFIG[activeTab]?.stockTypes || queryParams.stockTypes;
     
     if(activeTab === TAB_CONFIG.latestMain.key 
-      || activeTab === TAB_CONFIG.latestTechGem.key) {
+      || activeTab === TAB_CONFIG.latestTechGem.key 
+      || activeTab === TAB_CONFIG.stockSector.key) {
       response = await axios.post(host + '/stock/stockDataAnalysisPage', {
         pageSize: queryParams.pageSize,
         pageIndex: queryParams.pageIndex,
@@ -1303,10 +1319,10 @@ const StockList = () => {
             </span>
           </Dropdown>
 
-          {/* <span style={{ marginLeft: '10px' }}>标签:</span>
+          <span style={{ marginLeft: '10px' }}>标签:</span>
           <span style={{ marginLeft: '10px', color: '#555' }}>
             {matchedTags?.join(', ')}
-          </span> */}
+          </span>
 
         </div>
 
