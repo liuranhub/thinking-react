@@ -117,7 +117,7 @@ const StockList = () => {
     stockSector: {
       key: 'stockSector',
       label: '板块',
-      fieldConfigType: 'simple',
+      fieldConfigType: 'stockSector',
       operations: [{
         modalType: MODAL_TYPE_CONFIRM,
         name: "收藏",
