@@ -9,6 +9,7 @@ export HOST=0.0.0.0
 export PORT=3000
 export DANGEROUSLY_DISABLE_HOST_CHECK=true
 export NODE_ENV=production
+export BROWSER=none
 
 npm run build
 
