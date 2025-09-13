@@ -2466,7 +2466,7 @@ const getWarmUpStockCodes = () => {
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
                   <span style={{ fontWeight: 'bold' }}>{lhb.date}</span>
                   <span style={{ 
-                    color: lhb.changeRate > 0 ? '#14b143' : lhb.changeRate < 0 ? '#ef232a' : '#fff',
+                    color: lhb.changeRate > 0 ? '#ef232a' : lhb.changeRate < 0 ? '#14b143' : '#fff',
                     fontWeight: 'bold'
                   }}>
                     {lhb.changeRate > 0 ? '+' : ''}{lhb.changeRate.toFixed(2)}%
