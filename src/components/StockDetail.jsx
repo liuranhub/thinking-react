@@ -84,6 +84,24 @@ const StockDetail = () => {
   const [apiScoreResult, setApiScoreResult] = useState({}); // API分数结果
   const [stockDetailLoaded, setStockDetailLoaded] = useState(false); // 股票详情加载状态
   
+  // 龙虎榜tooltip状态
+  const [lhbTooltip, setLhbTooltip] = useState({ visible: false, x: 0, y: 0 });
+  
+  // 处理龙虎榜tooltip显示
+  const handleLhbMouseEnter = (e) => {
+    if (stockDetail.lhbs && stockDetail.lhbs.length > 0) {
+      setLhbTooltip({
+        visible: true,
+        x: e.clientX,
+        y: e.clientY
+      });
+    }
+  };
+  
+  const handleLhbMouseLeave = () => {
+    setLhbTooltip({ visible: false, x: 0, y: 0 });
+  };
+  
   // 监控配置相关状态
   const [showWatchConfigModal, setShowWatchConfigModal] = useState(false);
   const [watchConfigForm] = Form.useForm();
@@ -1720,43 +1738,55 @@ const getWarmUpStockCodes = () => {
                 <span style={{ marginLeft: 16, color: '#aaa', fontSize: '13px' }}>
                     {stockList.length > 0 ? `${currentIndex + 1}/${stockList.length}` : ''}
                 </span>
+                {/* 龙虎榜次数 */}
+                {stockDetail.lhbs && stockDetail.lhbs.length > 0 && (
+                  <span 
+                    style={{ 
+                      marginLeft: 16, 
+                      color: '#ff6b35', 
+                      fontSize: '13px',
+                      cursor: 'pointer',
+                      fontWeight: 'bold'
+                    }}
+                    onMouseEnter={handleLhbMouseEnter}
+                    onMouseLeave={handleLhbMouseLeave}
+                  >
+                    龙虎榜({stockDetail.lhbs.length})
+                  </span>
+                )}
               </div>
               {/* 股票标签 */}
-              <div style={{marginTop: 10}}>
+              <div style={{marginTop: 2}}>
                 {Array.isArray(stockDetail.tags) && stockDetail.tags.length > 0 && (() => {
-                  // 先找出高亮标签，按HIGHLIGHT_TAG_CONFIG顺序排列
-                  const highlightTags = [];
-                  const otherTags = [];
-                  const used = new Set();
-                  HIGHLIGHT_TAG_CONFIG.forEach(cfg => {
-                    stockDetail.tags.forEach(tag => {
-                      if (!used.has(tag) && tag.includes(cfg.tagName)) {
-                        highlightTags.push({ tag, color: cfg.color });
-                        used.add(tag);
+                  // 保持原有标签顺序，只对匹配的标签应用高亮样式
+                  const getTagColor = (tag) => {
+                    for (const cfg of HIGHLIGHT_TAG_CONFIG) {
+                      if (tag.includes(cfg.tagName)) {
+                        return cfg.color;
                       }
-                    });
-                  });
-                  stockDetail.tags.forEach(tag => {
-                    if (!used.has(tag)) otherTags.push(tag);
-                  });
-                  const renderTag = (tag, idx, color) => (
-                    <span key={tag + idx} style={{
-                      background: color ? color + '22' : BG_COLOR,
-                      color: color || TEXT_COLOR,
-                      borderRadius: '12px',
-                      padding: '2px 3px',
-                      fontSize: '12px',
-                      marginRight: '8px',
-                      marginBottom: '4px',
-                      display: 'inline-block',
-                      border: color ? `1px solid ${color}` : '1px solid #444',
-                      fontWeight: color ? 'bold' : 'normal',
-                    }}>{tag}</span>
-                  );
-                  return [
-                    ...highlightTags.map((item, idx) => renderTag(item.tag, idx, item.color)),
-                    ...otherTags.map((tag, idx) => renderTag(tag, idx, null)),
-                  ];
+                    }
+                    return null;
+                  };
+                  
+                  const renderTag = (tag, idx) => {
+                    const color = getTagColor(tag);
+                    return (
+                      <span key={tag + idx} style={{
+                        background: color ? color + '22' : BG_COLOR,
+                        color: color || TEXT_COLOR,
+                        borderRadius: '12px',
+                        padding: '2px 3px',
+                        fontSize: '12px',
+                        marginRight: '8px',
+                        marginBottom: '4px',
+                        display: 'inline-block',
+                        border: color ? `1px solid ${color}` : '1px solid #444',
+                        fontWeight: color ? 'bold' : 'normal',
+                      }}>{tag}</span>
+                    );
+                  };
+                  
+                  return stockDetail.tags.map((tag, idx) => renderTag(tag, idx));
                 })()}
               </div>
             </div>
@@ -2360,15 +2390,7 @@ const getWarmUpStockCodes = () => {
             name="startDate"
             label="开始日期"
             rules={[
-              { required: true, message: '请选择开始日期' },
-              {
-                validator: (_, value) => {
-                  if (value && value.isBefore(dayjs(), 'day')) {
-                    return Promise.reject(new Error('开始日期不能早于今天'));
-                  }
-                  return Promise.resolve();
-                }
-              }
+              { required: true, message: '请选择开始日期' }
             ]}
           >
             <DatePicker 
@@ -2409,6 +2431,55 @@ const getWarmUpStockCodes = () => {
           </Form.Item>
         </Form>
       </Modal>
+      
+      {/* 龙虎榜tooltip */}
+      {lhbTooltip.visible && stockDetail.lhbs && stockDetail.lhbs.length > 0 && (
+        <div 
+          style={{
+            position: 'fixed',
+            left: lhbTooltip.x + 10,
+            top: lhbTooltip.y + 10,
+            backgroundColor: 'rgba(0, 0, 0, 0.9)',
+            color: 'white',
+            padding: '12px',
+            borderRadius: '6px',
+            fontSize: '12px',
+            maxWidth: '400px',
+            zIndex: 10000,
+            pointerEvents: 'none',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
+            border: '1px solid #333'
+          }}
+        >
+          <div style={{ fontWeight: 'bold', marginBottom: '8px', color: '#ff6b35' }}>
+            龙虎榜明细 ({stockDetail.lhbs.length}次)
+          </div>
+          <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+            {stockDetail.lhbs.map((lhb, index) => (
+              <div key={lhb.id || index} style={{ 
+                marginBottom: '8px', 
+                padding: '6px',
+                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                borderRadius: '4px',
+                borderLeft: '3px solid #ff6b35'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                  <span style={{ fontWeight: 'bold' }}>{lhb.date}</span>
+                  <span style={{ 
+                    color: lhb.changeRate > 0 ? '#14b143' : lhb.changeRate < 0 ? '#ef232a' : '#fff',
+                    fontWeight: 'bold'
+                  }}>
+                    {lhb.changeRate > 0 ? '+' : ''}{lhb.changeRate.toFixed(2)}%
+                  </span>
+                </div>
+                <div style={{ fontSize: '11px', color: '#ccc', lineHeight: '1.4' }}>
+                  {lhb.explanation}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </>
   );
 };
