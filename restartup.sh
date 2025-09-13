@@ -12,5 +12,5 @@ export NODE_ENV=production
 
 npm run build
 
-pm2 start npm --name "StockApp" -- run start --prefix ~/Software/thinking-react -- --env production
+BROWSER=none pm2 start npm --name "StockApp" -- run start --prefix ~/Software/thinking-react -- --env production
 
