@@ -123,9 +123,6 @@ const StockList = () => {
         name: "收藏",
         handler: handleAddFavoriteClick,
       }],
-      stockTypes: ['BK'],
-      orderByField: 'stockCode',
-      orderRule: 'asc',
       showDateSelector: false // 妖股Tab不显示日期选择器
     },
     all: {
@@ -444,8 +441,7 @@ const StockList = () => {
     const currentStockTypes = TAB_CONFIG[activeTab]?.stockTypes || queryParams.stockTypes;
     
     if(activeTab === TAB_CONFIG.latestMain.key 
-      || activeTab === TAB_CONFIG.latestTechGem.key 
-      || activeTab === TAB_CONFIG.stockSector.key) {
+      || activeTab === TAB_CONFIG.latestTechGem.key ) {
       response = await axios.post(host + '/stock/stockDataAnalysisPage', {
         pageSize: queryParams.pageSize,
         pageIndex: queryParams.pageIndex,
@@ -456,6 +452,13 @@ const StockList = () => {
         orderRule: queryParams.orderRule,
         fieldQuery: queryParams.fieldQueries,
         dateType: "latest"
+      });
+    } else if (activeTab === TAB_CONFIG.stockSector.key) {
+      response = await axios.post(host + '/stock/stockDataAnalysisPageCommon', {
+        pageSize: queryParams.pageSize,
+        pageIndex: queryParams.pageIndex,
+        tableName: "stock_data_analysis_latest_sector",
+        keywords: queryParams.keywords,
       });
     } else if(activeTab === TAB_CONFIG.all.key) {
       response = await axios.post(host + '/stock/stockDataAnalysisPage', {
