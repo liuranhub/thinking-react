@@ -2105,7 +2105,7 @@ const getWarmUpStockCodes = () => {
                           <tr>
                             <th style={{ textAlign: 'left', paddingRight: 6, paddingBottom: 4, fontSize: 10 }}>名称</th>
                             <th style={{ textAlign: 'left', paddingRight: 6, paddingBottom: 4, fontSize: 10 }}>原始值</th>
-                            <th style={{ textAlign: 'left', paddingBottom: 4, fontSize: 10 }}>分数</th>
+                            <th style={{ textAlign: 'left', paddingBottom: 4, fontSize: 10 ,fontWeight: 'bold'}}>分数</th>
                             <th style={{ textAlign: 'left', paddingBottom: 4, fontSize: 10 }}>权重</th>
                           </tr>
                         </thead>
@@ -2119,8 +2119,8 @@ const getWarmUpStockCodes = () => {
                                 <tr key={key}>
                                   <td style={{ paddingBottom: 2, fontSize: 10 }}>{item?.name}</td>
                                   <td style={{ textAlign: 'left', color: '#1e90ff', paddingBottom: 2, fontSize: 10 }}>{formatNumber(item?.value)}</td>
-                                  <td style={{ textAlign: 'left', color: '#ffd700', paddingBottom: 2, fontSize: 10 }}>{formatNumber(item?.score)}</td>
-                                  <td style={{ textAlign: 'left', color: '#ffd700', paddingBottom: 2, fontSize: 10 }}>{formatNumber(item?.weight)}</td>
+                                  <td style={{ textAlign: 'left', color: '#ffd700', paddingBottom: 2, fontSize: 10, fontWeight: 'bold' }}>{formatNumber(item?.score)}</td>
+                                  <td style={{ textAlign: 'left', paddingBottom: 2, fontSize: 10 }}>{formatNumber(item?.weight)}</td>
                                 </tr>
                               );
                             })}
@@ -2135,7 +2135,7 @@ const getWarmUpStockCodes = () => {
                           <tr>
                             <th style={{ textAlign: 'left', paddingRight: 6, paddingBottom: 4, fontSize: 10 }}>名称(附加分)</th>
                             <th style={{ textAlign: 'left', paddingRight: 6, paddingBottom: 4, fontSize: 10 }}>原始值</th>
-                            <th style={{ textAlign: 'left', paddingBottom: 4, fontSize: 10 }}>分数</th>
+                            <th style={{ textAlign: 'left', paddingBottom: 4, fontSize: 10, fontWeight: 'bold'}}>分数</th>
                             <th style={{ textAlign: 'left', paddingBottom: 4, fontSize: 10 }}>权重</th>
                           </tr>
                         </thead>
@@ -2149,8 +2149,8 @@ const getWarmUpStockCodes = () => {
                                 <tr key={key}>
                                   <td style={{ paddingBottom: 2, fontSize: 10 }}>{item?.name}</td>
                                   <td style={{ textAlign: 'left', color: '#1e90ff', paddingBottom: 2, fontSize: 10 }}>{formatNumber(item?.value)}</td>
-                                  <td style={{ textAlign: 'left', color: '#ffd700', paddingBottom: 2, fontSize: 10 }}>{formatNumber(item?.score)}</td>
-                                  <td style={{ textAlign: 'left', color: '#ffd700', paddingBottom: 2, fontSize: 10 }}>{formatNumber(item?.weight)}</td>
+                                  <td style={{ textAlign: 'left', color: '#ffd700', paddingBottom: 2, fontSize: 10, fontWeight: 'bold' }}>{formatNumber(item?.score)}</td>
+                                  <td style={{ textAlign: 'left', paddingBottom: 2, fontSize: 10 }}>{formatNumber(item?.weight)}</td>
                                 </tr>
                               );
                             })}
@@ -2242,7 +2242,7 @@ const getWarmUpStockCodes = () => {
                 padding: '2px 8px',
                 background: '#23263a',
                 color: '#fff',
-                border: hasWatchConfig() ? '2px solid #1e90ff' : '1px solid #444',
+                border: hasWatchConfig() ? '2px solid #23b14d' : '1px solid #444',
                 borderRadius: '3px',
                 cursor: 'pointer',
                 fontWeight: 'normal',
