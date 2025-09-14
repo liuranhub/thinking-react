@@ -118,11 +118,7 @@ const StockList = () => {
       key: 'stockSector',
       label: '板块',
       fieldConfigType: 'stockSector',
-      operations: [{
-        modalType: MODAL_TYPE_CONFIRM,
-        name: "收藏",
-        handler: handleAddFavoriteClick,
-      }],
+
       showDateSelector: false // 妖股Tab不显示日期选择器
     },
     all: {
@@ -706,8 +702,11 @@ const StockList = () => {
       return () => window.removeEventListener('resize', handleResize);
     }, []);
 
-    const OPERATIONS_WIDTH = 10 + useMemo(() => {
-      return operations.reduce((total, operation) => {
+    const OPERATIONS_WIDTH = useMemo(() => {
+      if (!operations || operations.length === 0) {
+        return 0;
+      }
+      return 10 + operations.reduce((total, operation) => {
         const operationWidth = operation.width || 40;
         return total + operationWidth;
       }, 0);
@@ -790,22 +789,24 @@ const StockList = () => {
             {column.fieldName}
           </div>
         ))}
-        <div style={{ 
-          width: OPERATIONS_WIDTH,
-          padding: '0 4px',
-          borderLeft: '1px solid #BEBEBE',
-          borderRight: '1px solid #BEBEBE',
-          borderBottom: '1px solid #BEBEBE',
-          borderTop: '1px solid #BEBEBE',
-          whiteSpace: 'nowrap',
-          overflow: 'hidden',
-          fontSize: '13px',
-          display: 'flex',
-          alignItems: 'center',
-          fontWeight: 'bold'
-        }}>
-          操作
-        </div>
+        {operations && operations.length > 0 && (
+          <div style={{ 
+            width: OPERATIONS_WIDTH,
+            padding: '0 4px',
+            borderLeft: '1px solid #BEBEBE',
+            borderRight: '1px solid #BEBEBE',
+            borderBottom: '1px solid #BEBEBE',
+            borderTop: '1px solid #BEBEBE',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            fontSize: '13px',
+            display: 'flex',
+            alignItems: 'center',
+            fontWeight: 'bold'
+          }}>
+            操作
+          </div>
+        )}
       </div>
     ));
 
@@ -907,44 +908,46 @@ const StockList = () => {
               )}
             </div>
           ))}
-          <div style={{ 
-            width: OPERATIONS_WIDTH,
-            padding: '0 4px',
-            borderLeft: '1px solid #BEBEBE',
-            borderRight: '1px solid #BEBEBE',
-            borderBottom: '1px solid #BEBEBE',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            fontSize: '12px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '2px',
-            color: 'inherit'
-          }}>
-            {operations.map((operation, opIndex) => (
-              <button 
-                key={opIndex} 
-                onClick={() => {
-                  setMoalType(operation.modalType)
-                  setSelectedRow(row);
-                  setShowStockTableModal(true);
-                }}
-                style={{ 
-                  padding: '1px 3px',
-                  fontSize: '11px',
-                  height: '18px',
-                  minWidth: '40px',
-                  lineHeight: '1',
-                  border: '1px solid #ccc',
-                  borderRadius: '2px',
-                  backgroundColor: '#f8f8f8',
-                  color: 'inherit'
-                }}
-              >
-                {operation.name}
-              </button>
-            ))}
-          </div>
+          {operations && operations.length > 0 && (
+            <div style={{ 
+              width: OPERATIONS_WIDTH,
+              padding: '0 4px',
+              borderLeft: '1px solid #BEBEBE',
+              borderRight: '1px solid #BEBEBE',
+              borderBottom: '1px solid #BEBEBE',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              fontSize: '12px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '2px',
+              color: 'inherit'
+            }}>
+              {operations.map((operation, opIndex) => (
+                <button 
+                  key={opIndex} 
+                  onClick={() => {
+                    setMoalType(operation.modalType)
+                    setSelectedRow(row);
+                    setShowStockTableModal(true);
+                  }}
+                  style={{ 
+                    padding: '1px 3px',
+                    fontSize: '11px',
+                    height: '18px',
+                    minWidth: '40px',
+                    lineHeight: '1',
+                    border: '1px solid #ccc',
+                    borderRadius: '2px',
+                    backgroundColor: '#f8f8f8',
+                    color: 'inherit'
+                  }}
+                >
+                  {operation.name}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       );
     });
@@ -1065,7 +1068,7 @@ const StockList = () => {
           />
         )}
 
-        {operations.map((operation, opIndex) => (
+        {operations && operations.length > 0 && operations.map((operation, opIndex) => (
           <div key={opIndex}>
             {showStockTableModal && modalType === MODAL_TYPE_CONFIRM && (
               <ConfirmModal 
