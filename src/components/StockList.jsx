@@ -118,7 +118,12 @@ const StockList = () => {
       key: 'stockSector',
       label: '板块',
       fieldConfigType: 'stockSector',
-
+      operations: [{
+        modalType: MODAL_TYPE_CONFIRM,
+        name: "收藏",
+        handler: handleAddFavoriteClick,
+        width: 40
+      }],
       showDateSelector: false // 妖股Tab不显示日期选择器
     },
     all: {
@@ -704,7 +709,7 @@ const StockList = () => {
 
     const OPERATIONS_WIDTH = useMemo(() => {
       if (!operations || operations.length === 0) {
-        return 0;
+        return 10;
       }
       return 10 + operations.reduce((total, operation) => {
         const operationWidth = operation.width || 40;
@@ -720,10 +725,10 @@ const StockList = () => {
 
     // 使用 useMemo 缓存列宽计算结果
     const columnWidths = useMemo(() => {
-      const CHAR_WIDTH = 8;
+      const CHAR_WIDTH = 6.5;
       const PADDING = 16;
       const MIN_WIDTH = BASE_WIDTH;
-      const MAX_WIDTH = 100;
+      const MAX_WIDTH = 200;
       
       const widths = new Map();
       
