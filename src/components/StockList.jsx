@@ -1104,8 +1104,15 @@ const StockList = () => {
     <div style={{ 
       height: '100vh',
       fontSize:'12px', 
-      fontWeight: 'bold' 
+      fontWeight: 'bold',
+      overflowY: 'hidden',
+      scrollbarWidth: 'none', /* Firefox */
+      msOverflowStyle: 'none', /* IE and Edge */
+      WebkitScrollbar: { display: 'none' } /* Chrome, Safari, Opera */
     }}>
+      <style>
+        {`div::-webkit-scrollbar { display: none; }`}
+      </style>
       {/* 搜索弹窗 */}
       {/* <SearchModal
         visible={searchModalVisible}
