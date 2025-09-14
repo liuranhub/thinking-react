@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import * as echarts from 'echarts';
 import { calcStockStats, incrementalDecline, calcScore } from '../utils/calcVolatility';
 import { message, Select, Spin, Rate, Tooltip, Modal, Form, DatePicker, Input, Button } from 'antd';
+import { CopyOutlined } from '@ant-design/icons';
 import 'antd/dist/reset.css';
 import '../App.css';
 import { pinyin } from 'pinyin-pro';
@@ -159,6 +160,43 @@ const StockDetail = () => {
     isMouseInTooltipRef.current = false;
     setThemeTooltip({ visible: false, x: 0, y: 0 });
   };
+  
+  // 复制股票编码功能
+  const handleCopyStockCode = useCallback(async (e) => {
+    e.stopPropagation(); // 阻止事件冒泡
+    try {
+      await navigator.clipboard.writeText(stockCode);
+      // 简单的视觉反馈
+      const button = e.target.closest('button');
+      if (button) {
+        const originalColor = button.style.color;
+        button.style.color = '#52c41a';
+        setTimeout(() => {
+          button.style.color = originalColor;
+        }, 500);
+      }
+      console.log('已复制股票编码:', stockCode);
+    } catch (err) {
+      console.error('复制失败:', err);
+      // 降级方案：使用传统的复制方法
+      const textArea = document.createElement('textarea');
+      textArea.value = stockCode;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      
+      // 降级方案的视觉反馈
+      const button = e.target.closest('button');
+      if (button) {
+        const originalColor = button.style.color;
+        button.style.color = '#52c41a';
+        setTimeout(() => {
+          button.style.color = originalColor;
+        }, 500);
+      }
+    }
+  }, [stockCode]);
   
   // 监控配置相关状态
   const [showWatchConfigModal, setShowWatchConfigModal] = useState(false);
@@ -1793,7 +1831,33 @@ const getWarmUpStockCodes = () => {
                   keyboard={true}
                   notFoundContent="未找到匹配的股票"
                 />
-                <span style={{ marginLeft: 16, color: '#aaa', fontSize: '12px' }}>
+                {/* 复制股票编码按钮 */}
+                <button
+                  onClick={handleCopyStockCode}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    padding: '12px',
+                    marginLeft: '8px',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderRadius: '2px',
+                    fontSize: '10px',
+                    color: '#666',
+                    opacity: 0.7,
+                    transition: 'all 0.2s ease',
+                    minWidth: '14px',
+                    height: '14px',
+                    flexShrink: 0,
+                    whiteSpace: 'nowrap'
+                  }}
+                  title="复制股票编码"
+                >
+                  <CopyOutlined />
+                </button>
+                <span style={{ marginLeft: '8px', color: '#aaa', fontSize: '12px' }}>
                     {stockList.length > 0 ? `${currentIndex + 1}/${stockList.length}` : ''}
                 </span>
                 {/* 题材信息图标 */}
@@ -1802,7 +1866,7 @@ const getWarmUpStockCodes = () => {
                     style={{ 
                       marginLeft: 16, 
                       color: '#1890ff', 
-                      fontSize: '12px',
+                      fontSize: '11px',
                       cursor: 'pointer',
                       fontWeight: 'bold',
                       display: 'inline-flex',
