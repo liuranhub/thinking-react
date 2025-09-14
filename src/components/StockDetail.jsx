@@ -1793,7 +1793,7 @@ const getWarmUpStockCodes = () => {
                   keyboard={true}
                   notFoundContent="未找到匹配的股票"
                 />
-                <span style={{ marginLeft: 16, color: '#aaa', fontSize: '13px' }}>
+                <span style={{ marginLeft: 16, color: '#aaa', fontSize: '12px' }}>
                     {stockList.length > 0 ? `${currentIndex + 1}/${stockList.length}` : ''}
                 </span>
                 {/* 题材信息图标 */}
@@ -1802,14 +1802,14 @@ const getWarmUpStockCodes = () => {
                     style={{ 
                       marginLeft: 16, 
                       color: '#1890ff', 
-                      fontSize: '14px',
+                      fontSize: '12px',
                       cursor: 'pointer',
                       fontWeight: 'bold',
                       display: 'inline-flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      width: '18px',
-                      height: '18px',
+                      width: '15px',
+                      height: '15px',
                       borderRadius: '50%',
                       backgroundColor: 'rgba(24, 144, 255, 0.1)',
                       border: '1px solid #1890ff'
@@ -1826,8 +1826,8 @@ const getWarmUpStockCodes = () => {
                   <span 
                     style={{ 
                       marginLeft: 16, 
-                      color: '#ff6b35', 
-                      fontSize: '13px',
+                      color: '#1890ff', 
+                      fontSize: '12px',
                       cursor: 'pointer',
                       fontWeight: 'bold'
                     }}
@@ -2556,7 +2556,8 @@ const getWarmUpStockCodes = () => {
             position: 'fixed',
             left: lhbTooltip.x,
             top: lhbTooltip.y,
-            backgroundColor: '#1a1a1a',
+            // backgroundColor: '#1a1a1a',
+            backgroundColor: BG_COLOR,
             color: '#ffffff',
             padding: '12px',
             borderRadius: '6px',
@@ -2575,7 +2576,7 @@ const getWarmUpStockCodes = () => {
           <div style={{ 
             fontWeight: 'bold', 
             marginBottom: '12px', 
-            color: '#ff6b35',
+            color: '#1890ff',
             fontSize: '14px',
             borderBottom: '1px solid #333',
             paddingBottom: '8px'
@@ -2600,9 +2601,8 @@ const getWarmUpStockCodes = () => {
               <div key={lhb.id || index} style={{ 
                 marginBottom: '12px',
                 padding: '8px',
-                backgroundColor: 'rgba(255, 255, 255, 0.05)',
                 borderRadius: '4px',
-                borderLeft: '3px solid #ff6b35'
+                borderLeft: '3px solid #1890ff'
               }}>
                 {/* 日期和涨跌幅 */}
                 <div style={{ 
@@ -2649,7 +2649,7 @@ const getWarmUpStockCodes = () => {
             position: 'fixed',
             left: themeTooltip.x,
             top: themeTooltip.y,
-            backgroundColor: '#1a1a1a',
+            backgroundColor: BG_COLOR,
             color: '#ffffff',
             padding: '12px',
             borderRadius: '6px',
@@ -2693,7 +2693,7 @@ const getWarmUpStockCodes = () => {
               <div key={theme.id || index} style={{ 
                 marginBottom: '12px',
                 padding: '8px',
-                backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                backgroundColor: BG_COLOR,
                 borderRadius: '4px',
                 borderLeft: '3px solid #1890ff'
               }}>
