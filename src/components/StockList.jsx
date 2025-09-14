@@ -124,6 +124,7 @@ const StockList = () => {
         handler: handleAddFavoriteClick,
         width: 40
       }],
+      stockTypes: ['BK'],
       showDateSelector: false // 妖股Tab不显示日期选择器
     },
     all: {
@@ -1250,20 +1251,7 @@ const StockList = () => {
                 // placeholder="请选择股票类型"
               />
             </>
-          ) : (
-            <span style={{ 
-              marginLeft: '10px',
-              display: 'inline-flex',
-              alignItems: 'center',
-              height: '24px',
-              color: '#666',
-              fontSize: '12px'
-            }}>
-              股票类型: {TAB_CONFIG[activeTab].stockTypes.map(type => 
-                STOCK_TYPE_OPTIONS.find(option => option.value === type)?.label || type
-              ).join(', ')}
-            </span>
-          )}
+          ) : null}
 
           <span style={{ marginLeft: '10px' }}>关键字:</span>
           <input
