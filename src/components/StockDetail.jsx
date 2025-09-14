@@ -86,20 +86,78 @@ const StockDetail = () => {
   
   // 龙虎榜tooltip状态
   const [lhbTooltip, setLhbTooltip] = useState({ visible: false, x: 0, y: 0 });
+  const isMouseInLhbTooltipRef = useRef(false);
+  
+  // 题材信息tooltip状态
+  const [themeTooltip, setThemeTooltip] = useState({ visible: false, x: 0, y: 0 });
+  const isMouseInTooltipRef = useRef(false);
   
   // 处理龙虎榜tooltip显示
   const handleLhbMouseEnter = (e) => {
     if (stockDetail.lhbs && stockDetail.lhbs.length > 0) {
+      // 将tooltip显示在龙虎榜文本下方，避免鼠标移动路径
+      const rect = e.target.getBoundingClientRect();
       setLhbTooltip({
         visible: true,
-        x: e.clientX,
-        y: e.clientY
+        x: rect.left,
+        y: rect.bottom + 5
       });
+      isMouseInLhbTooltipRef.current = false;
     }
   };
   
   const handleLhbMouseLeave = () => {
+    // 延迟隐藏，给用户时间移动到tooltip
+    setTimeout(() => {
+      if (!isMouseInLhbTooltipRef.current) {
+        setLhbTooltip({ visible: false, x: 0, y: 0 });
+      }
+    }, 100);
+  };
+  
+  // 处理龙虎榜tooltip内容区域的鼠标事件
+  const handleLhbTooltipMouseEnter = () => {
+    isMouseInLhbTooltipRef.current = true;
+    setLhbTooltip(prev => ({ ...prev, visible: true }));
+  };
+  
+  const handleLhbTooltipMouseLeave = () => {
+    isMouseInLhbTooltipRef.current = false;
     setLhbTooltip({ visible: false, x: 0, y: 0 });
+  };
+  
+  // 处理题材信息tooltip显示
+  const handleThemeMouseEnter = (e) => {
+    if (stockDetail.themes && stockDetail.themes.length > 0) {
+      // 将tooltip显示在图标下方，避免鼠标移动路径
+      const rect = e.target.getBoundingClientRect();
+      setThemeTooltip({
+        visible: true,
+        x: rect.left,
+        y: rect.bottom + 5
+      });
+      isMouseInTooltipRef.current = false;
+    }
+  };
+  
+  const handleThemeMouseLeave = () => {
+    // 延迟隐藏，给用户时间移动到tooltip
+    setTimeout(() => {
+      if (!isMouseInTooltipRef.current) {
+        setThemeTooltip({ visible: false, x: 0, y: 0 });
+      }
+    }, 100);
+  };
+  
+  // 处理题材tooltip内容区域的鼠标事件
+  const handleThemeTooltipMouseEnter = () => {
+    isMouseInTooltipRef.current = true;
+    setThemeTooltip(prev => ({ ...prev, visible: true }));
+  };
+  
+  const handleThemeTooltipMouseLeave = () => {
+    isMouseInTooltipRef.current = false;
+    setThemeTooltip({ visible: false, x: 0, y: 0 });
   };
   
   // 监控配置相关状态
@@ -1738,6 +1796,31 @@ const getWarmUpStockCodes = () => {
                 <span style={{ marginLeft: 16, color: '#aaa', fontSize: '13px' }}>
                     {stockList.length > 0 ? `${currentIndex + 1}/${stockList.length}` : ''}
                 </span>
+                {/* 题材信息图标 */}
+                {stockDetail.themes && stockDetail.themes.length > 0 && (
+                  <span 
+                    style={{ 
+                      marginLeft: 16, 
+                      color: '#1890ff', 
+                      fontSize: '14px',
+                      cursor: 'pointer',
+                      fontWeight: 'bold',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: '18px',
+                      height: '18px',
+                      borderRadius: '50%',
+                      backgroundColor: 'rgba(24, 144, 255, 0.1)',
+                      border: '1px solid #1890ff'
+                    }}
+                    onMouseEnter={handleThemeMouseEnter}
+                    onMouseLeave={handleThemeMouseLeave}
+                    title="题材信息"
+                  >
+                    i
+                  </span>
+                )}
                 {/* 龙虎榜次数 */}
                 {stockDetail.lhbs && stockDetail.lhbs.length > 0 && (
                   <span 
@@ -2437,43 +2520,188 @@ const getWarmUpStockCodes = () => {
         <div 
           style={{
             position: 'fixed',
-            left: lhbTooltip.x + 10,
-            top: lhbTooltip.y + 10,
-            backgroundColor: 'rgba(0, 0, 0, 0.9)',
-            color: 'white',
+            left: lhbTooltip.x,
+            top: lhbTooltip.y,
+            backgroundColor: '#1a1a1a',
+            color: '#ffffff',
             padding: '12px',
             borderRadius: '6px',
             fontSize: '12px',
-            maxWidth: '400px',
+            maxWidth: '500px',
+            minWidth: '300px',
             zIndex: 10000,
-            pointerEvents: 'none',
-            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
-            border: '1px solid #333'
+            pointerEvents: 'auto',
+            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.5)',
+            border: '1px solid #333',
+            fontFamily: 'Arial, sans-serif'
           }}
+          onMouseEnter={handleLhbTooltipMouseEnter}
+          onMouseLeave={handleLhbTooltipMouseLeave}
         >
-          <div style={{ fontWeight: 'bold', marginBottom: '8px', color: '#ff6b35' }}>
+          <div style={{ 
+            fontWeight: 'bold', 
+            marginBottom: '12px', 
+            color: '#ff6b35',
+            fontSize: '14px',
+            borderBottom: '1px solid #333',
+            paddingBottom: '8px'
+          }}>
             龙虎榜明细 ({stockDetail.lhbs.length}次)
           </div>
-          <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+          <div style={{ 
+            maxHeight: '400px', 
+            overflowY: 'auto',
+            scrollbarWidth: 'none', /* Firefox */
+            msOverflowStyle: 'none', /* IE and Edge */
+            WebkitScrollbar: { display: 'none' } /* Chrome, Safari, Opera */
+          }}>
+            <style>
+              {`
+                div::-webkit-scrollbar {
+                  display: none;
+                }
+              `}
+            </style>
             {stockDetail.lhbs.map((lhb, index) => (
               <div key={lhb.id || index} style={{ 
-                marginBottom: '8px', 
-                padding: '6px',
-                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                marginBottom: '12px',
+                padding: '8px',
+                backgroundColor: 'rgba(255, 255, 255, 0.05)',
                 borderRadius: '4px',
                 borderLeft: '3px solid #ff6b35'
               }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                  <span style={{ fontWeight: 'bold' }}>{lhb.date}</span>
+                {/* 日期和涨跌幅 */}
+                <div style={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  alignItems: 'center',
+                  marginBottom: '6px'
+                }}>
+                  <span style={{ 
+                    fontWeight: 'bold',
+                    fontSize: '13px',
+                    color: '#ffffff'
+                  }}>
+                    {lhb.date}
+                  </span>
                   <span style={{ 
                     color: lhb.changeRate > 0 ? '#ef232a' : lhb.changeRate < 0 ? '#14b143' : '#fff',
-                    fontWeight: 'bold'
+                    fontWeight: 'bold',
+                    fontSize: '13px'
                   }}>
                     {lhb.changeRate > 0 ? '+' : ''}{lhb.changeRate.toFixed(2)}%
                   </span>
                 </div>
-                <div style={{ fontSize: '11px', color: '#ccc', lineHeight: '1.4' }}>
+                
+                {/* 说明内容 */}
+                <div style={{ 
+                  fontSize: '11px', 
+                  color: '#e0e0e0', 
+                  lineHeight: '1.5',
+                  textAlign: 'justify'
+                }}>
                   {lhb.explanation}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      
+      {/* 题材信息tooltip */}
+      {themeTooltip.visible && stockDetail.themes && stockDetail.themes.length > 0 && (
+        <div 
+          style={{
+            position: 'fixed',
+            left: themeTooltip.x,
+            top: themeTooltip.y,
+            backgroundColor: '#1a1a1a',
+            color: '#ffffff',
+            padding: '12px',
+            borderRadius: '6px',
+            fontSize: '12px',
+            maxWidth: '500px',
+            minWidth: '300px',
+            zIndex: 10001,
+            pointerEvents: 'auto',
+            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.5)',
+            border: '1px solid #333',
+            fontFamily: 'Arial, sans-serif'
+          }}
+          onMouseEnter={handleThemeTooltipMouseEnter}
+          onMouseLeave={handleThemeTooltipMouseLeave}
+        >
+          <div style={{ 
+            fontWeight: 'bold', 
+            marginBottom: '12px', 
+            color: '#1890ff',
+            fontSize: '14px',
+            borderBottom: '1px solid #333',
+            paddingBottom: '8px'
+          }}>
+            核心题材
+          </div>
+          <div style={{ 
+            maxHeight: '400px', 
+            overflowY: 'auto',
+            scrollbarWidth: 'none', /* Firefox */
+            msOverflowStyle: 'none', /* IE and Edge */
+            WebkitScrollbar: { display: 'none' } /* Chrome, Safari, Opera */
+          }}>
+            <style>
+              {`
+                div::-webkit-scrollbar {
+                  display: none;
+                }
+              `}
+            </style>
+            {stockDetail.themes.map((theme, index) => (
+              <div key={theme.id || index} style={{ 
+                marginBottom: '12px',
+                padding: '8px',
+                backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                borderRadius: '4px',
+                borderLeft: '3px solid #1890ff'
+              }}>
+                {/* 要点标题 */}
+                <div style={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  alignItems: 'flex-start',
+                  marginBottom: '6px',
+                  flexWrap: 'nowrap',
+                  gap: '8px'
+                }}>
+                  <span style={{ 
+                    fontWeight: 'bold', 
+                    color: '#1890ff',
+                    fontSize: '13px',
+                    whiteSpace: 'nowrap',
+                    flexShrink: 0
+                  }}>
+                    要点{theme.mainpoint}: {theme.keyClassif}
+                  </span>
+                  <span style={{ 
+                    fontSize: '11px',
+                    color: '#999',
+                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                    padding: '2px 6px',
+                    borderRadius: '10px',
+                    whiteSpace: 'nowrap',
+                    flexShrink: 0
+                  }}>
+                    {theme.keyword}
+                  </span>
+                </div>
+                
+                {/* 内容 */}
+                <div style={{ 
+                  fontSize: '11px', 
+                  color: '#e0e0e0', 
+                  lineHeight: '1.5',
+                  textAlign: 'justify'
+                }}>
+                  {theme.mainpointContent}
                 </div>
               </div>
             ))}
