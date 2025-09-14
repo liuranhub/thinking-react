@@ -869,13 +869,16 @@ const getWarmUpStockCodes = () => {
     const chartStartIdx = allDates.indexOf(chartDates[0]);
     const chartEndIdx = allDates.indexOf(chartDates[chartDates.length - 1]);
     // 区间内K线和成交量
-    const klineData = allStockData.slice(chartStartIdx, chartEndIdx + 1).map(item => [
-      item.openPrice,
-      item.closePrice,
-      item.minPrice,
-      item.maxPrice
-    ]);
-    const volumeData = allStockData.slice(chartStartIdx, chartEndIdx + 1).map(item => item.chenJiaoLiang);
+    const klineData = allStockData.slice(chartStartIdx, chartEndIdx + 1).map(item => {
+      // 添加异常判断，确保所有价格字段都存在
+      return [
+        item.openPrice ?? 0,
+        item.closePrice ?? 0,
+        item.minPrice ?? 0,
+        item.maxPrice ?? 0
+      ];
+    });
+    const volumeData = allStockData.slice(chartStartIdx, chartEndIdx + 1).map(item => item.chenJiaoLiang ?? 0);
     // MA均线（全量数据计算，区间内显示）
     function calcMA(dayCount) {
       const result = [];
@@ -886,7 +889,14 @@ const getWarmUpStockCodes = () => {
         }
         let sum = 0;
         for (let j = 0; j < dayCount; j++) {
-          sum += allStockData[i - j].closePrice;
+          const dataItem = allStockData[i - j];
+          // 添加异常判断，防止closePrice为undefined
+          if (dataItem && typeof dataItem.closePrice !== 'undefined' && !isNaN(dataItem.closePrice)) {
+            sum += dataItem.closePrice;
+          } else {
+            // 如果数据异常，使用前一个有效值或0
+            sum += 0;
+          }
         }
         // 保持数值类型，避免字符串转换导致的精度问题
         result.push(Number((sum / dayCount).toFixed(2)));
@@ -972,18 +982,24 @@ const getWarmUpStockCodes = () => {
           // 获取当前数据点的zhenFu字段
           const currentIndex = params[0].dataIndex;
           const currentData = chartData[currentIndex];
+          
+          // 添加异常判断，防止currentData为undefined或缺少必要字段
+          if (!currentData) {
+            return '<div style="color: #fff; font-size: 12px;">数据加载中...</div>';
+          }
+          
           const zhangDieFu = currentData?.zhangDieFu ?? 0;
           const zhangDieFuColor = zhangDieFu >= 0 ? '#ef232a' : '#14b143'; // 红涨绿跌
           
             return `
              <div style="color: #fff; font-size: 12px; line-height: 1.4;">
-               <div style="margin-bottom: 2px;">日期: ${params[0].axisValue}</div>
-               <div style="margin-bottom: 2px;">开盘: ${currentData.openPrice}</div>
-               <div style="margin-bottom: 2px;">收盘: ${currentData.closePrice}</div>
-               <div style="margin-bottom: 2px;">最低: ${currentData.minPrice}</div>
-               <div style="margin-bottom: 2px;">最高: ${currentData.maxPrice}</div>
+               <div style="margin-bottom: 2px;">日期: ${params[0].axisValue || '未知'}</div>
+               <div style="margin-bottom: 2px;">开盘: ${currentData.openPrice ?? '--'}</div>
+               <div style="margin-bottom: 2px;">收盘: ${currentData.closePrice ?? '--'}</div>
+               <div style="margin-bottom: 2px;">最低: ${currentData.minPrice ?? '--'}</div>
+               <div style="margin-bottom: 2px;">最高: ${currentData.maxPrice ?? '--'}</div>
                <div style="margin-bottom: 2px;">涨跌幅: <span style="color:${zhangDieFuColor};font-weight:bold">${Number(zhangDieFu).toFixed(2)}%</span></div>
-               <div>成交量: ${chenJiaoLiangConvert(currentData.chenJiaoLiang)}</div>
+               <div>成交量: ${chenJiaoLiangConvert(currentData.chenJiaoLiang ?? 0)}</div>
              </div>
             `;
           // return `
@@ -1198,6 +1214,10 @@ const getWarmUpStockCodes = () => {
           itemStyle: {
             color: function(params) {
               const d = chartData[params.dataIndex];
+              // 添加异常判断，防止d或d.closePrice/d.openPrice为undefined
+              if (!d || typeof d.closePrice === 'undefined' || typeof d.openPrice === 'undefined') {
+                return GREEN; // 默认返回绿色
+              }
               return d.closePrice >= d.openPrice ? RED : GREEN;
             }
           }
@@ -1527,7 +1547,12 @@ const getWarmUpStockCodes = () => {
     const magData = chartData.slice(start, end + 1);
     if (!magData.length) return;
     const magDates = magData.map(d => d.date);
-    const magKline = magData.map(d => [d.openPrice, d.closePrice, d.minPrice, d.maxPrice]);
+    const magKline = magData.map(d => [
+      d.openPrice ?? 0,
+      d.closePrice ?? 0,
+      d.minPrice ?? 0,
+      d.maxPrice ?? 0
+    ]);
     const magChart = echarts.init(magDom);
     magChart.setOption({
       backgroundColor: BG_COLOR,
