@@ -20,6 +20,23 @@ const MA_CONFIG = [
     { key: 250, label: 'MA250', color: '#ffd700', default: false },
   ];
 
+// 高亮标签关键词配置
+const HIGHLIGHT_TAG_CONFIG = [
+  { tagName: '国企', color: '#1ecb8c' },    // 明亮青绿
+  { tagName: '军工', color: '#ff6b81' },    // 柔和珊瑚红
+  { tagName: '华为', color: '#1e90ff' },    // 亮蓝
+  { tagName: '新能源', color: '#ffd700' },  // 金黄
+  { tagName: '固态电池', color: '#ffd700' },  // 金黄
+  { tagName: '独角兽', color: '#a259ff' },  // 紫色
+  { tagName: '芯片', color: '#ffb86c' },    // 橙黄
+  { tagName: '低空经济', color: '#23b14d' },    // 绿色
+  { tagName: '无人机', color: '#f672ff' },    // 粉紫
+  { tagName: '大飞机', color: '#f672ff' },    // 粉紫
+  { tagName: '机器人', color: '#f672ff' },    // 粉紫
+  { tagName: '石油', color: '#ff9800' },  // 青色
+  { tagName: '机构重仓', color: '#00bcd4' },  // 橙色
+    ];
+
 const BG_COLOR = '#181c26';
 const AXIS_COLOR = '#888ca0';
 const TEXT_COLOR = '#fff';
@@ -221,19 +238,6 @@ const StockDetail = () => {
     // return '100px';
   }
 
-    // 高亮标签关键词配置
-  const HIGHLIGHT_TAG_CONFIG = [
-    { tagName: '国企', color: '#1ecb8c' },    // 明亮青绿
-    { tagName: '军工', color: '#ff6b81' },    // 柔和珊瑚红
-    { tagName: '华为', color: '#1e90ff' },    // 亮蓝
-    { tagName: '新能源', color: '#ffd700' },  // 金黄
-    { tagName: '独角兽', color: '#a259ff' },  // 紫色
-    { tagName: '芯片', color: '#ffb86c' },    // 橙黄
-    { tagName: '低空经济', color: '#23b14d' },    // 绿色
-    { tagName: '无人机', color: '#f672ff' },    // 粉紫
-    { tagName: '石油', color: '#ff9800' },  // 青色
-    { tagName: '机构重仓', color: '#00bcd4' },  // 橙色
-  ];
 
   // 键盘上下键切换股票（循环）
   useEffect(() => {
@@ -1776,7 +1780,7 @@ const getWarmUpStockCodes = () => {
           flexWrap: 'wrap',
         }}>
           {/* 股票基本信息 Header */}
-          <div style={{marginLeft: '12px', display: 'flex', alignItems: 'flex-start', width: '35vw', maxHeight: '10vh'}}>             
+          <div style={{marginLeft: '0px', display: 'flex', alignItems: 'flex-start', width: '35vw', maxHeight: '10vh'}}>             
             {/* 股票基本信息 */}
             <div>
               {/* 股票名称 */}
@@ -2079,43 +2083,80 @@ const getWarmUpStockCodes = () => {
                       return formatNumber(score);
                     })()}</span>
                     <span> + </span>
-                    <span style={{ color: '#1e90ff', fontSize: 12 }}>{(() => {
+                    <span style={{ color: '#ffd700', fontSize: 12 }}>{(() => {
                       const extraScore = parseFloat(apiScoreResult.extraScore);
                       return formatNumber(extraScore);
                     })()}</span>
 
                     {(() => {
+                      const score = parseFloat(apiScoreResult.score);
+                      const extraScore = parseFloat(apiScoreResult.extraScore);
                       const scoreResult = calcScore(chartData);
                       return (
-                        <span style={{ color: '#1e90ff', fontSize: 12 }}>(旧：{scoreResult.score})</span>
+                        <span style={{ color: '#1e90ff', fontSize: 12 }}>（合计：{formatNumber(score + extraScore)}）</span>
                       );
                     })()}
                   </div>
-                  <div style={{ fontSize: 12 }}>
-                    <table style={{ width: '100%', fontSize: 11, borderCollapse: 'collapse' }}>
-                      <thead>
-                        <tr>
-                          <th style={{ textAlign: 'left', paddingRight: 8 }}>名称</th>
-                          <th style={{ textAlign: 'left', paddingRight: 8 }}>原始值</th>
-                          <th style={{ textAlign: 'left' }}>分数</th>
-                          <th style={{ textAlign: 'left' }}>总分</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {apiScoreResult.scoreDetail && Object.keys(apiScoreResult.scoreDetail).map(key => {
-                          const item = apiScoreResult.scoreDetail[key];
-                          
-                          return (
-                            <tr key={key}>
-                              <td>{item?.name}</td>
-                              <td style={{ textAlign: 'left', color: '#1e90ff' }}>{formatNumber(item?.value)}</td>
-                              <td style={{ textAlign: 'left', color: '#ffd700' }}>{formatNumber(item?.score)}</td>
-                              <td style={{ textAlign: 'left', color: '#ffd700' }}>{formatNumber(item?.weight)}</td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
+                  <div style={{ fontSize: 12, display: 'flex', gap: '16px' }}>
+                    {/* 主分数列表 */}
+                    <div style={{ flex: 1 }}>
+                      <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
+                        <thead>
+                          <tr>
+                            <th style={{ textAlign: 'left', paddingRight: 6, paddingBottom: 4, fontSize: 10 }}>名称</th>
+                            <th style={{ textAlign: 'left', paddingRight: 6, paddingBottom: 4, fontSize: 10 }}>原始值</th>
+                            <th style={{ textAlign: 'left', paddingBottom: 4, fontSize: 10 }}>分数</th>
+                            <th style={{ textAlign: 'left', paddingBottom: 4, fontSize: 10 }}>权重</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {apiScoreResult.scoreDetail && Object.keys(apiScoreResult.scoreDetail)
+                            .filter(key => apiScoreResult.scoreDetail[key]?.type === 'main')
+                            .map(key => {
+                              const item = apiScoreResult.scoreDetail[key];
+                              
+                              return (
+                                <tr key={key}>
+                                  <td style={{ paddingBottom: 2, fontSize: 10 }}>{item?.name}</td>
+                                  <td style={{ textAlign: 'left', color: '#1e90ff', paddingBottom: 2, fontSize: 10 }}>{formatNumber(item?.value)}</td>
+                                  <td style={{ textAlign: 'left', color: '#ffd700', paddingBottom: 2, fontSize: 10 }}>{formatNumber(item?.score)}</td>
+                                  <td style={{ textAlign: 'left', color: '#ffd700', paddingBottom: 2, fontSize: 10 }}>{formatNumber(item?.weight)}</td>
+                                </tr>
+                              );
+                            })}
+                        </tbody>
+                      </table>
+                    </div>
+                    
+                    {/* 附加分列表 */}
+                    <div style={{ flex: 1 }}>
+                      <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
+                        <thead>
+                          <tr>
+                            <th style={{ textAlign: 'left', paddingRight: 6, paddingBottom: 4, fontSize: 10 }}>名称(附加分)</th>
+                            <th style={{ textAlign: 'left', paddingRight: 6, paddingBottom: 4, fontSize: 10 }}>原始值</th>
+                            <th style={{ textAlign: 'left', paddingBottom: 4, fontSize: 10 }}>分数</th>
+                            <th style={{ textAlign: 'left', paddingBottom: 4, fontSize: 10 }}>权重</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {apiScoreResult.scoreDetail && Object.keys(apiScoreResult.scoreDetail)
+                            .filter(key => apiScoreResult.scoreDetail[key]?.type === 'extra')
+                            .map(key => {
+                              const item = apiScoreResult.scoreDetail[key];
+                              
+                              return (
+                                <tr key={key}>
+                                  <td style={{ paddingBottom: 2, fontSize: 10 }}>{item?.name}</td>
+                                  <td style={{ textAlign: 'left', color: '#1e90ff', paddingBottom: 2, fontSize: 10 }}>{formatNumber(item?.value)}</td>
+                                  <td style={{ textAlign: 'left', color: '#ffd700', paddingBottom: 2, fontSize: 10 }}>{formatNumber(item?.score)}</td>
+                                  <td style={{ textAlign: 'left', color: '#ffd700', paddingBottom: 2, fontSize: 10 }}>{formatNumber(item?.weight)}</td>
+                                </tr>
+                              );
+                            })}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 </div>
               );
@@ -2140,7 +2181,7 @@ const getWarmUpStockCodes = () => {
             display: 'flex',
             alignItems: 'center',
             gap: 10,
-            background: 'rgba(35,38,58,0.95)',
+            background: 'rgba(35,38,58,0.5)',
             borderRadius: 6,
             padding: '6px 14px',
             boxShadow: '0 2px 8px #0003',
