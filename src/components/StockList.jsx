@@ -246,7 +246,7 @@ const StockList = () => {
       stockTypes: [],
       pageIndex: 1,
       pageSize: 5000,
-      orderByField: TAB_CONFIG[initialTab]?.orderByField || 'stockCode',
+      orderByField: TAB_CONFIG[initialTab]?.orderByField,
       orderRule: TAB_CONFIG[initialTab]?.orderRule || 'asc',
       selectedDates: [],
       stockFieldConfigType: TAB_CONFIG[initialTab]?.fieldConfigType || 'simple'
@@ -337,7 +337,7 @@ const StockList = () => {
       stockTypes: tabConfig?.stockTypes ? [] : [],
       pageIndex: 1,
       pageSize: 5000,
-      orderByField: tabConfig?.orderByField || 'stockCode',
+      orderByField: tabConfig?.orderByField,
       orderRule: tabConfig?.orderRule || 'ASC',
       selectedDates: [],
       stockFieldConfigType: tabConfig?.fieldConfigType || 'simple'
