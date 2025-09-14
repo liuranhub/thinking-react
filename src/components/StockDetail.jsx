@@ -2818,7 +2818,7 @@ const getWarmUpStockCodes = () => {
                     whiteSpace: 'nowrap',
                     flexShrink: 0
                   }}>
-                    要点{theme.mainpoint}: {theme.keyClassif}
+                    要点{index + 1}: {theme.keyClassif}
                   </span>
                   <span style={{ 
                     fontSize: '11px',
