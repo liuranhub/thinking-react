@@ -1839,9 +1839,24 @@ const getWarmUpStockCodes = () => {
                 )}
               </div>
               {/* 股票标签 */}
-              <div style={{marginTop: 2}}>
+              <div style={{
+                marginTop: 2,
+                maxHeight: `${headerHeight - 30}px`,
+                overflowY: 'auto',
+                overflowX: 'hidden',
+                scrollbarWidth: 'none', /* Firefox */
+                msOverflowStyle: 'none', /* IE and Edge */
+                WebkitScrollbar: { display: 'none' } /* Chrome, Safari, Opera */
+              }}>
+                <style>
+                  {`
+                    div::-webkit-scrollbar {
+                      display: none;
+                    }
+                  `}
+                </style>
                 {Array.isArray(stockDetail.tags) && stockDetail.tags.length > 0 && (() => {
-                  // 保持原有标签顺序，只对匹配的标签应用高亮样式
+                  // 获取标签颜色
                   const getTagColor = (tag) => {
                     for (const cfg of HIGHLIGHT_TAG_CONFIG) {
                       if (tag.includes(cfg.tagName)) {
@@ -1851,10 +1866,11 @@ const getWarmUpStockCodes = () => {
                     return null;
                   };
                   
-                  const renderTag = (tag, idx) => {
+                  // 渲染标签
+                  const renderTag = (tag, idx, isHighlight = false) => {
                     const color = getTagColor(tag);
                     return (
-                      <span key={tag + idx} style={{
+                      <span key={`${tag}-${idx}-${isHighlight ? 'highlight' : 'normal'}`} style={{
                         background: color ? color + '22' : BG_COLOR,
                         color: color || TEXT_COLOR,
                         borderRadius: '12px',
@@ -1869,7 +1885,25 @@ const getWarmUpStockCodes = () => {
                     );
                   };
                   
-                  return stockDetail.tags.map((tag, idx) => renderTag(tag, idx));
+                  // 找出高亮标签
+                  const highlightTags = [];
+                  const normalTags = [];
+                  
+                  stockDetail.tags.forEach(tag => {
+                    // 如果标签有颜色，则添加到高亮标签中
+                    if (getTagColor(tag)) {
+                      highlightTags.push(tag);
+                    } else {
+                      // normalTags.push(tag);
+                    }
+                    normalTags.push(tag);
+                  });
+                  
+                  // 先渲染高亮标签，再渲染普通标签
+                  return [
+                    ...highlightTags.map((tag, idx) => renderTag(tag, idx, true)),
+                    ...normalTags.map((tag, idx) => renderTag(tag, idx, false))
+                  ];
                 })()}
               </div>
             </div>
@@ -2701,7 +2735,33 @@ const getWarmUpStockCodes = () => {
                   lineHeight: '1.5',
                   textAlign: 'justify'
                 }}>
-                  {theme.mainpointContent}
+                  {(() => {
+                    // 高亮关键字功能
+                    const highlightText = (text, highlightWords) => {
+                      if (!highlightWords || highlightWords.length === 0) {
+                        return text;
+                      }
+                      
+                      // 按长度排序，优先匹配长词
+                      const sortedWords = [...highlightWords].sort((a, b) => b.length - a.length);
+                      
+                      let result = text;
+                      sortedWords.forEach(word => {
+                        if (word && word.trim()) {
+                          const regex = new RegExp(`(${word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+                          result = result.replace(regex, '<span style="background-color: #ffd700; color: #000; padding: 1px 2px; border-radius: 2px; font-weight: bold;">$1</span>');
+                        }
+                      });
+                      
+                      return result;
+                    };
+                    
+                    const highlightedContent = highlightText(theme.mainpointContent, stockDetail.highLightWords);
+                    
+                    return (
+                      <span dangerouslySetInnerHTML={{ __html: highlightedContent }} />
+                    );
+                  })()}
                 </div>
               </div>
             ))}
