@@ -1042,17 +1042,53 @@ const getWarmUpStockCodes = () => {
         axisLabel: {
           color: TEXT_COLOR,
           interval: function(index, value) {
-            // 根据数据总量计算间隔，确保最多显示10个点位
-            const totalDataLength = dates.length;
-            const maxLabels = 10;
-            const calculatedInterval = Math.ceil(totalDataLength / maxLabels);
+            if (!dates || dates.length === 0) return false;
+            
+            // 计算时间跨度
+            const firstDate = new Date(dates[0]);
+            const lastDate = new Date(dates[dates.length - 1]);
+            const timeSpanYears = (lastDate - firstDate) / (365.25 * 24 * 60 * 60 * 1000);
+            
+            let calculatedInterval = 1;
+            
+            if (timeSpanYears > 5) {
+              // 超过5年数据：显示年份，每年显示一个
+              calculatedInterval = Math.ceil(dates.length / Math.min(10, Math.ceil(timeSpanYears)));
+            } else if (timeSpanYears >= 2) {
+              // 2年到5年数据：每半年显示一个
+              calculatedInterval = Math.ceil(dates.length / (timeSpanYears * 2));
+            } else {
+              // 1年内数据：显示每个月份
+              calculatedInterval = Math.ceil(dates.length / 12);
+            }
+            
             return index % calculatedInterval === 0;
           },
           formatter: function(value, index) {
-            // 显示年月格式 YYYY-MM
-            if (value && value.length >= 10) {
-              return value.slice(0, 7); // 显示 YYYY-MM 格式
+            if (!value || !dates || dates.length === 0) return value;
+            
+            // 计算时间跨度
+            const firstDate = new Date(dates[0]);
+            const lastDate = new Date(dates[dates.length - 1]);
+            const timeSpanYears = (lastDate - firstDate) / (365.25 * 24 * 60 * 60 * 1000);
+            
+            if (timeSpanYears > 5) {
+              // 超过5年数据：只显示年份 YYYY
+              if (value.length >= 4) {
+                return value.slice(0, 4);
+              }
+            } else if (timeSpanYears >= 2) {
+              // 2年到5年数据：显示年月 YYYY-MM
+              if (value.length >= 7) {
+                return value.slice(0, 7);
+              }
+            } else {
+              // 1年内数据：显示年月 YYYY-MM
+              if (value.length >= 7) {
+                return value.slice(0, 7);
+              }
             }
+            
             return value;
           }
         },
@@ -1261,17 +1297,53 @@ const getWarmUpStockCodes = () => {
         axisLabel: {
           color: TEXT_COLOR,
           interval: function(index, value) {
-            // 根据数据总量计算间隔，确保最多显示10个点位
-            const totalDataLength = dates.length;
-            const maxLabels = 10;
-            const calculatedInterval = Math.ceil(totalDataLength / maxLabels);
+            if (!dates || dates.length === 0) return false;
+            
+            // 计算时间跨度
+            const firstDate = new Date(dates[0]);
+            const lastDate = new Date(dates[dates.length - 1]);
+            const timeSpanYears = (lastDate - firstDate) / (365.25 * 24 * 60 * 60 * 1000);
+            
+            let calculatedInterval = 1;
+            
+            if (timeSpanYears > 5) {
+              // 超过5年数据：显示年份，每年显示一个
+              calculatedInterval = Math.ceil(dates.length / Math.min(10, Math.ceil(timeSpanYears)));
+            } else if (timeSpanYears >= 2) {
+              // 2年到5年数据：每半年显示一个
+              calculatedInterval = Math.ceil(dates.length / (timeSpanYears * 2));
+            } else {
+              // 1年内数据：显示每个月份
+              calculatedInterval = Math.ceil(dates.length / 12);
+            }
+            
             return index % calculatedInterval === 0;
           },
           formatter: function(value, index) {
-            // 显示年月格式 YYYY-MM
-            if (value && value.length >= 10) {
-              return value.slice(0, 7); // 显示 YYYY-MM 格式
+            if (!value || !dates || dates.length === 0) return value;
+            
+            // 计算时间跨度
+            const firstDate = new Date(dates[0]);
+            const lastDate = new Date(dates[dates.length - 1]);
+            const timeSpanYears = (lastDate - firstDate) / (365.25 * 24 * 60 * 60 * 1000);
+            
+            if (timeSpanYears > 5) {
+              // 超过5年数据：只显示年份 YYYY
+              if (value.length >= 4) {
+                return value.slice(0, 4);
+              }
+            } else if (timeSpanYears >= 2) {
+              // 2年到5年数据：显示年月 YYYY-MM
+              if (value.length >= 7) {
+                return value.slice(0, 7);
+              }
+            } else {
+              // 1年内数据：显示年月 YYYY-MM
+              if (value.length >= 7) {
+                return value.slice(0, 7);
+              }
             }
+            
             return value;
           }
         },
@@ -2093,11 +2165,11 @@ const getWarmUpStockCodes = () => {
                   
                   stockDetail.tags.forEach(tag => {
                     // 如果标签有颜色，则添加到高亮标签中
-                    if (getTagColor(tag)) {
-                      highlightTags.push(tag);
-                    } else {
-                      // normalTags.push(tag);
-                    }
+                    // if (getTagColor(tag)) {
+                    //   highlightTags.push(tag);
+                    // } else {
+                    //   normalTags.push(tag);
+                    // }
                     normalTags.push(tag);
                   });
                   
