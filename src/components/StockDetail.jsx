@@ -254,6 +254,14 @@ const StockDetail = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [stockList]);
 
+  // 检测是否有股票信息和龙虎榜弹窗存在
+  const hasModalOpen = useCallback(() => {
+    // 直接通过状态变量判断弹窗是否显示
+    // lhbTooltip.visible - 龙虎榜弹窗
+    // themeTooltip.visible - 题材信息（股票信息）弹窗
+    return lhbTooltip.visible || themeTooltip.visible;
+  }, [lhbTooltip.visible, themeTooltip.visible]);
+
   // 平板左右快速滑动切换股票
   // 实现原理：通过监听touchstart和touchend事件，计算滑动距离、时间和速度
   // 只有满足快速水平滑动条件时才切换股票，避免误触和与页面滚动冲突
@@ -265,6 +273,7 @@ const StockDetail = () => {
     let touchEndX = 0;        // 触摸结束X坐标
     let touchEndY = 0;        // 触摸结束Y坐标
     let touchEndTime = 0;     // 触摸结束时间
+    let isInKlineArea = false; // 是否在K线图区域内
     
     // 滑动检测参数
     const minSwipeDistance = 80; // 最小滑动距离（增加距离要求）
@@ -277,6 +286,16 @@ const StockDetail = () => {
       touchStartX = e.touches[0].clientX;
       touchStartY = e.touches[0].clientY;
       touchStartTime = Date.now();
+      
+      // 检查触摸是否在K线图区域内
+      const klineDom = document.getElementById('kline-chart');
+      if (klineDom) {
+        const rect = klineDom.getBoundingClientRect();
+        isInKlineArea = touchStartX >= rect.left && touchStartX <= rect.right && 
+                       touchStartY >= rect.top && touchStartY <= rect.bottom;
+      } else {
+        isInKlineArea = false;
+      }
     };
 
     // 触摸结束：计算滑动参数并判断是否切换股票
@@ -294,12 +313,13 @@ const StockDetail = () => {
       const deltaTime = touchEndTime - touchStartTime;  // 滑动时间
       const velocity = Math.abs(deltaY) / deltaTime;    // 滑动速度（像素/毫秒）
       
-      // 双重检测：垂直滑动 + 快速滑动
+      // 三重检测：垂直滑动 + 快速滑动 + K线图区域内
       const isVerticalSwipe = Math.abs(deltaY) > minSwipeDistance && deltaX < maxHorizontalDistance;
       const isQuickSwipe = deltaTime < maxSwipeTime && velocity > minSwipeVelocity;
+      const hasModal = hasModalOpen(); // 检测是否有弹窗存在
       
-      // 只有同时满足垂直滑动和快速滑动才切换股票
-      if (isVerticalSwipe && isQuickSwipe) {
+      // 只有同时满足垂直滑动、快速滑动、在K线图区域内且无弹窗时才切换股票
+      if (isVerticalSwipe && isQuickSwipe && isInKlineArea && !hasModal) {
         if (deltaY < 0) {
           // 向上快速滑动 - 上一个股票
           setCurrentIndex(idx => (idx < stockList.length - 1 ? idx + 1 : 0));
@@ -319,7 +339,7 @@ const StockDetail = () => {
       document.removeEventListener('touchstart', handleTouchStart);
       document.removeEventListener('touchend', handleTouchEnd);
     };
-  }, [stockList]);
+  }, [stockList, hasModalOpen]);
 
   // 鼠标滚轮切换股票，屏蔽K线图缩放
   useEffect(() => {
@@ -919,7 +939,11 @@ const getWarmUpStockCodes = () => {
         zoomOnMouseWheel: false, // 禁用滚轮缩放
         moveOnMouseWheel: false,
         moveOnMouseMove: true,
-        throttle: 50
+        throttle: 100, // 增加节流时间，降低响应速度
+        zoomLock: false,
+        filterMode: 'filter',
+        // 通过自定义事件处理来控制缩放速度
+        preventDefaultMouseMove: true
       }
     ];
     // K线图
@@ -1038,6 +1062,14 @@ const getWarmUpStockCodes = () => {
       },
       yAxis: {
         scale: true,
+        min: function(value) {
+          // 确保价格不为负，留出适当边距
+          return Math.max(0, value.min * 0.995).toFixed(1);
+        },
+        max: function(value) {
+          // 最大值增加适当边距
+          return Number(value.max * 1.005).toFixed(1);
+        },
         axisLine: { lineStyle: { color: AXIS_COLOR } },
         axisLabel: { color: TEXT_COLOR },
         splitLine: { lineStyle: { color: '#23263a' } },
@@ -1086,6 +1118,31 @@ const getWarmUpStockCodes = () => {
       ]
     };
     klineChart.setOption(klineOption);
+    
+    // 自定义缩放速度控制 - 降低到原来的一半
+    let lastZoomTime = 0;
+    let lastZoomRange = { start: 0, end: 100 };
+    
+    klineChart.on('dataZoom', (params) => {
+      const now = Date.now();
+      if (params.batch && params.batch.length > 0) {
+        const zoomParams = params.batch[0];
+        if (zoomParams.dataZoomId === 'stock-zoom') {
+          // 控制缩放频率，降低到原来的一半
+          if (now - lastZoomTime > 200) { // 原来可能是100ms，现在改为200ms
+            lastZoomTime = now;
+            lastZoomRange = { start: zoomParams.start, end: zoomParams.end };
+          } else {
+            // 如果缩放太频繁，恢复到上次的缩放状态
+            klineChart.dispatchAction({
+              type: 'dataZoom',
+              start: lastZoomRange.start,
+              end: lastZoomRange.end
+            });
+          }
+        }
+      }
+    });
     
     // 页面首次进入时显示最新一条数据的tooltip
     setTimeout(() => {
