@@ -262,6 +262,17 @@ const StockDetail = () => {
     return lhbTooltip.visible || themeTooltip.visible;
   }, [lhbTooltip.visible, themeTooltip.visible]);
 
+  // 切换股票时重置弹窗状态
+  useEffect(() => {
+    // 重置龙虎榜tooltip状态
+    setLhbTooltip({ visible: false, x: 0, y: 0 });
+    isMouseInLhbTooltipRef.current = false;
+    
+    // 重置题材信息tooltip状态
+    setThemeTooltip({ visible: false, x: 0, y: 0 });
+    isMouseInTooltipRef.current = false;
+  }, [stockCode]);
+
   // 平板左右快速滑动切换股票
   // 实现原理：通过监听touchstart和touchend事件，计算滑动距离、时间和速度
   // 只有满足快速水平滑动条件时才切换股票，避免误触和与页面滚动冲突
@@ -274,6 +285,8 @@ const StockDetail = () => {
     let touchEndY = 0;        // 触摸结束Y坐标
     let touchEndTime = 0;     // 触摸结束时间
     let isInKlineArea = false; // 是否在K线图区域内
+    let isMultiTouch = false; // 是否为多点触摸操作
+    let touchStartCount = 0;  // 触摸开始时的触摸点数量
     
     // 滑动检测参数
     const minSwipeDistance = 80; // 最小滑动距离（增加距离要求）
@@ -283,6 +296,17 @@ const StockDetail = () => {
 
     // 触摸开始：记录起始位置和时间
     const handleTouchStart = (e) => {
+      const touchCount = e.touches.length;
+      touchStartCount = touchCount;
+      
+      // 多点触摸检测：如果是双指或更多手指，标记为多点触摸
+      if (touchCount >= 2) {
+        isMultiTouch = true;
+        return; // 多点触摸操作时直接返回，不记录坐标
+      }
+      
+      // 单指操作才记录坐标
+      isMultiTouch = false;
       touchStartX = e.touches[0].clientX;
       touchStartY = e.touches[0].clientY;
       touchStartTime = Date.now();
@@ -302,6 +326,12 @@ const StockDetail = () => {
     const handleTouchEnd = (e) => {
       if (!stockList.length) return;
       
+      // 组合检测1：多点触摸检测
+      if (isMultiTouch || touchStartCount >= 2) {
+        isMultiTouch = false;
+        return;
+      }
+      
       // 获取触摸结束位置和时间
       touchEndX = e.changedTouches[0].clientX;
       touchEndY = e.changedTouches[0].clientY;
@@ -313,12 +343,24 @@ const StockDetail = () => {
       const deltaTime = touchEndTime - touchStartTime;  // 滑动时间
       const velocity = Math.abs(deltaY) / deltaTime;    // 滑动速度（像素/毫秒）
       
-      // 三重检测：垂直滑动 + 快速滑动 + K线图区域内
+      // 组合检测2：时间间隔检测
+      if (deltaTime < 50 || deltaTime > 2000) {
+        // 触摸时间过短（可能是双指操作）或过长（可能是长按），忽略
+        return;
+      }
+      
+      // 组合检测3：移动距离检测
+      if (Math.abs(deltaY) < 40) {
+        // 垂直移动距离过小，可能是双指操作，忽略
+        return;
+      }
+      
+      // 四重检测：垂直滑动 + 快速滑动 + K线图区域内 + 无弹窗
       const isVerticalSwipe = Math.abs(deltaY) > minSwipeDistance && deltaX < maxHorizontalDistance;
       const isQuickSwipe = deltaTime < maxSwipeTime && velocity > minSwipeVelocity;
       const hasModal = hasModalOpen(); // 检测是否有弹窗存在
       
-      // 只有同时满足垂直滑动、快速滑动、在K线图区域内且无弹窗时才切换股票
+      // 只有同时满足所有条件时才切换股票
       if (isVerticalSwipe && isQuickSwipe && isInKlineArea && !hasModal) {
         if (deltaY < 0) {
           // 向上快速滑动 - 上一个股票
@@ -2185,6 +2227,9 @@ const getWarmUpStockCodes = () => {
           <div style={{display: 'flex', alignItems: 'flex-start', flexWrap: 'wrap', flexDirection: 'column', 
                         width: '30vw', textAlign: 'left'}}>
             <div style={{display: 'flex', flexWrap: 'wrap'}}>
+              <span style={{color: TEXT_COLOR}}>市值: <span style={{color: '#11d1e4'}}>{stockDetail.totalMarketValue ? Number(stockDetail.totalMarketValue / 100000000).toFixed(2): 0}亿</span></span>
+            </div>
+            <div style={{display: 'flex', flexWrap: 'wrap'}}>
               <span style={{color: TEXT_COLOR}}>综合波动系数: <span style={{color: '#11d1e4'}}>{stockStats.volatility}</span></span>
               <span style={{color: TEXT_COLOR}}>(</span>
               <span style={{color: TEXT_COLOR}}>标准差: <span style={{color: '#11d1e4'}}>{stockStats.stdOverMean}</span></span>
@@ -2625,77 +2670,6 @@ const getWarmUpStockCodes = () => {
           </div>
         </div>
         
-        {/* 股票切换按钮 - 右下角 */}
-        <div style={{
-          position: 'fixed',
-          bottom: '0px',
-          right: '20px',
-          zIndex: 1000,
-          display: 'flex',
-          gap: '10px',
-          alignItems: 'center'
-        }}>
-          {/* 上一个按钮 */}
-          <button
-            onClick={() => {
-              if (stockList.length > 0) {
-                setCurrentIndex(idx => (idx > 0 ? idx - 1 : stockList.length - 1));
-              }
-            }}
-            disabled={!stockList.length}
-            style={{
-              width: '50px',
-              height: '30px',
-              borderRadius: '10%',
-              backgroundColor: 'transparent',
-              color: '#fff',
-              border: 'none',
-              cursor: stockList.length ? 'pointer' : 'not-allowed',
-              fontSize: '16px',
-              fontWeight: 'bold',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              transition: 'all 0.2s',
-              opacity: stockList.length ? 1 : 0.5,
-              boxShadow: 'none'
-            }}
-            title="上一个股票 (↑)"
-          >
-            ←
-          </button>
-          
-          {/* 下一个按钮 */}
-          <button
-            onClick={() => {
-              if (stockList.length > 0) {
-                setCurrentIndex(idx => (idx < stockList.length - 1 ? idx + 1 : 0));
-              }
-            }}
-            disabled={!stockList.length}
-            style={{
-              width: '50px',
-              height: '30px',
-              borderRadius: '10%',
-              backgroundColor: 'transparent',
-              color: '#fff',
-              border: 'none',
-              cursor: stockList.length ? 'pointer' : 'not-allowed',
-              fontSize: '16px',
-              fontWeight: 'bold',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              transition: 'all 0.2s',
-              opacity: stockList.length ? 1 : 0.5,
-              boxShadow: 'none'
-            }}
-            title="下一个股票 (↓)"
-          >
-            →
-          </button>
-        </div>
-        
         <div style={{
           position: 'fixed',
           left: (() => {
@@ -2965,7 +2939,7 @@ const getWarmUpStockCodes = () => {
             padding: '12px',
             borderRadius: '6px',
             fontSize: '12px',
-            maxWidth: '500px',
+            maxWidth: '600px',
             minWidth: '300px',
             zIndex: 10001,
             pointerEvents: 'auto',
@@ -2987,7 +2961,7 @@ const getWarmUpStockCodes = () => {
             核心题材
           </div>
           <div style={{ 
-            maxHeight: '400px', 
+            maxHeight: '500px', 
             overflowY: 'auto',
             scrollbarWidth: 'none', /* Firefox */
             msOverflowStyle: 'none', /* IE and Edge */
@@ -3041,7 +3015,7 @@ const getWarmUpStockCodes = () => {
                 
                 {/* 内容 */}
                 <div style={{ 
-                  fontSize: '11px', 
+                  fontSize: '12px', 
                   color: '#e0e0e0', 
                   lineHeight: '1.5',
                   textAlign: 'justify'
@@ -3067,7 +3041,14 @@ const getWarmUpStockCodes = () => {
                       return result;
                     };
                     
-                    const highlightedContent = highlightText(theme.mainpointContent, stockDetail.highLightWords);
+                    // 将分号替换为带序号的换行符
+                    const contentWithLineBreaks = theme.mainpointContent ? 
+                      theme.mainpointContent
+                        .split(';')
+                        .filter(item => item.trim()) // 过滤空内容
+                        .map((item, lineIndex) => `${lineIndex + 1}. ${item.trim()}`)
+                        .join('<br/>') : '';
+                    const highlightedContent = highlightText(contentWithLineBreaks, stockDetail.highLightWords);
                     
                     return (
                       <span dangerouslySetInnerHTML={{ __html: highlightedContent }} />
