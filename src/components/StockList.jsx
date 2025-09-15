@@ -739,7 +739,10 @@ const StockList = () => {
         const sampleSize = Math.min(500, data.length);
         for (let i = 0; i < sampleSize; i++) {
           const content = String(data[i][column.field]);
-          const contentWidth = content.length * CHAR_WIDTH;
+          let contentWidth = content.length * CHAR_WIDTH;
+          if(column.field === 'stockName') {
+            contentWidth = content.length * 8;
+          }
           maxWidth = Math.max(maxWidth, contentWidth);
         }
         
