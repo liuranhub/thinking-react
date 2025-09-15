@@ -3006,8 +3006,10 @@ const getWarmUpStockCodes = () => {
                     backgroundColor: 'rgba(255, 255, 255, 0.1)',
                     padding: '2px 6px',
                     borderRadius: '10px',
-                    whiteSpace: 'nowrap',
-                    flexShrink: 0
+                    whiteSpace: 'normal',
+                    wordWrap: 'break-word',
+                    maxWidth: '400px',
+                    display: 'inline-block'
                   }}>
                     {theme.keyword}
                   </span>
