@@ -268,7 +268,7 @@ const StockDetail = () => {
     
     // 滑动检测参数
     const minSwipeDistance = 80; // 最小滑动距离（增加距离要求）
-    const maxVerticalDistance = 120; // 最大垂直滑动距离
+    const maxHorizontalDistance = 120; // 最大水平滑动距离（垂直滑动时允许的水平偏移）
     const maxSwipeTime = 800; // 最大滑动时间（毫秒）- 快速滑动
     const minSwipeVelocity = 0.5; // 最小滑动速度（像素/毫秒）
 
@@ -289,23 +289,23 @@ const StockDetail = () => {
       touchEndTime = Date.now();
       
       // 计算滑动参数
-      const deltaX = touchEndX - touchStartX;           // 水平滑动距离
-      const deltaY = Math.abs(touchEndY - touchStartY); // 垂直滑动距离
+      const deltaX = Math.abs(touchEndX - touchStartX); // 水平滑动距离
+      const deltaY = touchEndY - touchStartY;           // 垂直滑动距离
       const deltaTime = touchEndTime - touchStartTime;  // 滑动时间
-      const velocity = Math.abs(deltaX) / deltaTime;    // 滑动速度（像素/毫秒）
+      const velocity = Math.abs(deltaY) / deltaTime;    // 滑动速度（像素/毫秒）
       
-      // 双重检测：水平滑动 + 快速滑动
-      const isHorizontalSwipe = Math.abs(deltaX) > minSwipeDistance && deltaY < maxVerticalDistance;
+      // 双重检测：垂直滑动 + 快速滑动
+      const isVerticalSwipe = Math.abs(deltaY) > minSwipeDistance && deltaX < maxHorizontalDistance;
       const isQuickSwipe = deltaTime < maxSwipeTime && velocity > minSwipeVelocity;
       
-      // 只有同时满足水平滑动和快速滑动才切换股票
-      if (isHorizontalSwipe && isQuickSwipe) {
-        if (deltaX > 0) {
-          // 向右快速滑动 - 上一个股票
-          setCurrentIndex(idx => (idx > 0 ? idx - 1 : stockList.length - 1));
-        } else {
-          // 向左快速滑动 - 下一个股票
+      // 只有同时满足垂直滑动和快速滑动才切换股票
+      if (isVerticalSwipe && isQuickSwipe) {
+        if (deltaY < 0) {
+          // 向上快速滑动 - 上一个股票
           setCurrentIndex(idx => (idx < stockList.length - 1 ? idx + 1 : 0));
+        } else {
+          // 向下快速滑动 - 下一个股票
+          setCurrentIndex(idx => (idx > 0 ? idx - 1 : stockList.length - 1));
         }
       }
     };
@@ -909,7 +909,6 @@ const getWarmUpStockCodes = () => {
       data: calcMA(ma.key)
     }));
     const dates = chartDates;
-    const xAxisConfig = getXAxisConfig(dates);
     const dataZoom = [
       {
         id: 'stock-zoom',
@@ -1018,8 +1017,20 @@ const getWarmUpStockCodes = () => {
         axisTick: { show: false }, 
         axisLabel: {
           color: TEXT_COLOR,
-          interval: xAxisConfig.interval,
-          formatter: xAxisConfig.formatter
+          interval: function(index, value) {
+            // 根据数据总量计算间隔，确保最多显示10个点位
+            const totalDataLength = dates.length;
+            const maxLabels = 10;
+            const calculatedInterval = Math.ceil(totalDataLength / maxLabels);
+            return index % calculatedInterval === 0;
+          },
+          formatter: function(value, index) {
+            // 显示年月格式 YYYY-MM
+            if (value && value.length >= 10) {
+              return value.slice(0, 7); // 显示 YYYY-MM 格式
+            }
+            return value;
+          }
         },
         splitLine: { show: false },
         min: 'dataMin',
@@ -1090,12 +1101,18 @@ const getWarmUpStockCodes = () => {
     
     // 鼠标双击K线图，立即设置结束日期
     klineChart.getZr().on('dblclick', function (params) {
+      // 直接使用ECharts的convertFromPixel方法获取对应的数据索引
       const pointInGrid = klineChart.convertFromPixel({gridIndex: 0}, [params.offsetX, params.offsetY]);
       const xIndex = Math.round(pointInGrid[0]);
-      if (dates[xIndex]) {
-        // 记录历史
-        chartEndDateHistory.current.push(chartEndDateRef.current);
-        setChartEndDate(dates[xIndex]);
+      
+      // 直接获取对应索引的日期
+      if (xIndex >= 0 && xIndex < dates.length) {
+        const targetDate = dates[xIndex];
+        if (targetDate) {
+          // 记录历史
+          chartEndDateHistory.current.push(chartEndDateRef.current);
+          setChartEndDate(targetDate);
+        }
       }
     });
     
@@ -1186,8 +1203,20 @@ const getWarmUpStockCodes = () => {
         axisTick: { show: false }, 
         axisLabel: {
           color: TEXT_COLOR,
-          interval: xAxisConfig.interval,
-          formatter: xAxisConfig.formatter
+          interval: function(index, value) {
+            // 根据数据总量计算间隔，确保最多显示10个点位
+            const totalDataLength = dates.length;
+            const maxLabels = 10;
+            const calculatedInterval = Math.ceil(totalDataLength / maxLabels);
+            return index % calculatedInterval === 0;
+          },
+          formatter: function(value, index) {
+            // 显示年月格式 YYYY-MM
+            if (value && value.length >= 10) {
+              return value.slice(0, 7); // 显示 YYYY-MM 格式
+            }
+            return value;
+          }
         },
         splitLine: { show: false },
         min: 'dataMin',
@@ -1400,13 +1429,19 @@ const getWarmUpStockCodes = () => {
           const y = touchStartY - rect.top;
           const chart = echarts.getInstanceByDom(klineDom);
           if (chart) {
+            // 直接使用ECharts的convertFromPixel方法获取对应的数据索引
             const pointInGrid = chart.convertFromPixel({gridIndex: 0}, [x, y]);
             const xIndex = Math.round(pointInGrid[0]);
+            
+            // 直接获取对应索引的日期
             const dates = chartData.map(item => item.date);
-            if (dates[xIndex]) {
-              // 记录历史
-              chartEndDateHistory.current.push(chartEndDateRef.current);
-              setChartEndDate(dates[xIndex]);
+            if (xIndex >= 0 && xIndex < dates.length) {
+              const targetDate = dates[xIndex];
+              if (targetDate) {
+                // 记录历史
+                chartEndDateHistory.current.push(chartEndDateRef.current);
+                setChartEndDate(targetDate);
+              }
             }
           }
           
@@ -1560,7 +1595,24 @@ const getWarmUpStockCodes = () => {
       xAxis: {
         type: 'category',
         data: magDates,
-        axisLabel: { color: TEXT_COLOR, fontSize: 10 },
+        axisLabel: { 
+          color: TEXT_COLOR, 
+          fontSize: 10,
+          interval: function(index, value) {
+            // 根据放大镜数据量计算间隔，确保最多显示10个点位
+            const totalDataLength = magDates.length;
+            const maxLabels = 10;
+            const calculatedInterval = Math.ceil(totalDataLength / maxLabels);
+            return index % calculatedInterval === 0;
+          },
+          formatter: function(value, index) {
+            // 显示年月格式 YYYY-MM
+            if (value && value.length >= 10) {
+              return value.slice(0, 7); // 显示 YYYY-MM 格式
+            }
+            return value;
+          }
+        },
         axisLine: { lineStyle: { color: AXIS_COLOR } },
         splitLine: { show: false }
       },
