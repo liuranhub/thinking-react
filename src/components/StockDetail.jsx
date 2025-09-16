@@ -4,6 +4,7 @@ import * as echarts from 'echarts';
 import { calcStockStats, incrementalDecline, calcScore } from '../utils/calcVolatility';
 import { message, Select, Spin, Rate, Tooltip, Modal, Form, DatePicker, Input, Button } from 'antd';
 import { CopyOutlined } from '@ant-design/icons';
+import ReactMarkdown from 'react-markdown';
 import 'antd/dist/reset.css';
 import '../App.css';
 import { pinyin } from 'pinyin-pro';
@@ -110,6 +111,10 @@ const StockDetail = () => {
   const [themeTooltip, setThemeTooltip] = useState({ visible: false, x: 0, y: 0 });
   const isMouseInTooltipRef = useRef(false);
   
+  // AI分析结果tooltip状态
+  const [aiTooltip, setAiTooltip] = useState({ visible: false, x: 0, y: 0 });
+  const isMouseInAiTooltipRef = useRef(false);
+  
   // 处理龙虎榜tooltip显示
   const handleLhbMouseEnter = (e) => {
     if (stockDetail.lhbs && stockDetail.lhbs.length > 0) {
@@ -176,6 +181,40 @@ const StockDetail = () => {
   const handleThemeTooltipMouseLeave = () => {
     isMouseInTooltipRef.current = false;
     setThemeTooltip({ visible: false, x: 0, y: 0 });
+  };
+
+  // 处理AI分析结果tooltip显示
+  const handleAiMouseEnter = (e) => {
+    if (stockDetail.aiAnalysisResult && stockDetail.aiAnalysisResult.content) {
+      // 将tooltip显示在AI按钮下方，避免鼠标移动路径
+      const rect = e.target.getBoundingClientRect();
+      setAiTooltip({
+        visible: true,
+        x: rect.left,
+        y: rect.bottom + 5
+      });
+      isMouseInAiTooltipRef.current = false;
+    }
+  };
+
+  const handleAiMouseLeave = () => {
+    // 延迟隐藏，给用户时间移动到tooltip
+    setTimeout(() => {
+      if (!isMouseInAiTooltipRef.current) {
+        setAiTooltip({ visible: false, x: 0, y: 0 });
+      }
+    }, 100);
+  };
+
+  // 处理AI分析结果tooltip内容区域的鼠标事件
+  const handleAiTooltipMouseEnter = () => {
+    isMouseInAiTooltipRef.current = true;
+    setAiTooltip(prev => ({ ...prev, visible: true }));
+  };
+
+  const handleAiTooltipMouseLeave = () => {
+    isMouseInAiTooltipRef.current = false;
+    setAiTooltip({ visible: false, x: 0, y: 0 });
   };
   
   // 复制股票编码功能
@@ -259,8 +298,9 @@ const StockDetail = () => {
     // 直接通过状态变量判断弹窗是否显示
     // lhbTooltip.visible - 龙虎榜弹窗
     // themeTooltip.visible - 题材信息（股票信息）弹窗
-    return lhbTooltip.visible || themeTooltip.visible;
-  }, [lhbTooltip.visible, themeTooltip.visible]);
+    // aiTooltip.visible - AI分析结果弹窗
+    return lhbTooltip.visible || themeTooltip.visible || aiTooltip.visible;
+  }, [lhbTooltip.visible, themeTooltip.visible, aiTooltip.visible]);
 
   // 切换股票时重置弹窗状态
   useEffect(() => {
@@ -271,6 +311,10 @@ const StockDetail = () => {
     // 重置题材信息tooltip状态
     setThemeTooltip({ visible: false, x: 0, y: 0 });
     isMouseInTooltipRef.current = false;
+    
+    // 重置AI分析结果tooltip状态
+    setAiTooltip({ visible: false, x: 0, y: 0 });
+    isMouseInAiTooltipRef.current = false;
   }, [stockCode]);
 
   // 平板左右快速滑动切换股票
@@ -2137,6 +2181,31 @@ const getWarmUpStockCodes = () => {
                     i
                   </span>
                 )}
+                {/* AI分析按钮 */}
+                {stockDetail.aiAnalysisResult && stockDetail.aiAnalysisResult.content && (
+                  <span 
+                    style={{ 
+                      marginLeft: 16, 
+                      color: '#fff', 
+                      fontSize: '11px',
+                      fontWeight: 'bold',
+                      cursor: 'pointer',
+                      color: '#1890ff', 
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '2px 6px',
+                      borderRadius: '4px',
+                      // backgroundColor: '#1890ff',
+                      // border: '1px solid #1890ff'
+                    }}
+                    onMouseEnter={handleAiMouseEnter}
+                    onMouseLeave={handleAiMouseLeave}
+                    title="AI分析结果"
+                  >
+                    AI
+                  </span>
+                )}
                 {/* 龙虎榜次数 */}
                 {stockDetail.lhbs && stockDetail.lhbs.length > 0 && (
                   <span 
@@ -3059,6 +3128,182 @@ const getWarmUpStockCodes = () => {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+      
+      {/* AI分析结果tooltip */}
+      {aiTooltip.visible && stockDetail.aiAnalysisResult && stockDetail.aiAnalysisResult.content && (
+        <div 
+          style={{
+            position: 'fixed',
+            left: aiTooltip.x,
+            top: aiTooltip.y,
+            backgroundColor: BG_COLOR,
+            color: '#ffffff',
+            padding: '12px',
+            borderRadius: '6px',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
+            maxWidth: '600px',
+            minWidth: '300px',
+            zIndex: 10001,
+            border: '1px solid #333',
+            fontFamily: 'Arial, sans-serif'
+          }}
+          onMouseEnter={handleAiTooltipMouseEnter}
+          onMouseLeave={handleAiTooltipMouseLeave}
+        >
+          <div style={{ 
+            fontWeight: 'bold',
+            marginBottom: '8px',
+            color: '#1890ff',
+            fontSize: '14px',
+            borderBottom: '1px solid #333',
+            paddingBottom: '4px'
+          }}>
+            AI分析结果
+          </div>
+          <div style={{ 
+            fontSize: '12px', 
+            color: '#e0e0e0', 
+            lineHeight: '1.6',
+            maxHeight: '400px',
+            overflowY: 'auto',
+            scrollbarWidth: 'none',
+            msOverflowStyle: 'none',
+            whiteSpace: 'pre-wrap'
+          }}>
+            <style>
+              {`
+                div::-webkit-scrollbar {
+                  display: none;
+                }
+              `}
+            </style>
+            {(() => {
+              // 处理markdown内容，移除markdown代码块标记
+              let content = stockDetail.aiAnalysisResult.content;
+              
+              // 移除markdown代码块标记
+              content = content.replace(/```markdown\n/g, '').replace(/```\n/g, '');
+              
+              return (
+                <ReactMarkdown
+                  components={{
+                    // 紧凑的自定义样式
+                    h1: ({children}) => (
+                      <div style={{ 
+                        fontSize: '14px', 
+                        fontWeight: 'bold', 
+                        color: '#1890ff', 
+                        marginTop: '8px', 
+                        marginBottom: '4px' 
+                      }}>
+                        {children}
+                      </div>
+                    ),
+                    h2: ({children}) => (
+                      <div style={{ 
+                        fontSize: '13px', 
+                        fontWeight: 'bold', 
+                        color: '#1890ff', 
+                        marginTop: '6px', 
+                        marginBottom: '3px' 
+                      }}>
+                        {children}
+                      </div>
+                    ),
+                    h3: ({children}) => (
+                      <div style={{ 
+                        fontSize: '12px', 
+                        fontWeight: 'bold', 
+                        color: '#1890ff', 
+                        marginTop: '4px', 
+                        marginBottom: '2px' 
+                      }}>
+                        {children}
+                      </div>
+                    ),
+                    p: ({children}) => (
+                      <div style={{ 
+                        marginBottom: '4px', 
+                        lineHeight: '1.4',
+                        fontSize: '12px'
+                      }}>
+                        {children}
+                      </div>
+                    ),
+                    ul: ({children}) => (
+                      <div style={{ 
+                        marginLeft: '12px', 
+                        marginBottom: '4px' 
+                      }}>
+                        {children}
+                      </div>
+                    ),
+                    ol: ({children}) => (
+                      <div style={{ 
+                        marginLeft: '12px', 
+                        marginBottom: '4px' 
+                      }}>
+                        {children}
+                      </div>
+                    ),
+                    li: ({children}) => (
+                      <div style={{ 
+                        marginBottom: '2px',
+                        fontSize: '12px'
+                      }}>
+                        {children}
+                      </div>
+                    ),
+                    code: ({children}) => (
+                      <span style={{ 
+                        backgroundColor: 'rgba(255, 255, 255, 0.1)', 
+                        padding: '1px 3px', 
+                        borderRadius: '2px',
+                        fontFamily: 'monospace',
+                        fontSize: '11px'
+                      }}>
+                        {children}
+                      </span>
+                    ),
+                    pre: ({children}) => (
+                      <div style={{ 
+                        backgroundColor: 'rgba(255, 255, 255, 0.05)', 
+                        padding: '4px', 
+                        borderRadius: '3px',
+                        marginBottom: '4px',
+                        overflow: 'auto',
+                        fontSize: '11px'
+                      }}>
+                        {children}
+                      </div>
+                    ),
+                    blockquote: ({children}) => (
+                      <div style={{ 
+                        borderLeft: '3px solid #1890ff',
+                        paddingLeft: '8px',
+                        marginLeft: '8px',
+                        marginBottom: '4px',
+                        fontStyle: 'italic',
+                        color: '#ccc'
+                      }}>
+                        {children}
+                      </div>
+                    ),
+                    hr: () => (
+                      <div style={{ 
+                        borderTop: '1px solid #333',
+                        margin: '4px 0'
+                      }} />
+                    )
+                  }}
+                >
+                  {content}
+                </ReactMarkdown>
+              );
+            })()}
           </div>
         </div>
       )}
