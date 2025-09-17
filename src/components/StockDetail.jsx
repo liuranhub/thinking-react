@@ -1111,9 +1111,9 @@ const getWarmUpStockCodes = () => {
                <div>成交量: ${chenJiaoLiangConvert(currentData.chenJiaoLiang ?? 0)}</div>
              </div>
             `;
-          // return `
-          //     涨跌幅: <span style="color:${zhangDieFuColor};font-weight:bold">${Number(zhangDieFu).toFixed(2)}%</span>
-          // `;
+          return `
+              涨跌幅: <span style="color:${zhangDieFuColor};font-weight:bold">${Number(zhangDieFu).toFixed(2)}%</span>
+          `;
         }
       },
       grid: { left: '45px', right: '0%', top: '5%', bottom: '5%' },
@@ -1208,6 +1208,39 @@ const getWarmUpStockCodes = () => {
             color0: GREEN,
             borderColor: RED,
             borderColor0: GREEN
+          },
+          // 添加锤子线标记点
+          markPoint: {
+            symbol: 'pin', // 使用pin形状，更加醒目
+            symbolSize: 12,
+            symbolRotate: 180, // 旋转180度，让针头指向下方（K线底部）
+            itemStyle: {
+              color: '#00FFFF', // 青色，在黑背景和红绿K线中很显眼
+              borderWidth: 0 // 去掉边框
+            },
+            label: {
+              show: false // 不显示标签文字
+            },
+            tooltip: {
+              formatter: function(params) {
+                return `锤子线信号<br/>日期: ${params.data.value}`;
+              }
+            },
+            data: stockDetail.hummerDates ? stockDetail.hummerDates
+              .filter(date => dates.includes(date)) // 只显示当前图表范围内的日期
+              .map(date => {
+                // 找到对应日期的K线数据，获取最低价
+                const dateIndex = dates.indexOf(date);
+                const klineItem = klineData[dateIndex];
+                const minPrice = klineItem ? klineItem[2] : 0; // K线数据格式: [open, close, low, high]
+                
+                return {
+                  name: '锤子线',
+                  xAxis: date,
+                  yAxis: minPrice - (minPrice * 0.005), // 显示在最低价下方一点点
+                  value: date
+                };
+              }) : []
           }
         },
         ...maList.map(ma => ({
