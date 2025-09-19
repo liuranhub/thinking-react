@@ -1200,8 +1200,8 @@ const getWarmUpStockCodes = () => {
       yAxis: {
         scale: true,
         min: function(value) {
-          // 确保价格不为负，留出适当边距
-          return Math.max(0, value.min * 0.95).toFixed(1);
+          // 在dataMin基础上减少5%，允许显示负数
+          return Number(value.min * 0.95).toFixed(1);
         },
         max: function(value) {
           // 最大值增加适当边距
