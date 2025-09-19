@@ -127,6 +127,19 @@ const StockList = () => {
       stockTypes: ['BK'],
       showDateSelector: false // 妖股Tab不显示日期选择器
     },
+    hammer: {
+      key: 'hammer',
+      label: 'Hammer',
+      fieldConfigType: 'hammer',
+      operations: [{
+        modalType: MODAL_TYPE_CONFIRM,
+        name: "收藏",
+        handler: handleAddFavoriteClick,
+        width: 40
+      }],
+      stockTypes: ['MAIN'],
+      showDateSelector: false // 妖股Tab不显示日期选择器
+    },
     all: {
       key: 'all',
       label: '所有数据',
@@ -461,6 +474,16 @@ const StockList = () => {
         pageIndex: queryParams.pageIndex,
         tableName: "stock_data_analysis_latest_sector",
         keywords: queryParams.keywords,
+      });
+    } else if (activeTab === TAB_CONFIG.hammer.key) {
+      response = await axios.post(host + '/stock/stockDataAnalysisPageCommon', {
+        pageSize: queryParams.pageSize,
+        pageIndex: queryParams.pageIndex,
+        tableName: "stock_data_analysis_latest_hammer",
+        keywords: queryParams.keywords,
+        stockTypes: currentStockTypes,
+        orderByField: queryParams.orderByField,
+        orderRule: queryParams.orderRule,
       });
     } else if(activeTab === TAB_CONFIG.all.key) {
       response = await axios.post(host + '/stock/stockDataAnalysisPage', {
