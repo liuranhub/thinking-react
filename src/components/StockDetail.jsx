@@ -2399,42 +2399,6 @@ const getWarmUpStockCodes = () => {
                 <span style={{color: TEXT_COLOR, marginLeft: 8, cursor: 'pointer', textDecoration: 'underline dashed'}}>增量下跌: {declineResult.isDecline ? '是' : '否'}{declineResult.isDecline && `（${declineResult.scenario}）`}</span>
               </Tooltip>
             </div>
-            <div style={{marginTop: '4px', letterSpacing: 1}}>
-              <span style={{color: TEXT_COLOR}}>计算过程数据: </span>
-              
-              {/* 分析详情显示 */}
-              {apiScoreResult.analyserDetail && apiScoreResult.analyserDetail.length > 0 && (
-                <Tooltip
-                  title={
-                    <div style={{ fontSize: '12px', maxWidth: '800px' }}>
-                      {apiScoreResult.analyserDetail.map((detail, index) => (
-                        <div key={index} style={{ 
-                          marginBottom: '4px',
-                          lineHeight: '1.4',
-                          wordBreak: 'break-all'
-                        }}>
-                          {detail}
-                        </div>
-                      ))}
-                    </div>
-                  }
-                  color="#23263a"
-                  placement="topLeft"
-                  overlayStyle={{ maxWidth: '800px' }}
-                  getPopupContainer={trigger => trigger.parentNode}
-                >
-                  <span style={{
-                    color: '#11d1e4',
-                    cursor: 'pointer',
-                    textDecoration: 'underline dashed',
-                    fontSize: '11px',
-                    marginLeft: '8px'
-                  }}>
-                    分析详情
-                  </span>
-                </Tooltip>
-              )}
-            </div>
           </div>
           
           <div style={{width: '30vw'}}>
@@ -2468,6 +2432,38 @@ const getWarmUpStockCodes = () => {
                         <span style={{ color: '#1e90ff', fontSize: 12 }}>（合计：{formatNumber(score + extraScore)}）</span>
                       );
                     })()}
+
+                    {apiScoreResult.analyserDetail && apiScoreResult.analyserDetail.length > 0 && (
+                      <Tooltip
+                        title={
+                          <div style={{ fontSize: '12px', maxWidth: '800px' }}>
+                            {apiScoreResult.analyserDetail.map((detail, index) => (
+                              <div key={index} style={{ 
+                                marginBottom: '4px',
+                                lineHeight: '1.4',
+                                wordBreak: 'break-all'
+                              }}>
+                                {detail}
+                              </div>
+                            ))}
+                          </div>
+                        }
+                        color="#23263a"
+                        placement="topLeft"
+                        overlayStyle={{ maxWidth: '800px' }}
+                        getPopupContainer={trigger => trigger.parentNode}
+                      >
+                        <span style={{
+                          color: '#11d1e4',
+                          cursor: 'pointer',
+                          textDecoration: 'underline dashed',
+                          fontSize: '11px',
+                          marginLeft: '8px'
+                        }}>
+                          分析详情
+                        </span>
+                      </Tooltip>
+                    )}
                   </div>
                   <div style={{ fontSize: 12, display: 'flex', gap: '16px' }}>
                     {/* 主分数列表 */}
