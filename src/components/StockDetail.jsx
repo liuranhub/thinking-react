@@ -102,6 +102,7 @@ const StockDetail = () => {
   const [originalData, setOriginalData] = useState([]); // 保存原始K线数据
   const [apiScoreResult, setApiScoreResult] = useState({}); // API分数结果
   const [stockDetailLoaded, setStockDetailLoaded] = useState(false); // 股票详情加载状态
+  const [latestStockData, setLatestStockData] = useState(null); // 最新股价数据
   
   // 龙虎榜tooltip状态
   const [lhbTooltip, setLhbTooltip] = useState({ visible: false, x: 0, y: 0 });
@@ -690,8 +691,27 @@ const StockDetail = () => {
     }
   };
 
+  // 获取最新股价数据
+  const fetchLatestStockData = async () => {
+    if (!stockCode) return;
+    
+    try {
+      const resp = await fetch(API_HOST + `/stock/getStockKLineLatestData/${stockCode}`);
+      if (resp.ok) {
+        const latestData = await resp.json();
+        setLatestStockData(latestData);
+      } else {
+        setLatestStockData(null);
+      }
+    } catch (error) {
+      console.error('获取最新股价失败:', error);
+      setLatestStockData(null);
+    }
+  };
+
   useEffect(() => {
     fetchDetail();
+    fetchLatestStockData();
     // eslint-disable-next-line
   }, [stockCode, currentStock]);
 
@@ -954,7 +974,7 @@ const getWarmUpStockCodes = () => {
       tooltip: {
         trigger: 'axis',
         show: true,
-        alwaysShowContent: true,
+        alwaysShowContent: true, // 恢复默认行为
         renderMode: 'html', // 使用HTML渲染模式
         appendToBody: true, // 将tooltip渲染到body中
         position: function (point, params, dom, rect, size) {
@@ -1024,7 +1044,7 @@ const getWarmUpStockCodes = () => {
           `;
         }
       },
-      grid: { left: '45px', right: '0%', top: '5%', bottom: '5%' },
+      grid: { left: '45px', right: '15px', top: '5%', bottom: '5%' },
       xAxis: {
         type: 'category',
         data: dates,
@@ -1182,6 +1202,8 @@ const getWarmUpStockCodes = () => {
     };
     klineChart.setOption(klineOption);
     
+    
+    
     // 自定义缩放速度控制 - 降低到原来的一半
     let lastZoomTime = 0;
     let lastZoomRange = { start: 0, end: 100 };
@@ -1207,17 +1229,6 @@ const getWarmUpStockCodes = () => {
       }
     });
     
-    // 页面首次进入时显示最新一条数据的tooltip
-    setTimeout(() => {
-      if (dates.length > 0) {
-        const lastIndex = dates.length - 1;
-        klineChart.dispatchAction({
-          type: 'showTip',
-          seriesIndex: 0,
-          dataIndex: lastIndex
-        });
-      }
-    }, 100);
     
     // 鼠标双击K线图，立即设置结束日期
     klineChart.getZr().on('dblclick', function (params) {
@@ -1236,36 +1247,7 @@ const getWarmUpStockCodes = () => {
       }
     });
     
-    // 鼠标离开K线图区域时，显示最新一天的数据
-    klineChart.getZr().on('mouseout', function (params) {
-      if (dates.length > 0) {
-        const lastIndex = dates.length - 1;
-        // 增加延迟时间，避免与ECharts内部事件冲突
-        setTimeout(() => {
-          // 检查图表DOM是否存在
-          const chartDom = klineChart.getDom();
-          if (!chartDom) {
-            return; // 如果图表DOM不存在，直接返回
-          }
-          
-          // 检查鼠标是否真的离开了图表区域
-          const rect = chartDom.getBoundingClientRect();
-          const mouseX = params.offsetX;
-          const mouseY = params.offsetY;
-          
-          // 如果鼠标仍在图表区域内，不执行showTip
-          if (mouseX >= 0 && mouseX <= rect.width && mouseY >= 0 && mouseY <= rect.height) {
-            return;
-          }
-          
-          klineChart.dispatchAction({
-            type: 'showTip',
-            seriesIndex: 0,
-            dataIndex: lastIndex
-          });
-        }, 100); // 增加延迟到100ms
-      }
-    });
+    // 重复的mouseout事件处理已移除，统一在上面处理
     // 成交量图
     const volumeChart = echarts.init(document.getElementById('volume-chart'));
     volumeChart.group = chartGroupId;
@@ -1312,7 +1294,7 @@ const getWarmUpStockCodes = () => {
           // return `成交量: ${formattedValue}`;
         }
       },
-      grid: { left: '45px', right: '0%', top: '5%', bottom: '20%' },
+      grid: { left: '45px', right: '10px', top: '5%', bottom: '20%' },
       xAxis: {
         type: 'category',
         data: dates,
@@ -2239,6 +2221,45 @@ const getWarmUpStockCodes = () => {
             <div style={{display: 'flex', flexWrap: 'wrap'}}>
               <span style={{color: TEXT_COLOR}}>市值: <span style={{color: '#11d1e4'}}>{stockDetail.totalMarketValue ? Number(stockDetail.totalMarketValue / 100000000).toFixed(2): 0}亿</span></span>
             </div>
+            
+            {/* 最新股价信息 */}
+            {latestStockData && (
+              <div style={{display: 'flex', flexWrap: 'wrap', marginTop: '2px', gap: '16px'}}>
+                <span style={{color: TEXT_COLOR}}>
+                  最新价: 
+                  <span style={{
+                    color: latestStockData.zhangDieFu >= 0 ? '#ef232a' : '#14b143',
+                    fontWeight: 'bold',
+                    marginLeft: '4px'
+                  }}>
+                    {latestStockData.closePrice}
+                  </span>
+                </span>
+                
+                <span style={{color: TEXT_COLOR}}>
+                  涨跌幅: 
+                  <span style={{
+                    color: latestStockData.zhangDieFu >= 0 ? '#ef232a' : '#14b143',
+                    fontWeight: 'bold',
+                    marginLeft: '4px'
+                  }}>
+                    {latestStockData.zhangDieFu >= 0 ? '+' : ''}{latestStockData.zhangDieFu}%
+                  </span>
+                </span>
+                
+                <span style={{color: TEXT_COLOR}}>
+                  换手率: 
+                  <span style={{
+                    color: '#11d1e4',
+                    fontWeight: 'bold',
+                    marginLeft: '4px'
+                  }}>
+                    {latestStockData.huanShouLv}%
+                  </span>
+                </span>
+              </div>
+            )}
+            
             <div style={{display: 'flex', flexWrap: 'wrap'}}>
               <span style={{color: TEXT_COLOR}}>综合波动系数: <span style={{color: '#11d1e4'}}>{stockStats.volatility}</span></span>
               <span style={{color: TEXT_COLOR}}>(</span>
