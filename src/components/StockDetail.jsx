@@ -103,6 +103,7 @@ const StockDetail = () => {
   const [apiScoreResult, setApiScoreResult] = useState({}); // API分数结果
   const [stockDetailLoaded, setStockDetailLoaded] = useState(false); // 股票详情加载状态
   const [latestStockData, setLatestStockData] = useState(null); // 最新股价数据
+  const refreshTimerRef = useRef(null); // 刷新定时器引用
   
   // 龙虎榜tooltip状态
   const [lhbTooltip, setLhbTooltip] = useState({ visible: false, x: 0, y: 0 });
@@ -691,6 +692,32 @@ const StockDetail = () => {
     }
   };
 
+  // 判断是否在交易时间内
+  const isInTradingTime = () => {
+    const now = new Date();
+    const day = now.getDay(); // 0=周日, 1=周一, ..., 6=周六
+    
+    // 只在工作日（周一到周五）
+    if (day === 0 || day === 6) {
+      return false;
+    }
+    
+    const hours = now.getHours();
+    const minutes = now.getMinutes();
+    const currentTime = hours * 60 + minutes; // 转换为分钟数便于比较
+    
+    // 上午交易时间：9:30 - 11:30
+    const morningStart = 9 * 60 + 30; // 9:30
+    const morningEnd = 11 * 60 + 30;   // 11:30
+    
+    // 下午交易时间：13:00 - 15:00
+    const afternoonStart = 13 * 60;    // 13:00
+    const afternoonEnd = 15 * 60;      // 15:00
+    
+    return (currentTime >= morningStart && currentTime <= morningEnd) ||
+           (currentTime >= afternoonStart && currentTime <= afternoonEnd);
+  };
+
   // 获取最新股价数据
   const fetchLatestStockData = async () => {
     if (!stockCode) return;
@@ -700,6 +727,7 @@ const StockDetail = () => {
       if (resp.ok) {
         const latestData = await resp.json();
         setLatestStockData(latestData);
+        console.log('最新股价数据已更新:', latestData.closePrice);
       } else {
         setLatestStockData(null);
       }
@@ -709,11 +737,73 @@ const StockDetail = () => {
     }
   };
 
+  // 启动定时刷新
+  const startAutoRefresh = () => {
+    // 先清除现有定时器
+    if (refreshTimerRef.current) {
+      clearInterval(refreshTimerRef.current);
+    }
+    
+    // 如果在交易时间内，启动定时器
+    if (isInTradingTime()) {
+      console.log('启动定时刷新 - 当前在交易时间内');
+      refreshTimerRef.current = setInterval(() => {
+        if (isInTradingTime()) {
+          fetchLatestStockData();
+        } else {
+          console.log('已离开交易时间，停止定时刷新');
+          stopAutoRefresh();
+        }
+      }, 5000); // 5秒间隔
+    } else {
+      console.log('当前不在交易时间内，不启动定时刷新');
+    }
+  };
+
+  // 停止定时刷新
+  const stopAutoRefresh = () => {
+    if (refreshTimerRef.current) {
+      clearInterval(refreshTimerRef.current);
+      refreshTimerRef.current = null;
+      console.log('定时刷新已停止');
+    }
+  };
+
   useEffect(() => {
     fetchDetail();
     fetchLatestStockData();
+    
+    // 启动定时刷新
+    startAutoRefresh();
+    
+    // 清理函数：组件卸载或stockCode变化时清理定时器
+    return () => {
+      stopAutoRefresh();
+    };
     // eslint-disable-next-line
   }, [stockCode, currentStock]);
+
+  // 监听页面可见性变化，优化性能
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        // 页面隐藏时停止定时刷新
+        stopAutoRefresh();
+        console.log('页面隐藏，停止定时刷新');
+      } else {
+        // 页面显示时重启定时刷新
+        console.log('页面显示，重启定时刷新');
+        startAutoRefresh();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+    // eslint-disable-next-line
+  }, [stockCode]);
 
   const fetchStockData = async () => {
     try {
