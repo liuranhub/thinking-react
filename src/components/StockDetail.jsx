@@ -1064,7 +1064,7 @@ const getWarmUpStockCodes = () => {
       tooltip: {
         trigger: 'axis',
         show: true,
-        alwaysShowContent: true, // 恢复默认行为
+        alwaysShowContent: false, // 通过事件控制显示
         renderMode: 'html', // 使用HTML渲染模式
         appendToBody: true, // 将tooltip渲染到body中
         position: function (point, params, dom, rect, size) {
@@ -1129,9 +1129,6 @@ const getWarmUpStockCodes = () => {
                <div>成交量: ${chenJiaoLiangConvert(currentData.chenJiaoLiang ?? 0)}</div>
              </div>
             `;
-          return `
-              涨跌幅: <span style="color:${zhangDieFuColor};font-weight:bold">${Number(zhangDieFu).toFixed(2)}%</span>
-          `;
         }
       },
       grid: { left: '45px', right: '15px', top: '5%', bottom: '5%' },
