@@ -769,6 +769,41 @@ const StockDetail = () => {
     }
   };
 
+  // 检查最新K线日期是否有对应的hummerDates
+  const getLatestHammerDate = () => {
+    if (!stockDetail.hummerDates || !chartData.length) return null;
+    
+    const latestKLineDate = chartData[chartData.length - 1]?.date;
+    if (!latestKLineDate) return null;
+    
+    return stockDetail.hummerDates.find(item => item.date === latestKLineDate);
+  };
+
+  // 更新Hammer是否有效
+  const updateHammerEffective = async (date) => {
+    if (!stockCode || !date) return;
+    
+    try {
+      const response = await fetch(API_HOST + `/stock/updateHammerDateIsEffective/${stockCode}/${date}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        message.success('Hammer状态更新成功');
+        // 重新获取股票详情以更新数据
+        fetchDetail();
+      } else {
+        message.error('Hammer状态更新失败');
+      }
+    } catch (error) {
+      console.error('更新Hammer状态失败:', error);
+      message.error('Hammer状态更新失败');
+    }
+  };
+
   useEffect(() => {
     fetchDetail();
     fetchLatestStockData();
@@ -1229,10 +1264,6 @@ const getWarmUpStockCodes = () => {
             symbol: 'pin', // 使用pin形状，更加醒目
             symbolSize: 12,
             symbolRotate: 180, // 旋转180度，让针头指向下方（K线底部）
-            itemStyle: {
-              color: '#00FFFF', // 青色，在黑背景和红绿K线中很显眼
-              borderWidth: 0 // 去掉边框
-            },
             label: {
               show: false // 不显示标签文字
             },
@@ -1242,18 +1273,27 @@ const getWarmUpStockCodes = () => {
               }
             },
             data: stockDetail.hummerDates ? stockDetail.hummerDates
-              .filter(date => dates.includes(date)) // 只显示当前图表范围内的日期
-              .map(date => {
+              .filter(item => dates.includes(item.date)) // 只显示当前图表范围内的日期
+              .map(item => {
                 // 找到对应日期的K线数据，获取最低价
-                const dateIndex = dates.indexOf(date);
+                const dateIndex = dates.indexOf(item.date);
                 const klineItem = klineData[dateIndex];
                 const minPrice = klineItem ? klineItem[2] : 0; // K线数据格式: [open, close, low, high]
                 
+                // 根据effective字段确定颜色
+                const color = item.effective === 1 ? '#9932CC' : '#00FFFF'; // 有效为紫色，否则为青色
+                
                 return {
                   name: '锤子线',
-                  xAxis: date,
+                  xAxis: item.date,
                   yAxis: minPrice - (minPrice * 0.005), // 显示在最低价下方一点点
-                  value: date
+                  value: item.date,
+                  itemStyle: {
+                    color: color,
+                    borderWidth: 0
+                  },
+                  effective: item.effective,
+                  id: item.id
                 };
               }) : []
           }
@@ -2632,6 +2672,40 @@ const getWarmUpStockCodes = () => {
             >
               监控
             </button>
+            
+            {/* Hammer按钮 - 只在最新K线有对应hummerDates时显示 */}
+            {getLatestHammerDate() && (
+              <button
+                onClick={() => {
+                  const latestHammer = getLatestHammerDate();
+                  if (latestHammer) {
+                    updateHammerEffective(latestHammer.date);
+                  }
+                }}
+                style={{
+                  background: '#23263a',
+                  color: '#fff',
+                  border: '1px solid #444',
+                  borderRadius: '4px',
+                  padding: '4px 8px',
+                  fontSize: '12px',
+                  cursor: 'pointer',
+                  marginRight: '8px',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseOver={e => {
+                  e.target.style.background = '#2a2f3a';
+                  e.target.style.borderColor = '#ff6b35';
+                }}
+                onMouseOut={e => {
+                  e.target.style.background = '#23263a';
+                  e.target.style.borderColor = '#444';
+                }}
+                title="更新Hammer信号有效性"
+              >
+                Hammer
+              </button>
+            )}
             
             <span style={{marginRight: 0, color: '#fff'}}>均线:</span>
             <Select

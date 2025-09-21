@@ -143,7 +143,7 @@ const StockList = () => {
     hammerTest: {
       key: 'hammerTest',
       label: 'Test',
-      fieldConfigType: 'hammerTest',
+      fieldConfigType: 'simple',
       operations: [{
         modalType: MODAL_TYPE_CONFIRM,
         name: "收藏",
@@ -502,7 +502,7 @@ const StockList = () => {
       response = await axios.post(host + '/stock/stockDataAnalysisPageCommon', {
         pageSize: queryParams.pageSize,
         pageIndex: queryParams.pageIndex,
-        tableName: "stock_data_hammer_test",
+        tableName: "stock_data_analysis_hammer",
         keywords: queryParams.keywords,
         stockTypes: currentStockTypes,
         orderByField: queryParams.orderByField,
