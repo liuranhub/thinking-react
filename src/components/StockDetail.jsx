@@ -1162,6 +1162,7 @@ const getWarmUpStockCodes = () => {
                <div style="margin-bottom: 2px;">最高: ${currentData.maxPrice ?? '--'}</div>
                <div style="margin-bottom: 2px;">涨跌幅: <span style="color:${zhangDieFuColor};font-weight:bold">${Number(zhangDieFu).toFixed(2)}%</span></div>
                <div>成交量: ${chenJiaoLiangConvert(currentData.chenJiaoLiang ?? 0)}</div>
+               <div>Hammer总长度: ${Number((currentData.maxPrice - currentData.minPrice) / currentData.minPrice).toFixed(2)}</div>
              </div>
             `;
         }
@@ -1322,6 +1323,25 @@ const getWarmUpStockCodes = () => {
           tooltip: {
             formatter: function() {
               return `目标价格: ${stockDetail.breakBelowPriceWatch.targetPrice}`;
+            }
+          }
+        }] : []),
+        
+        // 最后一条数据最低价位线
+        ...(chartData.length > 0 ? [{
+          name: '最低价位线',
+          type: 'line',
+          data: new Array(dates.length).fill(chartData[chartData.length - 1].minPrice),
+          showSymbol: false,
+          lineStyle: { 
+            width: 1.2, 
+            color: '#444', 
+            type: 'dashed' 
+          },
+          emphasis: { lineStyle: { width: 1.2 } },
+          tooltip: {
+            formatter: function() {
+              return `最低价位: ${chartData[chartData.length - 1].minPrice}`;
             }
           }
         }] : [])
@@ -1835,15 +1855,11 @@ const getWarmUpStockCodes = () => {
     if (!magnifier.visible || magnifier.idx == null) return;
     const magDom = document.getElementById('magnifier-kline');
     if (!magDom) return;
-    // 取6个月区间（假设每月20个交易日，取120天）
-    const N = 120; // 6个月
+    // 从鼠标位置开始，向前移动60天的数据
+    const N = 60; // 60天
     const center = magnifier.idx;
-    let start = center;
-    let end = Math.min(chartData.length - 1, center + N - 1);
-    if (end - start + 1 < N) {
-      // 右侧不足N条，向左补足
-      start = Math.max(0, end - N + 1);
-    }
+    let start = Math.max(0, center - N + 1); // 从鼠标位置向前60天开始
+    let end = center; // 到鼠标位置结束
     const magData = chartData.slice(start, end + 1);
     if (!magData.length) return;
     const magDates = magData.map(d => d.date);
@@ -1918,13 +1934,10 @@ const getWarmUpStockCodes = () => {
   let magStartDate = '';
   let magEndDate = '';
   if (magnifier.visible && magnifier.idx != null && chartData.length > 0) {
-    const N = 120;
+    const N = 60;
     let center = magnifier.idx;
-    let start = center;
-    let end = Math.min(chartData.length - 1, center + N - 1);
-    if (end - start + 1 < N) {
-      start = Math.max(0, end - N + 1);
-    }
+    let start = Math.max(0, center - N + 1); // 从鼠标位置向前60天开始
+    let end = center; // 到鼠标位置结束
     magStartDate = chartData[start]?.date || '';
     magEndDate = chartData[end]?.date || '';
   }
@@ -1933,13 +1946,10 @@ const getWarmUpStockCodes = () => {
   let magLongBullCount = 0;
   let magDownLimitCount = 0;
   if (magnifier.visible && magnifier.idx != null && chartData.length > 0) {
-    const N = 120;
+    const N = 60;
     let center = magnifier.idx;
-    let start = center;
-    let end = Math.min(chartData.length - 1, center + N - 1);
-    if (end - start + 1 < N) {
-      start = Math.max(0, end - N + 1);
-    }
+    let start = Math.max(0, center - N + 1); // 从鼠标位置向前60天开始
+    let end = center; // 到鼠标位置结束
     const magData = chartData.slice(start, end + 1);
     const magStats = calcStockStats(magData);
     magLongBullCount = magStats.longBullCount;
@@ -3426,6 +3436,23 @@ const getWarmUpStockCodes = () => {
           </div>
         </div>
       )}
+      
+      {/* 左下角浮动文本 */}
+      <div style={{
+        position: 'fixed',
+        left: '20px',
+        bottom: '10px',
+        zIndex: 1000,
+        color: 'red',
+        fontWeight: 'bold',
+        fontSize: '12px',
+        fontFamily: 'Arial, sans-serif',
+        pointerEvents: 'none',
+        userSelect: 'none',
+        opacity: 0.7
+      }}>
+        不破不立
+      </div>
     </>
   );
 };
