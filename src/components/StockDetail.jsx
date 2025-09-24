@@ -809,7 +809,7 @@ const StockDetail = () => {
     fetchLatestStockData();
     
     // 启动定时刷新
-    startAutoRefresh();
+    // startAutoRefresh();
     
     // 清理函数：组件卸载或stockCode变化时清理定时器
     return () => {
@@ -869,7 +869,7 @@ const StockDetail = () => {
       const data = await response.json();
       // 解析紧凑数据格式：日期、OpenPrice、ClosePrice、MinPrice、MaxPrice、ChenJiaoLiang、ZhangDieFu
       const parsedData = data.map(item => {
-        const [date, openPrice, closePrice, minPrice, maxPrice, chenJiaoLiang, zhangDieFu] = item.split(',');
+        const [date, openPrice, closePrice, minPrice, maxPrice, chenJiaoLiang, zhangDieFu, huanShouLv] = item.split(',');
         return {
           date,
           openPrice: parseFloat(openPrice),
@@ -877,7 +877,8 @@ const StockDetail = () => {
           minPrice: parseFloat(minPrice),
           maxPrice: parseFloat(maxPrice),
           chenJiaoLiang: parseFloat(chenJiaoLiang),
-          zhangDieFu: parseFloat(zhangDieFu)
+          zhangDieFu: parseFloat(zhangDieFu),
+          huanShouLv: parseFloat(huanShouLv)
         };
       });
       const sorted = parsedData.slice().sort((a, b) => a.date.localeCompare(b.date));
@@ -1161,8 +1162,10 @@ const getWarmUpStockCodes = () => {
                <div style="margin-bottom: 2px;">最低: ${currentData.minPrice ?? '--'}</div>
                <div style="margin-bottom: 2px;">最高: ${currentData.maxPrice ?? '--'}</div>
                <div style="margin-bottom: 2px;">涨跌幅: <span style="color:${zhangDieFuColor};font-weight:bold">${Number(zhangDieFu).toFixed(2)}%</span></div>
+               <div style="margin-bottom: 2px;">换手率: <span style="color:#11d1e4;font-weight:bold">${Number(currentData.huanShouLv).toFixed(2)}%</span></div>
                <div>成交量: ${chenJiaoLiangConvert(currentData.chenJiaoLiang ?? 0)}</div>
                <div>Hammer总长度: ${Number((currentData.maxPrice - currentData.minPrice) / currentData.minPrice).toFixed(2)}</div>
+               <div>Hammer实体: ${Number(Math.abs(currentData.closePrice - currentData.openPrice) / Math.min(currentData.closePrice, currentData.openPrice)).toFixed(2)}</div>
              </div>
             `;
         }
