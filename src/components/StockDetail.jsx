@@ -1272,11 +1272,19 @@ const getWarmUpStockCodes = () => {
           },
           // 添加锤子线标记点
           markPoint: {
-            symbol: 'pin', // 使用pin形状，更加醒目
-            symbolSize: 12,
-            symbolRotate: 180, // 旋转180度，让针头指向下方（K线底部）
+            // symbol: 'pin', // 使用pin形状，更加醒目
+            // symbolSize: 12,
+            // symbolRotate: 180, // 旋转180度，让针头指向下方（K线底部）
             label: {
-              show: false // 不显示标签文字
+              show: true, // 显示标签文字
+              position: 'bottom',
+              distance: 0,
+              fontSize: 8,
+              fontWeight: 'bold',
+              color: 'red',
+              formatter: function(params) {
+                return params.data.type || 'N';
+              }
             },
             tooltip: {
               formatter: function(params) {
@@ -1294,18 +1302,19 @@ const getWarmUpStockCodes = () => {
                 // 根据effective字段确定颜色
                 const color = item.effective === 1 ? '#9932CC' : '#00FFFF'; // 有效为紫色，否则为青色
                 
-                return {
-                  name: '锤子线',
-                  xAxis: item.date,
-                  yAxis: minPrice - (minPrice * 0.005), // 显示在最低价下方一点点
-                  value: item.date,
-                  itemStyle: {
-                    color: color,
-                    borderWidth: 0
-                  },
-                  effective: item.effective,
-                  id: item.id
-                };
+                // return {
+                //   name: '锤子线',
+                //   xAxis: item.date,
+                //   yAxis: minPrice - (minPrice * 0.005), // 显示在最低价下方一点点
+                //   value: item.date,
+                //   itemStyle: {
+                //     color: color,
+                //     borderWidth: 0
+                //   },
+                //   effective: item.effective,
+                //   id: item.id,
+                //   type: item.type // 保存type字段
+                // };
               }) : []
           }
         },
