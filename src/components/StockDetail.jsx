@@ -19,6 +19,7 @@ const MA_CONFIG = [
     { key: 60, label: 'MA60', color: '#bdbdbd', default: false },
     { key: 120, label: 'MA120', color: '#1e90ff', default: true },
     { key: 250, label: 'MA250', color: '#ffd700', default: false },
+    { key: 500, label: 'MA500', color: '#ffd700', default: false },
   ];
 
 // 高亮标签关键词配置
@@ -48,7 +49,13 @@ let chartGroupId = 'stock-detail-group';
 
 function getDateNDaysAgo(dateStr, years) {
   const d = new Date(dateStr);
-  d.setFullYear(d.getFullYear() - years);
+  // 如果是小于1年的，按月份计算
+  if (years < 1) {
+    const months = Math.round(years * 12);
+    d.setMonth(d.getMonth() - months);
+  } else {
+    d.setFullYear(d.getFullYear() - years);
+  }
   return d.toISOString().slice(0, 10);
 }
 
@@ -2738,7 +2745,7 @@ const getWarmUpStockCodes = () => {
               size="small"
             />
             <span style={{marginLeft: 2, color: '#fff'}}>区间:</span>
-            {[1, 3, 5, 10, 20].map(y => (
+            {[0.5, 1, 3, 5, 10, 20].map(y => (
               <button
                 key={y}
                 onClick={() => handleRangeChange(y)}
@@ -2756,7 +2763,7 @@ const getWarmUpStockCodes = () => {
                   transition: 'all 0.2s',
                 }}
               >
-                {y}
+                {y === 0.5 ? '半年' : y}
               </button>
             ))}
             <button
