@@ -1272,20 +1272,6 @@ const getWarmUpStockCodes = () => {
           },
           // 添加锤子线标记点
           markPoint: {
-            symbol: 'pin', // 使用pin形状，更加醒目
-            symbolSize: 12,
-            symbolRotate: 180, // 旋转180度，让针头指向下方（K线底部）
-            label: {
-              show: true, // 显示标签文字
-              position: 'bottom',
-              distance: 0,
-              fontSize: 8,
-              fontWeight: 'bold',
-              color: 'red',
-              formatter: function(params) {
-                return params.data.type || 'N';
-              }
-            },
             tooltip: {
               formatter: function(params) {
                 return `锤子线信号<br/>日期: ${params.data.value}`;
@@ -1298,18 +1284,43 @@ const getWarmUpStockCodes = () => {
                 const dateIndex = dates.indexOf(item.date);
                 const klineItem = klineData[dateIndex];
                 const minPrice = klineItem ? klineItem[2] : 0; // K线数据格式: [open, close, low, high]
-                
+
                 // 根据effective字段确定颜色
                 const color = item.effective === 1 ? '#9932CC' : '#00FFFF'; // 有效为紫色，否则为青色
-                
+
+                // 如果type为'T'，不显示pin形状，只显示文字标签
+                const isTType = item.type === 'T';
+                const symbol = isTType ? 'circle' : 'pin';
+                const symbolSize = isTType ? 1 : 12;
+                const symbolRotate = isTType ? 0 : 180;
+
                 return {
                   name: '锤子线',
                   xAxis: item.date,
                   yAxis: minPrice - (minPrice * 0.005), // 显示在最低价下方一点点
                   value: item.date,
+                  symbol: symbol,
+                  symbolSize: symbolSize,
+                  symbolRotate: symbolRotate,
                   itemStyle: {
                     color: color,
                     borderWidth: 0
+                  },
+                  label: {
+                    show: true, // 确保文字标签显示
+                    position: 'bottom',
+                    distance: 0,
+                    fontSize: isTType ? 10 : 8, // T类型稍微大一点，确保可见
+                    fontWeight: 'bold',
+                    color: 'red',
+                    formatter: function(params) {
+                      return params.data.type || 'N';
+                    }
+                  },
+                  tooltip: {
+                    formatter: function(params) {
+                      return `锤子线信号<br/>日期: ${params.data.value}`;
+                    }
                   },
                   effective: item.effective,
                   id: item.id,
