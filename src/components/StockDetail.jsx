@@ -111,6 +111,8 @@ const StockDetail = () => {
   const [stockDetailLoaded, setStockDetailLoaded] = useState(false); // 股票详情加载状态
   const [latestStockData, setLatestStockData] = useState(null); // 最新股价数据
   const refreshTimerRef = useRef(null); // 刷新定时器引用
+  const [chartRefreshTrigger, setChartRefreshTrigger] = useState(0); // 图表刷新触发器
+  const [isCalculating, setIsCalculating] = useState(false); // 计算按钮加载状态
   
   // 龙虎榜tooltip状态
   const [lhbTooltip, setLhbTooltip] = useState({ visible: false, x: 0, y: 0 });
@@ -262,7 +264,7 @@ const StockDetail = () => {
       }
     }
   }, [stockCode]);
-  
+
   // 监控配置相关状态
   const [showWatchConfigModal, setShowWatchConfigModal] = useState(false);
   const [watchConfigForm] = Form.useForm();
@@ -603,7 +605,7 @@ const StockDetail = () => {
     if (chartData.length > 0 && stockDetailLoaded) {
       return renderCharts();
     }
-  }, [chartData, selectedMAs, stockDetailLoaded, stockDetail.breakBelowPriceWatch]);
+  }, [chartData, selectedMAs, stockDetailLoaded, stockDetail.breakBelowPriceWatch, chartRefreshTrigger]);
 
   // 获取API分数
   const fetchApiScore = async () => {
@@ -698,6 +700,43 @@ const StockDetail = () => {
       setStockDetailLoaded(true); // 即使异常也标记为已加载
     }
   };
+
+
+  // 计算股票数据功能
+  const handleCalculateStockData = useCallback(async () => {
+    const currentStockData = stockList[currentIndex] || {};
+    const currentStockCode = currentStockData.stockCode;
+    const currentDate = chartEndDate || currentStockData.date;
+
+    if (!currentStockCode || !currentDate) {
+      message.error('缺少股票代码或日期参数', 2);
+      return;
+    }
+
+    setIsCalculating(true); // 开始计算，设置加载状态
+
+    try {
+      const response = await fetch(`${API_HOST}/stock/stockDataAnalyserOne/${currentStockCode}/${currentDate}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        message.success('股票数据计算完成！', 2);
+        await fetchDetail();
+        setChartRefreshTrigger(Date.now());
+      } else {
+        message.error('计算失败，请稍后重试', 2);
+      }
+    } catch (error) {
+      console.error('计算股票数据失败:', error);
+      message.error('网络错误，计算失败', 2);
+    } finally {
+      setIsCalculating(false); // 计算完成，恢复按钮状态
+    }
+  }, [stockList, currentIndex, chartEndDate, API_HOST, fetchDetail]);
 
   // 判断是否在交易时间内
   const isInTradingTime = () => {
@@ -2126,6 +2165,14 @@ const getWarmUpStockCodes = () => {
 
   return (
     <>
+      <style>
+        {`
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}
+      </style>
       {loading && (
         <div style={{
           position: 'fixed', left: 0, top: 0, width: '100vw', height: '100vh',
@@ -2664,6 +2711,62 @@ const getWarmUpStockCodes = () => {
                 <path d="M15.5 19L9 12L15.5 5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </button>
+            {/* 计算按钮 */}
+            <button
+              onClick={handleCalculateStockData}
+              disabled={isCalculating}
+              style={{
+                width: '45px',
+                height: '20px',
+                marginRight: 8,
+                padding: '2px 8px',
+                background: isCalculating ? '#1a1a2e' : '#23263a',
+                color: isCalculating ? '#888' : '#fff',
+                border: `1px solid ${isCalculating ? '#333' : '#444'}`,
+                borderRadius: '3px',
+                cursor: isCalculating ? 'not-allowed' : 'pointer',
+                fontWeight: 'normal',
+                fontSize: '12px',
+                outline: 'none',
+                transition: 'all 0.2s',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                opacity: isCalculating ? 0.7 : 1,
+                position: 'relative',
+              }}
+              onMouseOver={e => {
+                if (!isCalculating) {
+                  e.target.style.background = '#333';
+                  e.target.style.borderColor = '#1e90ff';
+                }
+              }}
+              onMouseOut={e => {
+                if (!isCalculating) {
+                  e.target.style.background = '#23263a';
+                  e.target.style.borderColor = '#444';
+                }
+              }}
+              title={isCalculating ? "计算中..." : "计算股票数据"}
+            >
+              {isCalculating ? (
+                <>
+                  <div style={{
+                    width: '12px',
+                    height: '12px',
+                    border: '2px solid #333',
+                    borderTop: '2px solid #1e90ff',
+                    borderRadius: '50%',
+                    animation: 'spin 1s linear infinite',
+                    marginRight: '4px'
+                  }} />
+                  
+                </>
+              ) : (
+                '计算'
+              )}
+            </button>
+
             {/* 添加监控配置按钮 */}
             <button
               onClick={() => {
