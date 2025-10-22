@@ -11,6 +11,8 @@ export DANGEROUSLY_DISABLE_HOST_CHECK=true
 export NODE_ENV=production
 export BROWSER=none
 
+npm install
+
 npm run build
 
 BROWSER=none pm2 start npm --name "StockApp" -- run start --prefix ~/Software/thinking-react -- --env production
