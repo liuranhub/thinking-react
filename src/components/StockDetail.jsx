@@ -10,6 +10,7 @@ import '../App.css';
 import { pinyin } from 'pinyin-pro';
 import { API_HOST } from '../config/config';
 import dayjs from 'dayjs';
+import LoadingButton from './LoadingButton';
 
 const MA_CONFIG = [
     { key: 5, label: 'MA5', color: '#e4c441', default: false },
@@ -112,7 +113,7 @@ const StockDetail = () => {
   const [latestStockData, setLatestStockData] = useState(null); // 最新股价数据
   const refreshTimerRef = useRef(null); // 刷新定时器引用
   const [chartRefreshTrigger, setChartRefreshTrigger] = useState(0); // 图表刷新触发器
-  const [isCalculating, setIsCalculating] = useState(false); // 计算按钮加载状态
+  const [isLoading, setIsLoading] = useState(false); // 计算按钮加载状态
   
   // 龙虎榜tooltip状态
   const [lhbTooltip, setLhbTooltip] = useState({ visible: false, x: 0, y: 0 });
@@ -701,6 +702,12 @@ const StockDetail = () => {
     }
   };
 
+  const getBrowserHost = () => {
+    const { protocol, hostname, port } = window.location;
+    
+    return `${protocol}//${hostname}`;
+  }
+
 
   // 计算股票数据功能
   const handleCalculateStockData = useCallback(async () => {
@@ -713,10 +720,11 @@ const StockDetail = () => {
       return;
     }
 
-    setIsCalculating(true); // 开始计算，设置加载状态
+    setIsLoading(true); // 开始计算，设置加载状态
 
     try {
-      const response = await fetch(`${API_HOST}/stock/stockDataAnalyserOne/${currentStockCode}/${currentDate}`, {
+      const browserHostServer = getBrowserHost()+ ":18888";
+      const response = await fetch(`${browserHostServer}/stock/stockDataAnalyserOne/${currentStockCode}/${currentDate}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -734,7 +742,7 @@ const StockDetail = () => {
       console.error('计算股票数据失败:', error);
       message.error('网络错误，计算失败', 2);
     } finally {
-      setIsCalculating(false); // 计算完成，恢复按钮状态
+      setIsLoading(false); // 计算完成，恢复按钮状态
     }
   }, [stockList, currentIndex, chartEndDate, API_HOST, fetchDetail]);
 
@@ -2165,14 +2173,6 @@ const getWarmUpStockCodes = () => {
 
   return (
     <>
-      <style>
-        {`
-          @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-          }
-        `}
-      </style>
       {loading && (
         <div style={{
           position: 'fixed', left: 0, top: 0, width: '100vw', height: '100vh',
@@ -2712,60 +2712,19 @@ const getWarmUpStockCodes = () => {
               </svg>
             </button>
             {/* 计算按钮 */}
-            <button
+            <LoadingButton
               onClick={handleCalculateStockData}
-              disabled={isCalculating}
+              loading={isLoading}
+              loadingText=""
               style={{
                 width: '45px',
                 height: '20px',
                 marginRight: 8,
-                padding: '2px 8px',
-                background: isCalculating ? '#1a1a2e' : '#23263a',
-                color: isCalculating ? '#888' : '#fff',
-                border: `1px solid ${isCalculating ? '#333' : '#444'}`,
-                borderRadius: '3px',
-                cursor: isCalculating ? 'not-allowed' : 'pointer',
-                fontWeight: 'normal',
-                fontSize: '12px',
-                outline: 'none',
-                transition: 'all 0.2s',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                opacity: isCalculating ? 0.7 : 1,
-                position: 'relative',
               }}
-              onMouseOver={e => {
-                if (!isCalculating) {
-                  e.target.style.background = '#333';
-                  e.target.style.borderColor = '#1e90ff';
-                }
-              }}
-              onMouseOut={e => {
-                if (!isCalculating) {
-                  e.target.style.background = '#23263a';
-                  e.target.style.borderColor = '#444';
-                }
-              }}
-              title={isCalculating ? "计算中..." : "计算股票数据"}
+              title="计算股票数据"
             >
-              {isCalculating ? (
-                <>
-                  <div style={{
-                    width: '12px',
-                    height: '12px',
-                    border: '2px solid #333',
-                    borderTop: '2px solid #1e90ff',
-                    borderRadius: '50%',
-                    animation: 'spin 1s linear infinite',
-                    marginRight: '4px'
-                  }} />
-                  
-                </>
-              ) : (
-                '计算'
-              )}
-            </button>
+              计算
+            </LoadingButton>
 
             {/* 添加监控配置按钮 */}
             <button
