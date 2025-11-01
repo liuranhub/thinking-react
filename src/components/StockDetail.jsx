@@ -2866,7 +2866,7 @@ const getWarmUpStockCodes = () => {
               onMouseOver={e => e.target.style.background = '#333'}
               onMouseOut={e => e.target.style.background = '#23263a'}
             >
-              模拟上涨
+              模拟
             </button>
             <button
               onClick={handleReset}
@@ -2892,8 +2892,8 @@ const getWarmUpStockCodes = () => {
               <button
                 onClick={handleRemoveYaogu}
                 style={{
-                  marginLeft: 8,
-                  padding: '2px 12px',
+                  marginLeft: 4,
+                  padding: '2px 2px',
                   backgroundColor: '#ff4444',
                   color: '#fff',
                   border: '1px solid #ff4444',
@@ -2912,8 +2912,8 @@ const getWarmUpStockCodes = () => {
               <button
                 onClick={handleAddYaogu}
                 style={{
-                  marginLeft: 8,
-                  padding: '2px 12px',
+                  marginLeft: 4,
+                  padding: '2px 2px',
                   backgroundColor: '#23b14d',
                   color: '#fff',
                   border: '1px solid #23b14d',
