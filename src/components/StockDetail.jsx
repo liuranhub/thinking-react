@@ -88,7 +88,7 @@ const StockDetail = () => {
   const [chartData, setChartData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [selectedMAs, setSelectedMAs] = useState(MA_CONFIG.filter(ma => ma.default).map(ma => ma.key));
+  const [selectedMAs, setSelectedMAs] = useState(MA_CONFIG.find(ma => ma.default)?.key || null);
   // 区间选择：最近N年
   const [rangeYears, setRangeYears] = useState(10); // 默认5年
   const [chartEndDate, setChartEndDate] = useState('');
@@ -270,6 +270,9 @@ const StockDetail = () => {
   const [showWatchConfigModal, setShowWatchConfigModal] = useState(false);
   const [watchConfigForm] = Form.useForm();
   const [watchModelOptions, setWatchModelOptions] = useState([]);
+  
+  // 监听watchModel字段变化，用于联动显示targetPrice
+  const watchModel = Form.useWatch('watchModel', watchConfigForm);
 
   const [windowHeight, setWindowHeight] = useState(window.innerHeight);
   const [headerHeight, setHeaderHeight] = useState(calculateHeaderHeight());
@@ -1118,10 +1121,10 @@ const getWarmUpStockCodes = () => {
       // 只取区间内部分
       return result.slice(chartStartIdx, chartEndIdx + 1);
     }
-    const maList = MA_CONFIG.filter(ma => selectedMAs.includes(ma.key)).map(ma => ({
+    const maList = selectedMAs ? MA_CONFIG.filter(ma => ma.key === selectedMAs).map(ma => ({
       ...ma,
       data: calcMA(ma.key)
-    }));
+    })) : [];
     const dates = chartDates;
     const dataZoom = [
       {
@@ -2811,10 +2814,9 @@ const getWarmUpStockCodes = () => {
             
             <span style={{marginRight: 0, color: '#fff'}}>均线:</span>
             <Select
-              mode="multiple"
               value={selectedMAs}
               onChange={setSelectedMAs}
-              style={{ minWidth: 80, width: 110, height:25, background: '#181c26', color: '#fff', border: 'none' }}
+              style={{ minWidth: 50, width: 90, height:25, background: '#181c26', color: '#fff', border: 'none' }}
               dropdownStyle={{ background: '#23263a', color: '#fff' }}
               popupClassName="ma-select-dark"
               options={MA_CONFIG.map(ma => ({
@@ -2822,18 +2824,17 @@ const getWarmUpStockCodes = () => {
                 label: <span style={{ color: ma.color }}>{ma.label}</span>
               }))}
               placeholder="选择均线"
-              maxTagCount={2}
               bordered={false}
               size="small"
             />
-            <span style={{marginLeft: 2, color: '#fff'}}>区间:</span>
+            <span style={{marginLeft: 1, color: '#fff'}}>区间:</span>
             {[0.5, 1, 3, 5, 10, 20].map(y => (
               <button
                 key={y}
                 onClick={() => handleRangeChange(y)}
                 style={{
-                  marginLeft: 0,
-                  padding: '2px 8px',
+                  minWidth: '25px',
+                  padding: '2px 2px',
                   background: '#23263a',
                   color: '#fff',
                   border: rangeYears === y ? '2px solid #1e90ff' : '1px solid #444',
@@ -3060,23 +3061,25 @@ const getWarmUpStockCodes = () => {
             </Select>
           </Form.Item>
 
-          <Form.Item
-            name="targetPrice"
-            label="目标价格"
-            rules={[
-              { required: true, message: '请输入目标价格' },
-              {
-                validator: (_, value) => {
-                  if (value && parseFloat(value) <= 0) {
-                    return Promise.reject(new Error('目标价格必须大于0'));
+          {watchModel === 'BREAK_BELOW_PRICE' && (
+            <Form.Item
+              name="targetPrice"
+              label="目标价格"
+              rules={[
+                { required: true, message: '请输入目标价格' },
+                {
+                  validator: (_, value) => {
+                    if (value && parseFloat(value) <= 0) {
+                      return Promise.reject(new Error('目标价格必须大于0'));
+                    }
+                    return Promise.resolve();
                   }
-                  return Promise.resolve();
                 }
-              }
-            ]}
-          >
-            <Input placeholder="请输入目标价格" />
-          </Form.Item>
+              ]}
+            >
+              <Input placeholder="请输入目标价格" />
+            </Form.Item>
+          )}
 
           <Form.Item
             name="startDate"
