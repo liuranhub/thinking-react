@@ -140,6 +140,32 @@ const StockList = () => {
       stockTypes: ['MAIN'],
       showDateSelector: false // 妖股Tab不显示日期选择器
     },
+    possibleHammer: {
+      key: 'possibleHammer',
+      label: 'PHammer',
+      fieldConfigType: 'hammer',
+      operations: [{
+        modalType: MODAL_TYPE_CONFIRM,
+        name: "收藏",
+        handler: handleAddFavoriteClick,
+        width: 40
+      }],
+      stockTypes: ['MAIN'],
+      showDateSelector: false // 妖股Tab不显示日期选择器
+    },
+    preOrder: {
+      key: 'preOrder',
+      label: '预购',
+      fieldConfigType: 'preOrder',
+      operations: [{
+        modalType: MODAL_TYPE_CONFIRM,
+        name: "收藏",
+        handler: handleAddFavoriteClick,
+        width: 40
+      }],
+      stockTypes: ['MAIN','TECH','GEM'],
+      showDateSelector: false // 妖股Tab不显示日期选择器
+    },
     hammerTest: {
       key: 'hammerTest',
       label: 'Test',
@@ -498,7 +524,27 @@ const StockList = () => {
         orderByField: queryParams.orderByField,
         orderRule: queryParams.orderRule,
       });
-    }else if (activeTab === TAB_CONFIG.hammerTest.key) {
+    } else if (activeTab === TAB_CONFIG.possibleHammer.key) {
+      response = await axios.post(host + '/stock/stockDataAnalysisPageCommon', {
+        pageSize: queryParams.pageSize,
+        pageIndex: queryParams.pageIndex,
+        tableName: "stock_data_analysis_latest_possible_hammer",
+        keywords: queryParams.keywords,
+        stockTypes: currentStockTypes,
+        orderByField: queryParams.orderByField,
+        orderRule: queryParams.orderRule,
+      });
+    } else if (activeTab === TAB_CONFIG.preOrder.key) {
+      response = await axios.post(host + '/stock/stockDataAnalysisPageCommon', {
+        pageSize: queryParams.pageSize,
+        pageIndex: queryParams.pageIndex,
+        tableName: "stock_data_analysis_pre_order",
+        keywords: queryParams.keywords,
+        stockTypes: currentStockTypes,
+        orderByField: queryParams.orderByField,
+        orderRule: queryParams.orderRule,
+      });
+    } else if (activeTab === TAB_CONFIG.hammerTest.key) {
       response = await axios.post(host + '/stock/stockDataAnalysisPageCommon', {
         pageSize: queryParams.pageSize,
         pageIndex: queryParams.pageIndex,

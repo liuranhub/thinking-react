@@ -2092,6 +2092,40 @@ const getWarmUpStockCodes = () => {
   const stockStats = calcStockStats(chartData);
   const declineResult = incrementalDecline(chartData);
 
+  // 添加预购买
+  const handleAddPreOrder = async () => {
+    try {
+      const resp = await fetch(API_HOST + `/stock/addPreOrder/${stockCode}`, {
+        method: 'POST'
+      });
+      if (resp.ok) {
+        message.success('添加预购买成功！', 2);
+        await fetchDetail();
+      } else {
+        message.error('添加预购买失败', 2);
+      }
+    } catch (e) {
+      message.error('网络错误，添加预购买失败', 2);
+    }
+  };
+
+  // 取消预购买
+  const handleRemovePreOrder = async () => {
+    try {
+      const resp = await fetch(API_HOST + `/stock/removePreOrder/${stockCode}`, {
+        method: 'POST'
+      });
+      if (resp.ok) {
+        message.success('取消预购买成功！', 2);
+        await fetchDetail();
+      } else {
+        message.error('取消预购买失败', 2);
+      }
+    } catch (e) {
+      message.error('网络错误，取消预购买失败', 2);
+    }
+  };
+
   // 添加为妖股
   const handleAddYaogu = async () => {
     const stockName = chartData[0]?.stockName || currentStock.stockName || '';
@@ -2888,6 +2922,48 @@ const getWarmUpStockCodes = () => {
             >
               重置
             </button>
+            {/* 预购买操作按钮 */}
+            {stockDetail.preOrder ? (
+              <button
+                onClick={handleRemovePreOrder}
+                style={{
+                  marginLeft: 4,
+                  padding: '2px 2px',
+                  backgroundColor: '#ff4444',
+                  color: '#fff',
+                  border: '1px solid #ff4444',
+                  borderRadius: '3px',
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                  fontWeight: 'bold',
+                  transition: 'background 0.2s',  
+                }}
+                onMouseOver={e => e.target.style.backgroundColor = '#ff8888'}
+                onMouseOut={e => e.target.style.backgroundColor = '#ff4444'}
+              >
+                取消预购
+              </button>
+            ) : (
+              <button
+                onClick={handleAddPreOrder}
+                style={{
+                  marginLeft: 4,
+                  padding: '2px 2px',
+                  backgroundColor: '#23b14d',
+                  color: '#fff',
+                  border: '1px solid #23b14d',
+                  borderRadius: '3px',
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                  fontWeight: 'bold',
+                  transition: 'background 0.2s',
+                }}
+                onMouseOver={e => e.target.style.backgroundColor = '#4be37a'}
+                onMouseOut={e => e.target.style.backgroundColor = '#23b14d'}
+              >
+                添加预购
+              </button>
+            )}
             {/* 妖股操作按钮 */}
             {stockDetail.yaoGu ? (
               <button
