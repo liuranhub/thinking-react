@@ -2965,7 +2965,8 @@ const getWarmUpStockCodes = () => {
               </button>
             )}
             {/* 妖股操作按钮 */}
-            {stockDetail.yaoGu ? (
+            {/* 屏蔽妖股按钮--2025-11-08 */}
+            {/* {stockDetail.yaoGu ? (
               <button
                 onClick={handleRemoveYaogu}
                 style={{
@@ -3005,7 +3006,7 @@ const getWarmUpStockCodes = () => {
               >
                 添加妖股
               </button>
-            )}
+            )} */}
             <span style={{marginRight: 0, color: '#fff'}}>收藏:</span>
             <Rate
                 count={5}

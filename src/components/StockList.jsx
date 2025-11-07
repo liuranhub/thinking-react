@@ -127,6 +127,31 @@ const StockList = () => {
       stockTypes: ['BK'],
       showDateSelector: false // 妖股Tab不显示日期选择器
     },
+    all: {
+      key: 'all',
+      label: '所有数据',
+      fieldConfigType: 'simple',
+      operations: [{
+        modalType: MODAL_TYPE_CONFIRM,
+        name: "收藏",
+        handler: handleAddFavoriteClick,
+      }],
+      orderByField: 'stockCode',
+      orderRule: 'ASC'
+    },
+    preOrder: {
+      key: 'preOrder',
+      label: '预购',
+      fieldConfigType: 'preOrder',
+      operations: [{
+        modalType: MODAL_TYPE_CONFIRM,
+        name: "收藏",
+        handler: handleAddFavoriteClick,
+        width: 40
+      }],
+      stockTypes: ['MAIN','TECH','GEM'],
+      showDateSelector: false // 妖股Tab不显示日期选择器
+    },
     hammer: {
       key: 'hammer',
       label: 'Hammer',
@@ -142,7 +167,7 @@ const StockList = () => {
     },
     possibleHammer: {
       key: 'possibleHammer',
-      label: 'PHammer',
+      label: 'PreHammer',
       fieldConfigType: 'hammer',
       operations: [{
         modalType: MODAL_TYPE_CONFIRM,
@@ -153,43 +178,18 @@ const StockList = () => {
       stockTypes: ['MAIN'],
       showDateSelector: false // 妖股Tab不显示日期选择器
     },
-    preOrder: {
-      key: 'preOrder',
-      label: '预购',
-      fieldConfigType: 'preOrder',
-      operations: [{
-        modalType: MODAL_TYPE_CONFIRM,
-        name: "收藏",
-        handler: handleAddFavoriteClick,
-        width: 40
-      }],
-      stockTypes: ['MAIN','TECH','GEM'],
-      showDateSelector: false // 妖股Tab不显示日期选择器
-    },
-    hammerTest: {
-      key: 'hammerTest',
-      label: 'Test',
+    incrementalDecline : {
+      key: 'incrementalDecline',
+      label: '增量下跌',
       fieldConfigType: 'simple',
       operations: [{
         modalType: MODAL_TYPE_CONFIRM,
         name: "收藏",
         handler: handleAddFavoriteClick,
         width: 40
-      }],
-      stockTypes: ['MAIN'],
-      showDateSelector: false // 妖股Tab不显示日期选择器
-    },
-    all: {
-      key: 'all',
-      label: '所有数据',
-      fieldConfigType: 'simple',
-      operations: [{
-        modalType: MODAL_TYPE_CONFIRM,
-        name: "收藏",
-        handler: handleAddFavoriteClick,
       }],
       orderByField: 'stockCode',
-      orderRule: 'ASC'
+      orderRule: 'asc'
     },
     favorites: {
       key: 'favorites',
@@ -221,23 +221,24 @@ const StockList = () => {
       orderByField: 'targetPriceIntervalPrecent',
       orderRule: 'ASC'
     },
-    yaogu: {
-      key: 'yaogu',
-      label: '妖股',
-      fieldConfigType: 'simple',
-      operations: [{
-        modalType: MODAL_TYPE_CONFIRM,
-        name: "不支持",
-        handler: handleNotSupportClick,
-        width: 40
-      }],
-      orderByField: 'stockCode',
-      orderRule: 'ASC',
-      showDateSelector: false // 妖股Tab不显示日期选择器
-    },
-    incrementalDecline : {
-      key: 'incrementalDecline',
-      label: '增量下跌',
+    // 屏蔽妖股列表
+    // yaogu: {
+    //   key: 'yaogu',
+    //   label: '妖股',
+    //   fieldConfigType: 'simple',
+    //   operations: [{
+    //     modalType: MODAL_TYPE_CONFIRM,
+    //     name: "不支持",
+    //     handler: handleNotSupportClick,
+    //     width: 40
+    //   }],
+    //   orderByField: 'stockCode',
+    //   orderRule: 'ASC',
+    //   showDateSelector: false // 妖股Tab不显示日期选择器
+    // },
+    hammerTest: {
+      key: 'hammerTest',
+      label: 'TEST',
       fieldConfigType: 'simple',
       operations: [{
         modalType: MODAL_TYPE_CONFIRM,
@@ -245,8 +246,8 @@ const StockList = () => {
         handler: handleAddFavoriteClick,
         width: 40
       }],
-      orderByField: 'stockCode',
-      orderRule: 'asc'
+      stockTypes: ['MAIN'],
+      showDateSelector: false // 妖股Tab不显示日期选择器
     }
   }), [handleAddFavoriteClick, handleRemoveFavoriteClick, handleNotSupportClick]);
 
@@ -608,7 +609,8 @@ const StockList = () => {
         orderByField: queryParams.orderByField,
         orderRule: queryParams.orderRule,
         fieldQuery: queryParams.fieldQueries,
-        matchedAlgorithm: "INCREMENTAL_DECLINE"
+        matchedAlgorithm: "INCREMENTAL_DECLINE",
+        dateType: "latest"
       });
     }
     
@@ -1257,7 +1259,8 @@ const StockList = () => {
           >
             高级搜索
           </Button> */}
-          <select 
+          {/* 屏蔽表头下拉 */}
+          {/* <select 
             value={queryParams.stockFieldConfigType} 
             onChange={(e) => updateQueryParams({ stockFieldConfigType: e.target.value })}
             style={{width: '70px',}}
@@ -1267,7 +1270,7 @@ const StockList = () => {
                 {option}
               </option>
             ))}
-          </select>
+          </select> */}
 
           {/* 日期选择，根据Tab配置决定是否显示 */}
           {TAB_CONFIG[activeTab]?.showDateSelector !== false && (
