@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import * as echarts from 'echarts';
 import { calcStockStats, incrementalDecline, calcScore } from '../utils/calcVolatility';
-import { message, Select, Spin, Rate, Tooltip, Modal, Form, DatePicker, Input, Button } from 'antd';
+import { message, Select, Spin, Rate, Tooltip, Modal, Form, DatePicker, Input, Button, Tag } from 'antd';
 import { CopyOutlined } from '@ant-design/icons';
 import ReactMarkdown from 'react-markdown';
 import 'antd/dist/reset.css';
@@ -47,6 +47,8 @@ const RED = '#ef232a';
 const GREEN = '#14b143';
 
 let chartGroupId = 'stock-detail-group';
+
+const mottoTags = ['不破不立', '等待'];
 
 function getDateNDaysAgo(dateStr, years) {
   const d = new Date(dateStr);
@@ -3609,11 +3611,11 @@ const getWarmUpStockCodes = () => {
         </div>
       )}
       
-      {/* 左下角浮动文本 */}
+      {/* 顶部提示标签 */}
       <div style={{
         position: 'fixed',
         left: '20px',
-        bottom: '10px',
+        bottom: '5px',
         zIndex: 1000,
         color: 'red',
         fontWeight: 'bold',
@@ -3623,7 +3625,56 @@ const getWarmUpStockCodes = () => {
         userSelect: 'none',
         opacity: 0.7
       }}>
-        不破不立
+          {Array.isArray(mottoTags) && mottoTags.length > 0 && (() => {
+            // 获取标签颜色
+            const getTagColor = (tag) => {
+              for (const cfg of HIGHLIGHT_TAG_CONFIG) {
+                if (tag.includes(cfg.tagName)) {
+                  return cfg.color;
+                }
+              }
+              return null;
+            };
+            
+            // 渲染标签
+            const renderTag = (tag, idx, isHighlight = false) => {
+              const color = getTagColor(tag);
+              return (
+                <span key={`${tag}-${idx}-${isHighlight ? 'highlight' : 'normal'}`} style={{
+                  background: color ? color + '22' : BG_COLOR,
+                  color: 'red',
+                  borderRadius: '12px',
+                  padding: '2px 3px',
+                  fontSize: '12px',
+                  marginRight: '8px',
+                  marginBottom: '4px',
+                  display: 'inline-block',
+                  border: color ? `1px solid ${color}` : '1px solid #444',
+                  fontWeight: color ? 'bold' : 'normal',
+                }}>{tag}</span>
+              );
+            };
+            
+            // 找出高亮标签
+            const highlightTags = [];
+            const normalTags = [];
+            
+            mottoTags.forEach(tag => {
+              // 如果标签有颜色，则添加到高亮标签中
+              // if (getTagColor(tag)) {
+              //   highlightTags.push(tag);
+              // } else {
+              //   normalTags.push(tag);
+              // }
+              normalTags.push(tag);
+            });
+            
+            // 先渲染高亮标签，再渲染普通标签
+            return [
+              ...highlightTags.map((tag, idx) => renderTag(tag, idx, true)),
+              ...normalTags.map((tag, idx) => renderTag(tag, idx, false))
+            ];
+          })()}
       </div>
     </>
   );
