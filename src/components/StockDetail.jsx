@@ -1393,8 +1393,8 @@ const getWarmUpStockCodes = () => {
           data: ma.data,
           smooth: true,
           showSymbol: false,
-          lineStyle: { width: 1, color: ma.color },
-          emphasis: { lineStyle: { width: 1 } },
+          lineStyle: { width: 0.8, color: ma.color },
+          emphasis: { lineStyle: { width: 0.8 } },
         })),
         // 目标价格虚线
         ...(shouldShowTargetPriceLine ? [{
@@ -1417,7 +1417,7 @@ const getWarmUpStockCodes = () => {
         
         // 最后一条数据最低价位线
         ...(chartData.length > 0 ? [{
-          name: '最低价位线',
+          name: '当前价位线',
           type: 'line',
           data: new Array(dates.length).fill(chartData[chartData.length - 1].minPrice),
           showSymbol: false,
@@ -2856,8 +2856,8 @@ const getWarmUpStockCodes = () => {
             
             <span style={{marginRight: 0, color: '#fff'}}>均线:</span>
             <Select
-              value={selectedMAs}
-              onChange={setSelectedMAs}
+              value={selectedMAs ?? undefined}
+              onChange={value => setSelectedMAs(value ?? null)}
               style={{ minWidth: 50, width: 90, height:25, background: '#181c26', color: '#fff', border: 'none' }}
               dropdownStyle={{ background: '#23263a', color: '#fff' }}
               popupClassName="ma-select-dark"
@@ -2868,6 +2868,7 @@ const getWarmUpStockCodes = () => {
               placeholder="选择均线"
               bordered={false}
               size="small"
+              allowClear
             />
             <span style={{marginLeft: 1, color: '#fff'}}>区间:</span>
             {[0.5, 1, 3, 5, 10, 20].map(y => (
