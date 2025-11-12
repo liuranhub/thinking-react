@@ -11,6 +11,10 @@ import { pinyin } from 'pinyin-pro';
 import { API_HOST } from '../config/config';
 import dayjs from 'dayjs';
 import LoadingButton from './LoadingButton';
+import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
+
+dayjs.extend(isSameOrBefore);
+
 
 const MA_CONFIG = [
     { key: 5, label: 'MA5', color: '#e4c441', default: false },
@@ -1148,6 +1152,8 @@ const getWarmUpStockCodes = () => {
     // K线图
     const klineChart = echarts.init(document.getElementById('kline-chart'));
     klineChart.group = chartGroupId;
+    const latestKlineDate = dates.length > 0 ? dates[dates.length - 1] : null;
+    const shouldShowTargetPriceLine = rangeYears > 1 && !!stockDetail.breakBelowPriceWatch && (!stockDetail.breakBelowPriceWatch.startDate || !latestKlineDate || dayjs(stockDetail.breakBelowPriceWatch.startDate).isSameOrBefore(dayjs(latestKlineDate)));
     const klineOption = {
       backgroundColor: BG_COLOR,
       title: {
@@ -1391,17 +1397,17 @@ const getWarmUpStockCodes = () => {
           emphasis: { lineStyle: { width: 1 } },
         })),
         // 目标价格虚线
-        ...(stockDetail.breakBelowPriceWatch ? [{
+        ...(shouldShowTargetPriceLine ? [{
           name: '目标价格',
           type: 'line',
           data: new Array(dates.length).fill(stockDetail.breakBelowPriceWatch.targetPrice),
           showSymbol: false,
           lineStyle: { 
-            width: 1, 
+            width: 0.8, 
             color: 'red', 
             type: 'dashed' 
           },
-          emphasis: { lineStyle: { width: 1 } },
+          emphasis: { lineStyle: { width: 0.8 } },
           tooltip: {
             formatter: function() {
               return `目标价格: ${stockDetail.breakBelowPriceWatch.targetPrice}`;
@@ -1416,11 +1422,11 @@ const getWarmUpStockCodes = () => {
           data: new Array(dates.length).fill(chartData[chartData.length - 1].minPrice),
           showSymbol: false,
           lineStyle: { 
-            width: 1.2, 
+            width: 0.8, 
             color: '#444', 
             type: 'dashed' 
           },
-          emphasis: { lineStyle: { width: 1.2 } },
+          emphasis: { lineStyle: { width: 0.8 } },
           tooltip: {
             formatter: function() {
               return `最低价位: ${chartData[chartData.length - 1].minPrice}`;
