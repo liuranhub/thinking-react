@@ -2520,65 +2520,6 @@ const getWarmUpStockCodes = () => {
           <div style={{display: 'flex', alignItems: 'flex-start', flexWrap: 'wrap', flexDirection: 'column', 
                         width: '30vw', textAlign: 'left'}}>
 
-            {/* 购买checkList - 只在preOrder为true时显示 */}
-            {stockDetail.preOrder && (
-              <div style={{marginBottom: '12px'}}>
-                <div style={{display: 'flex', flexWrap: 'wrap', gap: '16px'}}>
-                  {CHECK_LIST_ITEMS.map((itemName) => {
-                    // 确保checkListStatus存在，如果为空则使用空对象
-                    const checkListStatus = stockDetail.checkListStatus || {};
-                    // 如果checkListStatus为空或该字段不存在，默认为false
-                    const isChecked = Boolean(checkListStatus[itemName]);
-                    
-                    return (
-                      <div 
-                        key={itemName}
-                        style={{
-                          display: 'flex',
-                          flexDirection: 'column',
-                          alignItems: 'center',
-                          gap: '4px',
-                          cursor: 'pointer'
-                        }}
-                        onClick={() => handleUpdateCheckList(itemName, !isChecked)}
-                      >
-                        {/* 第一行：检查项目名 */}
-                        <div style={{
-                          color: TEXT_COLOR,
-                          fontSize: '12px',
-                          textAlign: 'center'
-                        }}>
-                          {itemName}
-                        </div>
-                        {/* 第二行：红绿灯状态 */}
-                        <div
-                          style={{
-                            width: '12px',
-                            height: '12px',
-                            borderRadius: '50%',
-                            backgroundColor: isChecked ? GREEN : '#666',
-                            border: `2px solid ${isChecked ? GREEN : '#666'}`,
-                            transition: 'all 0.2s'
-                          }}
-                          onMouseOver={(e) => {
-                            if (!isChecked) {
-                              e.target.style.backgroundColor = '#888';
-                              e.target.style.borderColor = '#888';
-                            }
-                          }}
-                          onMouseOut={(e) => {
-                            if (!isChecked) {
-                              e.target.style.backgroundColor = '#666';
-                              e.target.style.borderColor = '#666';
-                            }
-                          }}
-                        />
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
             <div style={{display: 'flex', flexWrap: 'wrap'}}>
               <span style={{color: TEXT_COLOR}}>市值: <span style={{color: '#11d1e4'}}>{stockDetail.totalMarketValue ? Number(stockDetail.totalMarketValue / 100000000).toFixed(2): 0}亿</span></span>
             </div>
@@ -3127,6 +3068,76 @@ const getWarmUpStockCodes = () => {
                 style={{ color: '#ffd700', fontSize: 16 }}
             />
           </div>
+          
+          {/* 购买checkList - 只在preOrder为true时显示，位于工具栏下方 */}
+          {stockDetail.preOrder && (
+            <div style={{
+              position: 'absolute',
+              top: 48,
+              right: 10,
+              zIndex: 10,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 16,
+              background: 'rgba(35,38,58,0.5)',
+              borderRadius: 6,
+              padding: '6px 14px',
+              boxShadow: '0 2px 8px #0003',
+            }}>
+              {CHECK_LIST_ITEMS.map((itemName) => {
+                // 确保checkListStatus存在，如果为空则使用空对象
+                const checkListStatus = stockDetail.checkListStatus || {};
+                // 如果checkListStatus为空或该字段不存在，默认为false
+                const isChecked = Boolean(checkListStatus[itemName]);
+                
+                return (
+                  <div 
+                    key={itemName}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      cursor: 'pointer'
+                    }}
+                    onClick={() => handleUpdateCheckList(itemName, !isChecked)}
+                  >
+                    {/* 检查项目名 */}
+                    <span style={{
+                      color: TEXT_COLOR,
+                      fontSize: '12px',
+                      whiteSpace: 'nowrap'
+                    }}>
+                      {itemName}:
+                    </span>
+                    {/* 红绿灯状态 */}
+                    <div
+                      style={{
+                        width: '12px',
+                        height: '12px',
+                        borderRadius: '50%',
+                        backgroundColor: isChecked ? RED : '#666',
+                        border: `2px solid ${isChecked ? RED : '#666'}`,
+                        transition: 'all 0.2s',
+                        flexShrink: 0
+                      }}
+                      onMouseOver={(e) => {
+                        if (!isChecked) {
+                          e.target.style.backgroundColor = '#888';
+                          e.target.style.borderColor = '#888';
+                        }
+                      }}
+                      onMouseOut={(e) => {
+                        if (!isChecked) {
+                          e.target.style.backgroundColor = '#666';
+                          e.target.style.borderColor = '#666';
+                        }
+                      }}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          )}
           {/* K线图区域 */}
           <div style={{ 
             flex: '5',
