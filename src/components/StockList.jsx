@@ -588,17 +588,6 @@ const StockList = () => {
         orderRule: queryParams.orderRule,
         fieldQuery: queryParams.fieldQueries
       });
-    } else if (activeTab === TAB_CONFIG.yaogu.key) {
-      response = await axios.post(host + '/stock/stockDataYaoguPage', {
-        pageSize: queryParams.pageSize,
-        pageIndex: queryParams.pageIndex,
-        date: queryParams.date,
-        keywords: queryParams.keywords,
-        stockTypes: currentStockTypes,
-        orderByField: queryParams.orderByField,
-        orderRule: queryParams.orderRule,
-        fieldQuery: queryParams.fieldQueries
-      });
     } else if (activeTab === TAB_CONFIG.incrementalDecline.key) {
       response = await axios.post(host + '/stock/stockDataAnalysisPage', {
         pageSize: queryParams.pageSize,

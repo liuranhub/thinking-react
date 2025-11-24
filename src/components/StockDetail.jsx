@@ -50,6 +50,9 @@ const TEXT_COLOR = '#fff';
 const RED = '#ef232a';
 const GREEN = '#14b143';
 
+// checkList项目配置
+const CHECK_LIST_ITEMS = ['金针探底', '增量下跌', '长阳线', '高活跃度'];
+
 let chartGroupId = 'stock-detail-group';
 
 const mottoTags = ['不破不立', '等待'];
@@ -2134,6 +2137,45 @@ const getWarmUpStockCodes = () => {
     }
   };
 
+  // 更新checkList状态
+  const handleUpdateCheckList = async (itemName, newStatus) => {
+    if (!stockCode) return;
+    
+    try {
+      // 获取当前的checkListStatus，如果没有则初始化为空对象
+      const currentCheckListStatus = stockDetail.checkListStatus || {};
+      
+      // 更新指定项目的状态
+      const updatedCheckListStatus = {
+        ...currentCheckListStatus,
+        [itemName]: newStatus
+      };
+      
+      const resp = await fetch(API_HOST + `/stock/updateCheckList`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          stockCode: stockCode,
+          checkListStatus: updatedCheckListStatus
+        })
+      });
+      
+      if (resp.ok) {
+        // 更新本地状态
+        setStockDetail(prev => ({
+          ...prev,
+          checkListStatus: updatedCheckListStatus
+        }));
+      } else {
+        message.error('更新失败', 2);
+      }
+    } catch (e) {
+      message.error('网络错误，更新失败', 2);
+    }
+  };
+
   // 添加为妖股
   const handleAddYaogu = async () => {
     const stockName = chartData[0]?.stockName || currentStock.stockName || '';
@@ -2197,7 +2239,7 @@ const getWarmUpStockCodes = () => {
     const parsed = parseFloat(num);
     if (isNaN(parsed)) return num;
     const decimalPlaces = (parsed.toString().split('.')[1] || '').length;
-    return decimalPlaces > 2 ? parsed.toFixed(2) : parsed.toString();
+    return decimalPlaces > 3 ? parsed.toFixed(3) : parsed.toString();
   };
 
   // 去除拼音声调
@@ -2477,6 +2519,66 @@ const getWarmUpStockCodes = () => {
           </div>
           <div style={{display: 'flex', alignItems: 'flex-start', flexWrap: 'wrap', flexDirection: 'column', 
                         width: '30vw', textAlign: 'left'}}>
+
+            {/* 购买checkList - 只在preOrder为true时显示 */}
+            {stockDetail.preOrder && (
+              <div style={{marginBottom: '12px'}}>
+                <div style={{display: 'flex', flexWrap: 'wrap', gap: '16px'}}>
+                  {CHECK_LIST_ITEMS.map((itemName) => {
+                    // 确保checkListStatus存在，如果为空则使用空对象
+                    const checkListStatus = stockDetail.checkListStatus || {};
+                    // 如果checkListStatus为空或该字段不存在，默认为false
+                    const isChecked = Boolean(checkListStatus[itemName]);
+                    
+                    return (
+                      <div 
+                        key={itemName}
+                        style={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          gap: '4px',
+                          cursor: 'pointer'
+                        }}
+                        onClick={() => handleUpdateCheckList(itemName, !isChecked)}
+                      >
+                        {/* 第一行：检查项目名 */}
+                        <div style={{
+                          color: TEXT_COLOR,
+                          fontSize: '12px',
+                          textAlign: 'center'
+                        }}>
+                          {itemName}
+                        </div>
+                        {/* 第二行：红绿灯状态 */}
+                        <div
+                          style={{
+                            width: '12px',
+                            height: '12px',
+                            borderRadius: '50%',
+                            backgroundColor: isChecked ? GREEN : '#666',
+                            border: `2px solid ${isChecked ? GREEN : '#666'}`,
+                            transition: 'all 0.2s'
+                          }}
+                          onMouseOver={(e) => {
+                            if (!isChecked) {
+                              e.target.style.backgroundColor = '#888';
+                              e.target.style.borderColor = '#888';
+                            }
+                          }}
+                          onMouseOut={(e) => {
+                            if (!isChecked) {
+                              e.target.style.backgroundColor = '#666';
+                              e.target.style.borderColor = '#666';
+                            }
+                          }}
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
             <div style={{display: 'flex', flexWrap: 'wrap'}}>
               <span style={{color: TEXT_COLOR}}>市值: <span style={{color: '#11d1e4'}}>{stockDetail.totalMarketValue ? Number(stockDetail.totalMarketValue / 100000000).toFixed(2): 0}亿</span></span>
             </div>
