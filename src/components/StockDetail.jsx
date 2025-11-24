@@ -3109,30 +3109,54 @@ const getWarmUpStockCodes = () => {
                     }}>
                       {itemName}:
                     </span>
-                    {/* 红绿灯状态 */}
+                    {/* 红绿灯状态 - true显示绿色勾，false显示红色叉 */}
                     <div
                       style={{
-                        width: '12px',
-                        height: '12px',
-                        borderRadius: '50%',
-                        backgroundColor: isChecked ? RED : '#666',
-                        border: `2px solid ${isChecked ? RED : '#666'}`,
-                        transition: 'all 0.2s',
-                        flexShrink: 0
+                        width: '16px',
+                        height: '16px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                        cursor: 'pointer'
                       }}
-                      onMouseOver={(e) => {
-                        if (!isChecked) {
-                          e.target.style.backgroundColor = '#888';
-                          e.target.style.borderColor = '#888';
-                        }
-                      }}
-                      onMouseOut={(e) => {
-                        if (!isChecked) {
-                          e.target.style.backgroundColor = '#666';
-                          e.target.style.borderColor = '#666';
-                        }
-                      }}
-                    />
+                    >
+                      {isChecked ? (
+                        // 绿色勾
+                        <svg
+                          width="16"
+                          height="16"
+                          viewBox="0 0 16 16"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            d="M13.5 4.5L6 12L2.5 8.5"
+                            stroke={GREEN}
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      ) : (
+                        // 红色叉
+                        <svg
+                          width="16"
+                          height="16"
+                          viewBox="0 0 16 16"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            d="M4 4L12 12M12 4L4 12"
+                            stroke={RED}
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      )}
+                    </div>
                   </div>
                 );
               })}
