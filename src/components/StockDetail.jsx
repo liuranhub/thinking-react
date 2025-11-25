@@ -3070,7 +3070,7 @@ const getWarmUpStockCodes = () => {
           </div>
           
           {/* 购买checkList - 只在preOrder为true时显示，位于工具栏下方 */}
-          {stockDetail.preOrder && (
+          {(
             <div style={{
               position: 'absolute',
               top: 48,
@@ -3112,8 +3112,8 @@ const getWarmUpStockCodes = () => {
                     {/* 红绿灯状态 - true显示绿色勾，false显示红色叉 */}
                     <div
                       style={{
-                        width: '16px',
-                        height: '16px',
+                        width: '14px',
+                        height: '14px',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -3124,8 +3124,8 @@ const getWarmUpStockCodes = () => {
                       {isChecked ? (
                         // 绿色勾
                         <svg
-                          width="16"
-                          height="16"
+                          width="14"
+                          height="14"
                           viewBox="0 0 16 16"
                           fill="none"
                           xmlns="http://www.w3.org/2000/svg"
@@ -3141,8 +3141,8 @@ const getWarmUpStockCodes = () => {
                       ) : (
                         // 红色叉
                         <svg
-                          width="16"
-                          height="16"
+                          width="14"
+                          height="14"
                           viewBox="0 0 16 16"
                           fill="none"
                           xmlns="http://www.w3.org/2000/svg"

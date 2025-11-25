@@ -247,6 +247,7 @@ const StockList = () => {
         width: 40
       }],
       stockTypes: ['MAIN'],
+      hiddle: true,
       showDateSelector: false // 妖股Tab不显示日期选择器
     }
   }), [handleAddFavoriteClick, handleRemoveFavoriteClick, handleNotSupportClick]);
