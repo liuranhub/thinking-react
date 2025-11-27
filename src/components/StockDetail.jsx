@@ -1049,8 +1049,7 @@ const getWarmUpStockCodes = () => {
   const handleReset = () => {
     setAllStockData(originalData);
     chartEndDateHistory.current.push(chartEndDateRef.current);
-    // setChartEndDate(currentStock.date);
-    setChartEndDate(kLineLatestDate);
+    setChartEndDate(currentStock.date);
     setRangeYears(10);
   };
 
