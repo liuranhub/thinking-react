@@ -950,7 +950,6 @@ const StockDetail = () => {
       const sorted = parsedData.slice().sort((a, b) => a.date.localeCompare(b.date));
       setAllStockData(sorted);
       setOriginalData(sorted);
-      setKLineLatestDate(sorted[sorted.length - 1].date); // 保存原始数据
     } catch (err) {
       setError(err.message);
     } finally {
