@@ -1229,7 +1229,9 @@ const StockList = () => {
       
       <div style={{ overflowY: 'hidden' }}>
         <div style={{ borderBottom: '1px solid #BEBEBE', marginBottom: '2px'}}>
-            {Object.entries(TAB_CONFIG).map(([tabKey, config]) => (
+            {Object.entries(TAB_CONFIG)
+              .filter(([tabKey, config]) => !config.hiddle) // 过滤掉hiddle为true的Tab
+              .map(([tabKey, config]) => (
               <button
                 key={tabKey}
                 onClick={() => handleTabChange(tabKey)}

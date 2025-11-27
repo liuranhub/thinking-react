@@ -815,7 +815,7 @@ const StockDetail = () => {
       console.log('启动定时刷新 - 当前在交易时间内');
       refreshTimerRef.current = setInterval(() => {
         if (isInTradingTime()) {
-          fetchLatestStockData();
+          // fetchLatestStockData();
         } else {
           console.log('已离开交易时间，停止定时刷新');
           stopAutoRefresh();
@@ -872,7 +872,7 @@ const StockDetail = () => {
 
   useEffect(() => {
     fetchDetail();
-    fetchLatestStockData();
+    // fetchLatestStockData();
     
     // 启动定时刷新
     // startAutoRefresh();
@@ -949,7 +949,8 @@ const StockDetail = () => {
       });
       const sorted = parsedData.slice().sort((a, b) => a.date.localeCompare(b.date));
       setAllStockData(sorted);
-      setOriginalData(sorted); // 保存原始数据
+      setOriginalData(sorted);
+      setKLineLatestDate(sorted[sorted.length - 1].date); // 保存原始数据
     } catch (err) {
       setError(err.message);
     } finally {
@@ -1048,7 +1049,8 @@ const getWarmUpStockCodes = () => {
   const handleReset = () => {
     setAllStockData(originalData);
     chartEndDateHistory.current.push(chartEndDateRef.current);
-    setChartEndDate(currentStock.date);
+    // setChartEndDate(currentStock.date);
+    setChartEndDate(kLineLatestDate);
     setRangeYears(10);
   };
 
