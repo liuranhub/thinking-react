@@ -117,6 +117,7 @@ const StockDetail = () => {
   const [isFavorite, setIsFavorite] = useState(false);
   const [favoriteStars, setFavoriteStars] = useState(3);
   const [originalData, setOriginalData] = useState([]); // 保存原始K线数据
+  const [kLineLatestDate, setKLineLatestDate] = useState(''); // 保存最新K线日期
   const [apiScoreResult, setApiScoreResult] = useState({}); // API分数结果
   const [stockDetailLoaded, setStockDetailLoaded] = useState(false); // 股票详情加载状态
   const [latestStockData, setLatestStockData] = useState(null); // 最新股价数据
@@ -497,9 +498,13 @@ const StockDetail = () => {
 
   // fetchStockData后自动重置结束日期为最新
   useEffect(() => {
-    setChartEndDate(currentStock.date);
-    chartEndDateHistory.current = [];
-  }, [currentStock]);
+    // 优先使用 kLineLatestDate，如果没有则使用 currentStock.date 作为后备
+    const targetDate = kLineLatestDate || currentStock.date;
+    if (targetDate) {
+      setChartEndDate(targetDate);
+      chartEndDateHistory.current = [];
+    }
+  }, [currentStock, kLineLatestDate]);
 
   // 获取监控模式选项
   const fetchWatchModelOptions = async () => {
@@ -950,6 +955,12 @@ const StockDetail = () => {
       const sorted = parsedData.slice().sort((a, b) => a.date.localeCompare(b.date));
       setAllStockData(sorted);
       setOriginalData(sorted);
+      
+      // 设置最新K线日期
+      if (sorted.length > 0) {
+        const latestDate = sorted[sorted.length - 1].date;
+        setKLineLatestDate(latestDate);
+      }
     } catch (err) {
       setError(err.message);
     } finally {
@@ -1048,7 +1059,11 @@ const getWarmUpStockCodes = () => {
   const handleReset = () => {
     setAllStockData(originalData);
     chartEndDateHistory.current.push(chartEndDateRef.current);
-    setChartEndDate(currentStock.date);
+    // 优先使用 kLineLatestDate
+    const targetDate = kLineLatestDate || currentStock.date;
+    if (targetDate) {
+      setChartEndDate(targetDate);
+    }
     setRangeYears(10);
   };
 
