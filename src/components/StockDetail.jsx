@@ -55,7 +55,7 @@ const CHECK_LIST_ITEMS = ['金针探底', '增量下跌', '长阳线', '高活�
 
 let chartGroupId = 'stock-detail-group';
 
-const mottoTags = ['不破不立', '等待'];
+const mottoTags = ['不破不立', '等待', '今日长缨在手,何时缚住苍龙'];
 
 function getDateNDaysAgo(dateStr, years) {
   const d = new Date(dateStr);
