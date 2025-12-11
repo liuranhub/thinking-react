@@ -4,7 +4,7 @@ import '../App.css';
 import { FixedSizeList as List } from 'react-window';
 import SearchModal from './SearchModal';
 
-import { Select, Dropdown, Button } from 'antd';
+import { Select, Dropdown, Button, message } from 'antd';
 import { DownOutlined } from '@ant-design/icons';
 import 'antd/dist/reset.css';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
@@ -345,6 +345,41 @@ const StockList = () => {
     link.click();
     document.body.removeChild(link);
   }, [data, activeTab, TAB_CONFIG]);
+
+  // 复制股票编码功能
+  const copyStockCodes = useCallback(async () => {
+    if (!data || data.length === 0) {
+      message.warning('没有股票数据可以复制');
+      return;
+    }
+
+    try {
+      // 提取所有股票编码，用逗号分隔
+      const stockCodes = data.map(row => row.stockCode).join(',');
+      
+      // 使用现代 Clipboard API
+      await navigator.clipboard.writeText(stockCodes);
+      message.success(`已复制 ${data.length} 个股票编码到剪贴板`, 2);
+    } catch (err) {
+      console.error('复制失败:', err);
+      // 降级方案：使用传统的复制方法
+      try {
+        const stockCodes = data.map(row => row.stockCode).join(',');
+        const textArea = document.createElement('textarea');
+        textArea.value = stockCodes;
+        textArea.style.position = 'fixed';
+        textArea.style.opacity = '0';
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        message.success(`已复制 ${data.length} 个股票编码到剪贴板`, 2);
+      } catch (fallbackErr) {
+        console.error('降级复制方案也失败:', fallbackErr);
+        message.error('复制失败，请重试', 2);
+      }
+    }
+  }, [data]);
   
   // 重构：Tab参数缓存 - 使用普通Map缓存不同Tab的queryParams
   const tabQueryParamCache = useRef(new Map());
@@ -1377,6 +1412,11 @@ const StockList = () => {
           <Dropdown
             menu={{
               items: [
+                {
+                  key: 'copy-stock-codes',
+                  label: '复制股票编码',
+                  onClick: copyStockCodes,
+                },
                 {
                   key: 'export',
                   label: '导出CSV',
