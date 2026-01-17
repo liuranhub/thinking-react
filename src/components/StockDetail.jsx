@@ -45,7 +45,7 @@ const HIGHLIGHT_TAG_CONFIG = [
     ];
 
 const BG_COLOR = '#181c26';
-const AXIS_COLOR = '#888ca0';
+const AXIS_COLOR = '#888993';
 const TEXT_COLOR = '#fff';
 const RED = '#ef232a';
 const GREEN = '#14b143';
