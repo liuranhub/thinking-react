@@ -291,8 +291,8 @@ const StockDetail = () => {
   }, []);
 
   function calculateHeaderHeight() {
-    return window.innerHeight > 600 ? window.innerHeight * 0.15 : '100px';
-    // return '100px';
+    return window.innerHeight > 600 ? window.innerHeight * 0.15 : 100;
+    // return 100;
   }
 
 
@@ -2054,7 +2054,7 @@ const getWarmUpStockCodes = () => {
         margin: 0,
         backgroundColor: BG_COLOR,
         color: TEXT_COLOR,
-        height: '100vh',
+        height: `${windowHeight}px`,
         width: '100vw',
         overflow: 'hidden',
         fontSize: '14px',
@@ -2534,7 +2534,7 @@ const getWarmUpStockCodes = () => {
           style={{ 
             display: 'flex', 
             flexDirection: 'column', 
-            height:  `${window.innerHeight - headerHeight - 20}px`,
+            height:  `${windowHeight - headerHeight - 16}px`,
             padding: '10px',
             gap: '10px',
             position: 'relative'
