@@ -279,11 +279,13 @@ const StockDetail = () => {
 
   const [windowHeight, setWindowHeight] = useState(window.innerHeight);
   const [headerHeight, setHeaderHeight] = useState(calculateHeaderHeight());
+  const [bottomHeight, setBottomHeight] = useState(calculateBottomHeight());
 
   useEffect(() => {
     const handleResize = () => {
       setWindowHeight(window.innerHeight);
       setHeaderHeight(calculateHeaderHeight());
+      setBottomHeight(calculateBottomHeight());
     };
 
     window.addEventListener('resize', handleResize);
@@ -293,6 +295,10 @@ const StockDetail = () => {
   function calculateHeaderHeight() {
     return window.innerHeight > 600 ? window.innerHeight * 0.15 : 100;
     // return 100;
+  }
+
+  function calculateBottomHeight() {
+    return 20;
   }
 
 
@@ -1569,23 +1575,9 @@ const getWarmUpStockCodes = () => {
         },
         backgroundColor: 'rgba(24,28,38,0.95)',
         borderColor: '#333',
-        textStyle: { color: TEXT_COLOR },
-        formatter: function (params) {
-          // const value = params[0].value;
-          // let formattedValue;
-          // if (value >= 100000000) {
-          //   formattedValue = (value / 100000000).toFixed(1) + '亿';
-          // } else if (value >= 10000000) {
-          //   formattedValue = (value / 10000000).toFixed(1) + '千万';
-          // } else if (value >= 10000) {
-          //   formattedValue = (value / 10000).toFixed(1) + '万';
-          // } else {
-          //   formattedValue = value.toFixed(0);
-          // }
-          // return `成交量: ${formattedValue}`;
-        }
+        textStyle: { color: TEXT_COLOR }
       },
-      grid: { left: '45px', right: '10px', top: '5%', bottom: '20%' },
+      grid: { left: '45px', right: '10px', top: '5%', bottom: '15%' },
       xAxis: {
         type: 'category',
         data: dates,
@@ -2300,9 +2292,9 @@ const getWarmUpStockCodes = () => {
                         width: '30vw', textAlign: 'left'}}>
             {/* 最新股价信息 */}
             {latestStockData && (
-              <div style={{display: 'flex', flexWrap: 'wrap', marginTop: '2px'}}>
+              <div style={{display: 'flex', flexWrap: 'wrap', marginTop: '2px', gap: '8px'}}>
                 <span style={{color: TEXT_COLOR}}>
-                  最新价: 
+                  股价:
                   <span style={{
                     color: latestStockData.zhangDieFu >= 0 ? '#ef232a' : '#14b143',
                     fontWeight: 'bold',
@@ -2313,7 +2305,7 @@ const getWarmUpStockCodes = () => {
                 </span>
                 
                 <span style={{color: TEXT_COLOR}}>
-                  涨跌幅: 
+                  涨跌:
                   <span style={{
                     color: latestStockData.zhangDieFu >= 0 ? '#ef232a' : '#14b143',
                     fontWeight: 'bold',
@@ -2324,18 +2316,18 @@ const getWarmUpStockCodes = () => {
                 </span>
                 
                 <span style={{color: TEXT_COLOR}}>
-                  换手率: 
+                  换:
                   <span style={{
                     color: '#11d1e4',
                     fontWeight: 'bold',
                     marginLeft: '4px'
-                  }}>{latestStockData.huanShouLv}%</span>
+                  }}>{formatNumber(latestStockData.huanShouLv, 1)}%</span>
                   |
                   <span style={{
                     color: '#11d1e4',
                     fontWeight: 'bold',
                     marginLeft: '4px'
-                  }}>{predictDailyTurnover(latestStockData.huanShouLv)}%</span>
+                  }}>{formatNumber(predictDailyTurnover(latestStockData.huanShouLv), 1)}%</span>
                   |
                   <span style={{
                     color: '#11d1e4',
@@ -2363,8 +2355,10 @@ const getWarmUpStockCodes = () => {
             <div style={{marginTop: '4px', letterSpacing: 1}}>
               <span style={{color: TEXT_COLOR}}>最近一年长阳线: <span style={{color: '#11d1e4'}}>{stockStats.longBullCount}</span></span>
             </div>
-            <div style={{marginTop: '4px', color: '#ffd700', letterSpacing: 1}}>
+            <dev>
               <span style={{color: TEXT_COLOR}}>最近一年跌停/一字跌停: <span style={{color: '#11d1e4'}}>{stockStats.downLimitCount}/{stockStats.lockedLimitDownCount}</span></span>
+            </dev>
+            <div style={{marginTop: '4px', color: '#ffd700', letterSpacing: 1}}>
               <Tooltip
                 title={
                   <div>
@@ -2395,7 +2389,7 @@ const getWarmUpStockCodes = () => {
                 overlayStyle={{ maxWidth: 400 }}
                 getPopupContainer={trigger => trigger.parentNode}
               >
-                <span style={{color: TEXT_COLOR, marginLeft: 8, cursor: 'pointer', textDecoration: 'underline dashed'}}>增量下跌: {declineResult.isDecline ? '是' : '否'}{declineResult.isDecline && `（${declineResult.scenario}）`}</span>
+                <span style={{color: TEXT_COLOR, cursor: 'pointer', textDecoration: 'underline dashed'}}>增量下跌: {declineResult.isDecline ? '是' : '否'}{declineResult.isDecline && `（${declineResult.scenario}）`}</span>
               </Tooltip>
             </div>
           </div>
@@ -2534,7 +2528,7 @@ const getWarmUpStockCodes = () => {
           style={{ 
             display: 'flex', 
             flexDirection: 'column', 
-            height:  `${windowHeight - headerHeight - 16}px`,
+            height:  `${windowHeight - headerHeight - bottomHeight}px`,
             padding: '10px',
             gap: '10px',
             position: 'relative'
@@ -2951,7 +2945,7 @@ const getWarmUpStockCodes = () => {
           )}
           {/* K线图区域 */}
           <div style={{ 
-            flex: '5',
+            flex: '50',
             backgroundColor: BG_COLOR,
             border: '1px solid #23263a',
             borderRadius: '4px'
@@ -2960,7 +2954,7 @@ const getWarmUpStockCodes = () => {
           </div>
           {/* 交易量图区域 */}
           <div style={{
-            flex: '2',
+            flex: '20',
             backgroundColor: BG_COLOR,
             border: '1px solid #23263a',
             borderRadius: '4px',
@@ -2970,6 +2964,73 @@ const getWarmUpStockCodes = () => {
             <div id="volume-chart" style={{ width: '100%', height: '100%' }}></div>
           </div>
         </div>
+        <div style={{
+          backgroundColor: BG_COLOR, 
+          width: '100%', 
+          height: {bottomHeight},
+          paddingLeft: '10px'
+          }}>
+            <div style={{
+              color: 'red',
+              fontWeight: 'bold',
+              fontSize: '12px',
+              fontFamily: 'Arial, sans-serif',
+              pointerEvents: 'none',
+              userSelect: 'none',
+              opacity: 0.7
+            }}>
+                {Array.isArray(mottoTags) && mottoTags.length > 0 && (() => {
+                  // 获取标签颜色
+                  const getTagColor = (tag) => {
+                    for (const cfg of HIGHLIGHT_TAG_CONFIG) {
+                      if (tag.includes(cfg.tagName)) {
+                        return cfg.color;
+                      }
+                    }
+                    return null;
+                  };
+                  
+                  // 渲染标签
+                  const renderTag = (tag, idx, isHighlight = false) => {
+                    const color = getTagColor(tag);
+                    return (
+                      <span key={`${tag}-${idx}-${isHighlight ? 'highlight' : 'normal'}`} style={{
+                        background: color ? color + '22' : BG_COLOR,
+                        color: 'red',
+                        borderRadius: '12px',
+                        padding: '2px 3px',
+                        fontSize: '12px',
+                        marginRight: '8px',
+                        marginBottom: '4px',
+                        display: 'inline-block',
+                        border: color ? `1px solid ${color}` : '1px solid #444',
+                        fontWeight: 'bold',
+                      }}>{tag}</span>
+                    );
+                  };
+                  
+                  // 找出高亮标签
+                  const highlightTags = [];
+                  const normalTags = [];
+                  
+                  mottoTags.forEach(tag => {
+                    // 如果标签有颜色，则添加到高亮标签中
+                    // if (getTagColor(tag)) {
+                    //   highlightTags.push(tag);
+                    // } else {
+                    //   normalTags.push(tag);
+                    // }
+                    normalTags.push(tag);
+                  });
+                  
+                  // 先渲染高亮标签，再渲染普通标签
+                  return [
+                    ...highlightTags.map((tag, idx) => renderTag(tag, idx, true)),
+                    ...normalTags.map((tag, idx) => renderTag(tag, idx, false))
+                  ];
+                })()}
+            </div>
+          </div>
       </div>
 
       {/* 添加监控配置弹窗 */}
@@ -3495,70 +3556,7 @@ const getWarmUpStockCodes = () => {
       )}
       
       {/* 顶部提示标签 */}
-      <div style={{
-        position: 'fixed',
-        left: '20px',
-        bottom: '5px',
-        zIndex: 1000,
-        color: 'red',
-        fontWeight: 'bold',
-        fontSize: '12px',
-        fontFamily: 'Arial, sans-serif',
-        pointerEvents: 'none',
-        userSelect: 'none',
-        opacity: 0.7
-      }}>
-          {Array.isArray(mottoTags) && mottoTags.length > 0 && (() => {
-            // 获取标签颜色
-            const getTagColor = (tag) => {
-              for (const cfg of HIGHLIGHT_TAG_CONFIG) {
-                if (tag.includes(cfg.tagName)) {
-                  return cfg.color;
-                }
-              }
-              return null;
-            };
-            
-            // 渲染标签
-            const renderTag = (tag, idx, isHighlight = false) => {
-              const color = getTagColor(tag);
-              return (
-                <span key={`${tag}-${idx}-${isHighlight ? 'highlight' : 'normal'}`} style={{
-                  background: color ? color + '22' : BG_COLOR,
-                  color: 'red',
-                  borderRadius: '12px',
-                  padding: '2px 3px',
-                  fontSize: '12px',
-                  marginRight: '8px',
-                  marginBottom: '4px',
-                  display: 'inline-block',
-                  border: color ? `1px solid ${color}` : '1px solid #444',
-                  fontWeight: 'bold',
-                }}>{tag}</span>
-              );
-            };
-            
-            // 找出高亮标签
-            const highlightTags = [];
-            const normalTags = [];
-            
-            mottoTags.forEach(tag => {
-              // 如果标签有颜色，则添加到高亮标签中
-              // if (getTagColor(tag)) {
-              //   highlightTags.push(tag);
-              // } else {
-              //   normalTags.push(tag);
-              // }
-              normalTags.push(tag);
-            });
-            
-            // 先渲染高亮标签，再渲染普通标签
-            return [
-              ...highlightTags.map((tag, idx) => renderTag(tag, idx, true)),
-              ...normalTags.map((tag, idx) => renderTag(tag, idx, false))
-            ];
-          })()}
-      </div>
+      
     </>
   );
 };
