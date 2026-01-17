@@ -22,7 +22,7 @@ const MA_CONFIG = [
     { key: 20, label: 'MA20', color: '#11d1e4', default: false },
     { key: 30, label: 'MA30', color: '#23b14d', default: false },
     { key: 60, label: 'MA60', color: '#bdbdbd', default: false },
-    { key: 120, label: 'MA120', color: '#1e90ff', default: true },
+    { key: 120, label: 'MA120', color: '#1e90ff', default: false },
     { key: 250, label: 'MA250', color: '#ffd700', default: false },
     { key: 500, label: 'MA500', color: '#ffd700', default: false },
   ];
@@ -799,12 +799,9 @@ const StockDetail = () => {
         const latestData = await resp.json();
         setLatestStockData(latestData);
         console.log('最新股价数据已更新:', latestData.closePrice);
-      } else {
-        setLatestStockData(null);
       }
     } catch (error) {
       console.error('获取最新股价失败:', error);
-      setLatestStockData(null);
     }
   };
 
@@ -815,21 +812,68 @@ const StockDetail = () => {
       clearInterval(refreshTimerRef.current);
     }
     
-    // 如果在交易时间内，启动定时器
-    if (isInTradingTime()) {
-      console.log('启动定时刷新 - 当前在交易时间内');
-      refreshTimerRef.current = setInterval(() => {
-        if (isInTradingTime()) {
-          // fetchLatestStockData();
-        } else {
-          console.log('已离开交易时间，停止定时刷新');
-          stopAutoRefresh();
-        }
-      }, 5000); // 5秒间隔
-    } else {
-      console.log('当前不在交易时间内，不启动定时刷新');
-    }
+    refreshTimerRef.current = setInterval(() => {
+      if(isInTradingTime()){
+        fetchLatestStockData();
+      }
+    }, 10000); // 10秒间隔
   };
+
+  function predictDailyTurnover(currentTR) {
+    const now = new Date();
+    const hour = now.getHours();
+    const minute = now.getMinutes();
+    const totalMinutesInDay = hour * 60 + minute;
+
+    // 1. 计算已交易分钟数 (elapsedMinutes)
+    let elapsedMinutes = 0;
+
+    // 开盘前: 09:30 之前
+    if (totalMinutesInDay < 570) { 
+        elapsedMinutes = 0; 
+    } 
+    // 上午场: 09:30 - 11:30 (共120分钟)
+    else if (totalMinutesInDay <= 690) {
+        elapsedMinutes = totalMinutesInDay - 570;
+    } 
+    // 午休时间: 11:30 - 13:00
+    else if (totalMinutesInDay < 780) {
+        elapsedMinutes = 120;
+    } 
+    // 下午场: 13:00 - 15:00 (共120分钟)
+    else if (totalMinutesInDay <= 900) {
+        elapsedMinutes = 120 + (totalMinutesInDay - 780);
+    } 
+    // 收盘后: 15:00 之后
+    else {
+        elapsedMinutes = 240;
+    }
+
+    if (elapsedMinutes <= 0) return 0;
+    if (elapsedMinutes >= 240) return currentTR;
+
+    // 2. 获取成交量累积权重 Ratio(t)
+    // 模拟 A 股 U 型成交量曲线 (早盘放量 -> 中间清淡 -> 尾盘回升)
+    let weightRatio = 0;
+
+    if (elapsedMinutes <= 30) {
+        // 前30分钟权重：占全天约 25%
+        weightRatio = (elapsedMinutes / 30) * 0.25;
+    } else if (elapsedMinutes <= 120) {
+        // 上午剩余90分钟权重：占全天约 30% (累计 55%)
+        weightRatio = 0.25 + ((elapsedMinutes - 30) / 90) * 0.30;
+    } else if (elapsedMinutes <= 210) {
+        // 下午前半段90分钟权重：占全天约 25% (累计 80%)
+        weightRatio = 0.55 + ((elapsedMinutes - 120) / 90) * 0.25;
+    } else {
+        // 最后30分钟权重：占全天约 20% (累计 100%)
+        weightRatio = 0.80 + ((elapsedMinutes - 210) / 30) * 0.20;
+    }
+
+    // 3. 计算公式: EstimatedTR = CurrentTR / Ratio(t)
+    const result = currentTR / weightRatio;
+    return parseFloat(result.toFixed(2));
+}
 
   // 停止定时刷新
   const stopAutoRefresh = () => {
@@ -877,10 +921,11 @@ const StockDetail = () => {
 
   useEffect(() => {
     fetchDetail();
-    // fetchLatestStockData();
+    setLatestStockData(null)
+    fetchLatestStockData();
     
     // 启动定时刷新
-    // startAutoRefresh();
+    startAutoRefresh();
     
     // 清理函数：组件卸载或stockCode变化时清理定时器
     return () => {
@@ -1757,29 +1802,29 @@ const getWarmUpStockCodes = () => {
       }
     };
     const handleKeyUp = (e) => {
-      if (e.key === 'Control') {
-        const duration = Date.now() - ctrlDownTime.current;
-        if (duration < 300) {
-          // 短按Ctrl，关闭放大镜功能
-          setIsMagnifierActive(false);
-          setMagnifier(m => ({ ...m, visible: false }));
-        } else {
-          // 长按Ctrl，激活放大镜功能
-          setIsMagnifierActive(true);
-          // 立即用当前鼠标位置显示放大镜
-          if (mouseInKline.current) {
-            const { x, y } = lastMousePositionRef.current;
-            const chart = echarts.getInstanceByDom(klineDom);
-            if (chart) {
-              const pointInGrid = chart.convertFromPixel({gridIndex: 0}, [x, y]);
-              const idx = Math.round(pointInGrid[0]);
-              if (idx >= 0 && idx < chartData.length) {
-                setMagnifier({ visible: true, x: x + klineDom.getBoundingClientRect().left, y: y + klineDom.getBoundingClientRect().top, idx });
-              }
-            }
-          }
-        }
-      }
+      // if (e.key === 'Control') {
+      //   const duration = Date.now() - ctrlDownTime.current;
+      //   if (duration < 300) {
+      //     // 短按Ctrl，关闭放大镜功能
+      //     setIsMagnifierActive(false);
+      //     setMagnifier(m => ({ ...m, visible: false }));
+      //   } else {
+      //     // 长按Ctrl，激活放大镜功能
+      //     setIsMagnifierActive(true);
+      //     // 立即用当前鼠标位置显示放大镜
+      //     if (mouseInKline.current) {
+      //       const { x, y } = lastMousePositionRef.current;
+      //       const chart = echarts.getInstanceByDom(klineDom);
+      //       if (chart) {
+      //         const pointInGrid = chart.convertFromPixel({gridIndex: 0}, [x, y]);
+      //         const idx = Math.round(pointInGrid[0]);
+      //         if (idx >= 0 && idx < chartData.length) {
+      //           setMagnifier({ visible: true, x: x + klineDom.getBoundingClientRect().left, y: y + klineDom.getBoundingClientRect().top, idx });
+      //         }
+      //       }
+      //     }
+      //   }
+      // }
     };
     
     // iPad触摸开始处理
@@ -2249,12 +2294,12 @@ const getWarmUpStockCodes = () => {
   };
 
   // 格式化数值函数
-  const formatNumber = (num) => {
+  const formatNumber = (num, length = 3) => {
     if (num === null || num === undefined || num === '') return num;
     const parsed = parseFloat(num);
     if (isNaN(parsed)) return num;
     const decimalPlaces = (parsed.toString().split('.')[1] || '').length;
-    return decimalPlaces > 3 ? parsed.toFixed(3) : parsed.toString();
+    return decimalPlaces > length ? parsed.toFixed(length) : parsed.toString();
   };
 
   // 去除拼音声调
@@ -2424,8 +2469,7 @@ const getWarmUpStockCodes = () => {
                 {stockDetail.aiAnalysisResult && stockDetail.aiAnalysisResult.content && (
                   <span 
                     style={{ 
-                      marginLeft: 16, 
-                      color: '#fff', 
+                      marginLeft: 16,
                       fontSize: '11px',
                       fontWeight: 'bold',
                       cursor: 'pointer',
@@ -2534,11 +2578,6 @@ const getWarmUpStockCodes = () => {
           </div>
           <div style={{display: 'flex', alignItems: 'flex-start', flexWrap: 'wrap', flexDirection: 'column', 
                         width: '30vw', textAlign: 'left'}}>
-
-            <div style={{display: 'flex', flexWrap: 'wrap'}}>
-              <span style={{color: TEXT_COLOR}}>市值: <span style={{color: '#11d1e4'}}>{stockDetail.totalMarketValue ? Number(stockDetail.totalMarketValue / 100000000).toFixed(2): 0}亿</span></span>
-            </div>
-            
             {/* 最新股价信息 */}
             {latestStockData && (
               <div style={{display: 'flex', flexWrap: 'wrap', marginTop: '2px', gap: '16px'}}>
@@ -2570,12 +2609,25 @@ const getWarmUpStockCodes = () => {
                     color: '#11d1e4',
                     fontWeight: 'bold',
                     marginLeft: '4px'
-                  }}>
-                    {latestStockData.huanShouLv}%
-                  </span>
+                  }}>{latestStockData.huanShouLv}%</span>
+                  |
+                  <span style={{
+                    color: '#11d1e4',
+                    fontWeight: 'bold',
+                    marginLeft: '4px'
+                  }}>{predictDailyTurnover(latestStockData.huanShouLv)}%</span>
+                  |
+                  <span style={{
+                    color: '#11d1e4',
+                    fontWeight: 'bold',
+                    marginLeft: '4px'
+                  }}>{formatNumber(stockDetail.avgHuanShouLv, 1)}%</span>
                 </span>
               </div>
             )}
+            <div style={{display: 'flex', flexWrap: 'wrap', fontWeight: 'bold',}}>
+              <span style={{color: TEXT_COLOR}}>市值: <span style={{color: '#11d1e4'}}>{stockDetail.totalMarketValue ? Number(stockDetail.totalMarketValue / 100000000).toFixed(2): 0}亿</span></span>
+            </div>
             
             <div style={{display: 'flex', flexWrap: 'wrap'}}>
               <span style={{color: TEXT_COLOR}}>综合波动系数: <span style={{color: '#11d1e4'}}>{stockStats.volatility}</span></span>
@@ -3809,7 +3861,7 @@ const getWarmUpStockCodes = () => {
                   marginBottom: '4px',
                   display: 'inline-block',
                   border: color ? `1px solid ${color}` : '1px solid #444',
-                  fontWeight: color ? 'bold' : 'normal',
+                  fontWeight: 'bold',
                 }}>{tag}</span>
               );
             };
