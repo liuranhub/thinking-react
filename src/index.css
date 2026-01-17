@@ -1,3 +1,24 @@
+/* iOS PWA 支持：确保背景色延伸到状态栏区域 */
+@supports (padding: env(safe-area-inset-top)) {
+  html {
+    /* 确保背景色覆盖整个视口，包括状态栏区域 */
+    background-color: var(--pwa-background-color, #ffffff);
+  }
+  
+  body {
+    /* 为顶部安全区域添加 padding，确保内容不被状态栏遮挡 */
+    padding-top: env(safe-area-inset-top);
+    background-color: inherit;
+  }
+}
+
+html {
+  /* 默认背景色 */
+  background-color: var(--pwa-background-color, #ffffff);
+  /* 确保背景色延伸到状态栏下方（当使用 black-translucent 时） */
+  height: 100%;
+}
+
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
@@ -5,6 +26,9 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* 确保背景色继承自 html */
+  background-color: inherit;
+  min-height: 100%;
 }
 
 code {
