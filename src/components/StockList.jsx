@@ -90,11 +90,11 @@ const StockList = () => {
       key: 'latestMain',
       label: '主板',
       fieldConfigType: 'simple',
-      operations: [{
-        modalType: MODAL_TYPE_CONFIRM,
-        name: "收藏",
-        handler: handleAddFavoriteClick,
-      }],
+      // operations: [{
+      //   modalType: MODAL_TYPE_CONFIRM,
+      //   name: "收藏",
+      //   handler: handleAddFavoriteClick,
+      // }],
       stockTypes: ['MAIN'],
       orderByField: 'score',
       orderRule: 'desc',
@@ -104,11 +104,11 @@ const StockList = () => {
       key: 'latestTechGem',
       label: '科创/创业',
       fieldConfigType: 'simple',
-      operations: [{
-        modalType: MODAL_TYPE_CONFIRM,
-        name: "收藏",
-        handler: handleAddFavoriteClick,
-      }],
+      // operations: [{
+      //   modalType: MODAL_TYPE_CONFIRM,
+      //   name: "收藏",
+      //   handler: handleAddFavoriteClick,
+      // }],
       stockTypes: ['TECH','GEM'],
       orderByField: 'score',
       orderRule: 'desc',
@@ -118,12 +118,12 @@ const StockList = () => {
       key: 'stockSector',
       label: '板块',
       fieldConfigType: 'stockSector',
-      operations: [{
-        modalType: MODAL_TYPE_CONFIRM,
-        name: "收藏",
-        handler: handleAddFavoriteClick,
-        width: 40
-      }],
+      // operations: [{
+      //   modalType: MODAL_TYPE_CONFIRM,
+      //   name: "收藏",
+      //   handler: handleAddFavoriteClick,
+      //   width: 40
+      // }],
       stockTypes: ['BK'],
       showDateSelector: false // 妖股Tab不显示日期选择器
     },
@@ -131,11 +131,11 @@ const StockList = () => {
       key: 'all',
       label: '所有数据',
       fieldConfigType: 'simple',
-      operations: [{
-        modalType: MODAL_TYPE_CONFIRM,
-        name: "收藏",
-        handler: handleAddFavoriteClick,
-      }],
+      // operations: [{
+      //   modalType: MODAL_TYPE_CONFIRM,
+      //   name: "收藏",
+      //   handler: handleAddFavoriteClick,
+      // }],
       orderByField: 'stockCode',
       orderRule: 'ASC'
     },
@@ -143,12 +143,12 @@ const StockList = () => {
       key: 'preOrder',
       label: '预购',
       fieldConfigType: 'preOrder',
-      operations: [{
-        modalType: MODAL_TYPE_CONFIRM,
-        name: "收藏",
-        handler: handleAddFavoriteClick,
-        width: 40
-      }],
+      // operations: [{
+      //   modalType: MODAL_TYPE_CONFIRM,
+      //   name: "收藏",
+      //   handler: handleAddFavoriteClick,
+      //   width: 40
+      // }],
       stockTypes: ['MAIN','TECH','GEM'],
       showDateSelector: false // 妖股Tab不显示日期选择器
     },
@@ -156,12 +156,12 @@ const StockList = () => {
       key: 'hammer',
       label: 'Hammer',
       fieldConfigType: 'hammer',
-      operations: [{
-        modalType: MODAL_TYPE_CONFIRM,
-        name: "收藏",
-        handler: handleAddFavoriteClick,
-        width: 40
-      }],
+      // operations: [{
+      //   modalType: MODAL_TYPE_CONFIRM,
+      //   name: "收藏",
+      //   handler: handleAddFavoriteClick,
+      //   width: 40
+      // }],
       stockTypes: ['MAIN'],
       showDateSelector: false // 妖股Tab不显示日期选择器
     },
@@ -169,12 +169,12 @@ const StockList = () => {
       key: 'possibleHammer',
       label: 'PreHammer',
       fieldConfigType: 'hammer',
-      operations: [{
-        modalType: MODAL_TYPE_CONFIRM,
-        name: "收藏",
-        handler: handleAddFavoriteClick,
-        width: 40
-      }],
+      // operations: [{
+      //   modalType: MODAL_TYPE_CONFIRM,
+      //   name: "收藏",
+      //   handler: handleAddFavoriteClick,
+      //   width: 40
+      // }],
       stockTypes: ['MAIN'],
       showDateSelector: false // 妖股Tab不显示日期选择器
     },
@@ -182,12 +182,12 @@ const StockList = () => {
       key: 'incrementalDecline',
       label: '增量下跌',
       fieldConfigType: 'simple',
-      operations: [{
-        modalType: MODAL_TYPE_CONFIRM,
-        name: "收藏",
-        handler: handleAddFavoriteClick,
-        width: 40
-      }],
+      // operations: [{
+      //   modalType: MODAL_TYPE_CONFIRM,
+      //   name: "收藏",
+      //   handler: handleAddFavoriteClick,
+      //   width: 40
+      // }],
       orderByField: 'stockCode',
       orderRule: 'asc'
     },
@@ -197,12 +197,12 @@ const StockList = () => {
       fieldConfigType: 'favorite',
       dateType: 'latest',
       showDateSelector: false,
-      operations: [{
-        modalType: MODAL_TYPE_CONFIRM,
-        name: "取消收藏",
-        handler: handleRemoveFavoriteClick,
-        width: 60
-      }],
+      // operations: [{
+      //   modalType: MODAL_TYPE_CONFIRM,
+      //   name: "取消收藏",
+      //   handler: handleRemoveFavoriteClick,
+      //   width: 60
+      // }],
       orderByField: 'stockCode',
       orderRule: 'ASC'
     },
@@ -211,12 +211,12 @@ const StockList = () => {
       label: '监控列表',
       fieldConfigType: 'watched',
       showDateSelector: false,
-      operations: [{
-        modalType: MODAL_TYPE_CONFIRM,
-        name: "收藏",
-        handler: handleAddFavoriteClick,
-        width: 40
-      }],
+      // operations: [{
+      //   modalType: MODAL_TYPE_CONFIRM,
+      //   name: "收藏",
+      //   handler: handleAddFavoriteClick,
+      //   width: 40
+      // }],
       stockTypes: ['MAIN'],
       orderByField: 'targetPriceIntervalPrecent',
       orderRule: 'ASC'
@@ -240,12 +240,12 @@ const StockList = () => {
       key: 'hammerTest',
       label: 'TEST',
       fieldConfigType: 'simple',
-      operations: [{
-        modalType: MODAL_TYPE_CONFIRM,
-        name: "收藏",
-        handler: handleAddFavoriteClick,
-        width: 40
-      }],
+      // operations: [{
+      //   modalType: MODAL_TYPE_CONFIRM,
+      //   name: "收藏",
+      //   handler: handleAddFavoriteClick,
+      //   width: 40
+      // }],
       stockTypes: ['MAIN'],
       hiddle: true,
       showDateSelector: false // 妖股Tab不显示日期选择器
