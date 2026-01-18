@@ -11,5 +11,6 @@
   "start_url": "/",
   "scope": "/",
   "display": "fullscreen",
-  "theme_color": "#ffffff"
+  "theme_color": "#181c26",
+  "background_color": "#181c26"
 }

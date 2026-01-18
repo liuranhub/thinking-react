@@ -293,12 +293,11 @@ const StockDetail = () => {
   }, []);
 
   function calculateHeaderHeight() {
-    return window.innerHeight > 600 ? window.innerHeight * 0.15 : 100;
-    // return 100;
+    return Math.max(window.innerHeight > 600 ? window.innerHeight * 0.15 : 125, 125);
   }
 
   function calculateBottomHeight() {
-    return 20;
+    return 30;
   }
 
 
@@ -2056,19 +2055,21 @@ const getWarmUpStockCodes = () => {
         {/* PAGE DIV*/}
         <div style={{
           // margin: '24px 0 12px 0',
-          padding: '8px 20px 8px 20px',
+          padding: '8px 20px 0px 20px',
           backgroundColor: BG_COLOR,
           borderRadius: '6px',
-          maxHeight: `${headerHeight}px`,
+          height: `${headerHeight}px`,
           border: 'none',
-          display: 'flex',
-          alignItems: 'flex-start',  // 改为置顶对齐
-          justifyContent: 'flex-start',  // 改为靠左对齐
+          display: 'flex', 
+          flexDirection: 'row',  // 改为横向排列
+          alignItems: 'flex-start',  // 垂直方向置顶对齐
+          justifyContent: 'flex-start',  // 水平方向靠左对齐
           fontSize: '12px',
-          flexWrap: 'wrap',
+          flexWrap: 'nowrap',  // 不换行，确保三个部分在同一行
+          gap: '10px',  // 添加间距
         }}>
-          {/* 股票基本信息 Header */}
-          <div style={{marginLeft: '0px', display: 'flex', alignItems: 'flex-start', width: '35vw', maxHeight: '10vh'}}>             
+          {/* 股票基本信息 Header - 第一部分 30% */}
+          <div style={{flex: '3.5', minWidth: 0, height: '100%', display: 'flex', alignItems: 'flex-start'}}>             
             {/* 股票基本信息 */}
             <div>
               {/* 股票名称 */}
@@ -2288,8 +2289,18 @@ const getWarmUpStockCodes = () => {
               </div>
             </div>
           </div>
-          <div style={{display: 'flex', alignItems: 'flex-start', flexWrap: 'wrap', flexDirection: 'column', 
-                        width: '30vw', textAlign: 'left'}}>
+          {/* 最新股价信息 - 第二部分 35% */}
+          <div style={
+            {flex: '3', 
+             minWidth: 0, 
+            //  height: '100%', 
+             display: 'flex', 
+             alignItems: 'flex-start', 
+            //  flexWrap: 'wrap', 
+             flexDirection: 'column', 
+             textAlign: 'left',
+             overflowY: 'auto',
+             overflowX: 'hidden',}}>
             {/* 最新股价信息 */}
             {latestStockData && (
               <div style={{display: 'flex', flexWrap: 'wrap', marginTop: '2px', gap: '8px'}}>
@@ -2358,7 +2369,7 @@ const getWarmUpStockCodes = () => {
             <dev>
               <span style={{color: TEXT_COLOR}}>最近一年跌停/一字跌停: <span style={{color: '#11d1e4'}}>{stockStats.downLimitCount}/{stockStats.lockedLimitDownCount}</span></span>
             </dev>
-            <div style={{marginTop: '4px', color: '#ffd700', letterSpacing: 1}}>
+            <div style={{color: TEXT_COLOR}}>
               <Tooltip
                 title={
                   <div>
@@ -2394,7 +2405,16 @@ const getWarmUpStockCodes = () => {
             </div>
           </div>
           
-          <div style={{width: '30vw'}}>
+          {/* 股票分数显示 - 第三部分 35% */}
+          <div style={
+            {flex: '3.5',
+             minWidth: 0, 
+             height: '100%', 
+             display: 'flex', 
+             flexDirection: 'column', 
+             overflowY: 'auto', 
+             overflowX: 'hidden'
+             }}>
             {/* 股票分数显示 */}
             {apiScoreResult && Object.keys(apiScoreResult).length > 0 && (() => {
               return (
@@ -2529,14 +2549,14 @@ const getWarmUpStockCodes = () => {
             display: 'flex', 
             flexDirection: 'column', 
             height:  `${windowHeight - headerHeight - bottomHeight}px`,
-            padding: '10px',
+            padding: '1px, 10px, 10px, 10px',
             gap: '10px',
             position: 'relative'
         }}>
           {/* 右上角操作区：MA线选择、区间选择、重置 */}
           <div style={{
             position: 'absolute',
-            top: 10,
+            top: 1,
             right: 10,
             zIndex: 10,
             display: 'flex',
@@ -2854,7 +2874,7 @@ const getWarmUpStockCodes = () => {
           {(
             <div style={{
               position: 'absolute',
-              top: 48,
+              top: 40,
               right: 10,
               zIndex: 10,
               display: 'flex',
@@ -2968,7 +2988,8 @@ const getWarmUpStockCodes = () => {
           backgroundColor: BG_COLOR, 
           width: '100%', 
           height: {bottomHeight},
-          paddingLeft: '10px'
+          // paddingLeft: '10px',
+          padding: '5px, 0px, 10px, 0px'
           }}>
             <div style={{
               color: 'red',

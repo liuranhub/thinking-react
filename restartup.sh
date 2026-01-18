@@ -15,5 +15,5 @@ npm install
 
 npm run build
 
-BROWSER=none pm2 start npm --name "StockApp" -- run start --prefix ~/Software/thinking-react -- --env production
+BROWSER=none pm2 start npm --name "StockApp" -- run start --prefix . -- --env production
 

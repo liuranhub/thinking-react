@@ -36,8 +36,8 @@ function PWAThemeController() {
     // 判断当前路由是否为详情页
     const isDetailPage = location.pathname.startsWith('/stock-detail');
     
-    // 详情页使用黑色主题，列表页使用白色主题
-    const themeColor = isDetailPage ? '#000000' : '#ffffff';
+    // 详情页使用与背景色一致的主题色（#181c26），列表页使用白色主题
+    const themeColor = isDetailPage ? '#181c26' : '#ffffff';
     const backgroundColor = isDetailPage ? '#181c26' : '#ffffff';
     
     // 更新或创建 theme-color meta 标签
