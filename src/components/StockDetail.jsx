@@ -1307,7 +1307,17 @@ const getWarmUpStockCodes = () => {
         boundaryGap: false,
         axisLine: { onZero: false, lineStyle: { color: AXIS_COLOR } },
         axisPointer: {
-          label: { show: false }  // 在 xAxis 中显式隐藏交叉点标签
+          label: { 
+            show: true,  // 显示X轴底部的日期标签
+            backgroundColor: '#23263a',
+            color: '#fff',
+            borderColor: '#444',
+            borderWidth: 1,
+            formatter: function(params) {
+              // 显示完整日期
+              return params.value || '';
+            }
+          }
         },
         // 屏蔽刻度线
         axisTick: { show: false }, 
@@ -1380,7 +1390,17 @@ const getWarmUpStockCodes = () => {
         },
         axisLine: { lineStyle: { color: AXIS_COLOR } },
         axisPointer: {
-          label: { show: false }  // 在 yAxis 中显式隐藏交叉点标签
+          label: { 
+            show: true,  // 显示Y轴左侧的价格标签
+            backgroundColor: '#23263a',
+            color: '#fff',
+            borderColor: '#444',
+            borderWidth: 1,
+            formatter: function(params) {
+              // 格式化价格显示，保留2位小数
+              return params.value.toFixed(2);
+            }
+          }
         },
         axisLabel: { color: TEXT_COLOR },
         splitLine: { lineStyle: { color: '#23263a' } },
@@ -1501,7 +1521,7 @@ const getWarmUpStockCodes = () => {
         ...(chartData.length > 0 ? [{
           name: '当前价位线',
           type: 'line',
-          data: new Array(dates.length).fill(chartData[chartData.length - 1].minPrice),
+          data: new Array(dates.length).fill(chartData[chartData.length - 1].closePrice),
           showSymbol: false,
           symbol: 'none',  // 明确设置不显示符号
           lineStyle: { 
@@ -1516,7 +1536,7 @@ const getWarmUpStockCodes = () => {
           },
           tooltip: {
             formatter: function() {
-              return `最低价位: ${chartData[chartData.length - 1].minPrice}`;
+              return `最低价位: ${chartData[chartData.length - 1].closePrice}`;
             }
           }
         }] : [])
@@ -1672,6 +1692,19 @@ const getWarmUpStockCodes = () => {
       yAxis: {
         scale: true,
         axisLine: { lineStyle: { color: AXIS_COLOR } },
+        axisPointer: {
+          label: { 
+            show: true,  // 显示Y轴左侧的交易量标签
+            backgroundColor: '#23263a',
+            color: '#fff',
+            borderColor: '#444',
+            borderWidth: 1,
+            formatter: function(params) {
+              // 格式化交易量显示
+              return chenJiaoLiangConvert(params.value);
+            }
+          }
+        },
         axisLabel: { 
           color: TEXT_COLOR,
           formatter: function(value) {
