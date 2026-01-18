@@ -1,44 +1,12 @@
-import React, { useState, useEffect, useMemo, memo, useCallback, useRef } from 'react';
+import React, {memo, useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import axios from 'axios';
 import '../App.css';
-import { FixedSizeList as List } from 'react-window';
-import SearchModal from './SearchModal';
+import {FixedSizeList as List} from 'react-window';
 
-import { Select, Dropdown, Button, message } from 'antd';
-import { DownOutlined } from '@ant-design/icons';
+import {Dropdown, message, Select} from 'antd';
 import 'antd/dist/reset.css';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { API_HOST } from '../config/config';
-
-class MutexLock {
-  constructor() {
-    this.locked = false;
-    this.queue = [];
-  }
-
-  acquire() {
-    return new Promise(resolve => {
-      if (!this.locked) {
-        this.locked = true;
-        resolve();
-      } else {
-        this.queue.push(resolve);
-      }
-    });
-  }
-
-  release() {
-    if (this.queue.length > 0) {
-      const nextResolver = this.queue.shift();
-      nextResolver();
-    } else {
-      this.locked = false;
-    }
-  }
-}
-
-// 创建一个全局锁实例
-const globalLock = new MutexLock();
+import {Link, useNavigate, useSearchParams} from 'react-router-dom';
+import {API_HOST} from '../config/config';
 
 const StockList = () => {
   const host = API_HOST;
