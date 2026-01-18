@@ -1235,6 +1235,7 @@ const getWarmUpStockCodes = () => {
         },
         axisPointer: {
           type: 'cross',
+          handle: { show: false },
           lineStyle: {
             color: '#444',
             width: 1.2,
@@ -1243,8 +1244,10 @@ const getWarmUpStockCodes = () => {
           crossStyle: {
             color: '#444',
             width: 1.2,
+            type: 'dashed'
           },
           label: {
+            show: false,  // 隐藏交叉点的圆点和标签
             backgroundColor: '#23263a',
             color: '#fff',
             borderColor: '#444',
@@ -1259,7 +1262,7 @@ const getWarmUpStockCodes = () => {
           // 添加节流控制
           throttle: 100,             // 增加节流到100ms，减少频繁更新
           // 添加防抖配置
-          snap: true,                // 启用吸附功能
+          snap: false,                // 启用吸附功能
           z: 10                      // 设置层级，避免与其他元素冲突
         },
         backgroundColor: 'rgba(24,28,38,0.3)',
@@ -1303,6 +1306,9 @@ const getWarmUpStockCodes = () => {
         scale: true,
         boundaryGap: false,
         axisLine: { onZero: false, lineStyle: { color: AXIS_COLOR } },
+        axisPointer: {
+          label: { show: false }  // 在 xAxis 中显式隐藏交叉点标签
+        },
         // 屏蔽刻度线
         axisTick: { show: false }, 
         axisLabel: {
@@ -1373,6 +1379,9 @@ const getWarmUpStockCodes = () => {
           return Number(value.max * 1.005).toFixed(1);
         },
         axisLine: { lineStyle: { color: AXIS_COLOR } },
+        axisPointer: {
+          label: { show: false }  // 在 yAxis 中显式隐藏交叉点标签
+        },
         axisLabel: { color: TEXT_COLOR },
         splitLine: { lineStyle: { color: '#23263a' } },
         splitArea: { show: false }
@@ -1454,8 +1463,14 @@ const getWarmUpStockCodes = () => {
           data: ma.data,
           smooth: true,
           showSymbol: false,
+          symbol: 'none',  // 明确设置不显示符号
           lineStyle: { width: 0.8, color: ma.color },
-          emphasis: { lineStyle: { width: 0.8 } },
+          emphasis: { 
+            scale: false, 
+            lineStyle: { width: 0.8 },
+            showSymbol: false,  // emphasis 状态也不显示符号
+            symbol: 'none'  // 明确设置不显示符号
+          },
         })),
         // 目标价格虚线
         ...(shouldShowTargetPriceLine ? [{
@@ -1463,12 +1478,18 @@ const getWarmUpStockCodes = () => {
           type: 'line',
           data: new Array(dates.length).fill(stockDetail.breakBelowPriceWatch.targetPrice),
           showSymbol: false,
+          symbol: 'none',  // 明确设置不显示符号
           lineStyle: { 
             width: 0.8, 
             color: 'red', 
             type: 'dashed' 
           },
-          emphasis: { lineStyle: { width: 0.8 } },
+          emphasis: {
+            scale: false, 
+            lineStyle: { width: 0.8 },
+            showSymbol: false,  // emphasis 状态也不显示符号
+            symbol: 'none'  // 明确设置不显示符号
+          },
           tooltip: {
             formatter: function() {
               return `目标价格: ${stockDetail.breakBelowPriceWatch.targetPrice}`;
@@ -1482,12 +1503,17 @@ const getWarmUpStockCodes = () => {
           type: 'line',
           data: new Array(dates.length).fill(chartData[chartData.length - 1].minPrice),
           showSymbol: false,
+          symbol: 'none',  // 明确设置不显示符号
           lineStyle: { 
             width: 0.8, 
             color: '#444', 
             type: 'dashed' 
           },
-          emphasis: { lineStyle: { width: 0.8 } },
+          emphasis: { 
+            lineStyle: { width: 0.8 },
+            showSymbol: false,  // emphasis 状态也不显示符号
+            symbol: 'none'  // 明确设置不显示符号
+          },
           tooltip: {
             formatter: function() {
               return `最低价位: ${chartData[chartData.length - 1].minPrice}`;
@@ -1556,6 +1582,7 @@ const getWarmUpStockCodes = () => {
         textStyle: { fontSize: 14, fontWeight: 'bold', color: TEXT_COLOR }
       },
       tooltip: {
+        showContent: false,
         trigger: 'axis',
         axisPointer: {
           type: 'cross',
