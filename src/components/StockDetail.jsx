@@ -2361,6 +2361,9 @@ const getWarmUpStockCodes = () => {
              textAlign: 'left',
              overflowY: 'auto',
              overflowX: 'hidden',}}>
+            <div style={{display: 'flex', flexWrap: 'wrap', fontWeight: 'bold',}}>
+              <span style={{color: TEXT_COLOR}}>市值: <span style={{color: '#11d1e4'}}>{stockDetail.totalMarketValue ? Number(stockDetail.totalMarketValue / 100000000).toFixed(2): 0}亿</span></span>
+            </div>
             {/* 最新股价信息 */}
             {latestStockData && (
               <div style={{display: 'flex', flexWrap: 'wrap', marginTop: '2px', gap: '8px'}}>
@@ -2376,7 +2379,7 @@ const getWarmUpStockCodes = () => {
                 </span>
                 
                 <span style={{color: TEXT_COLOR}}>
-                  涨跌:
+                  涨跌幅:
                   <span style={{
                     color: latestStockData.zhangDieFu >= 0 ? '#ef232a' : '#14b143',
                     fontWeight: 'bold',
@@ -2387,7 +2390,7 @@ const getWarmUpStockCodes = () => {
                 </span>
                 
                 <span style={{color: TEXT_COLOR}}>
-                  换:
+                  换手率:
                   <span style={{
                     color: '#11d1e4',
                     fontWeight: 'bold',
@@ -2408,17 +2411,26 @@ const getWarmUpStockCodes = () => {
                 </span>
               </div>
             )}
-            <div style={{display: 'flex', flexWrap: 'wrap', fontWeight: 'bold',}}>
-              <span style={{color: TEXT_COLOR}}>市值: <span style={{color: '#11d1e4'}}>{stockDetail.totalMarketValue ? Number(stockDetail.totalMarketValue / 100000000).toFixed(2): 0}亿</span></span>
-            </div>
             
-            <div style={{display: 'flex', flexWrap: 'wrap'}}>
-              <span style={{color: TEXT_COLOR}}>综合波动系数: <span style={{color: '#11d1e4'}}>{stockStats.volatility}</span></span>
-              <span style={{color: TEXT_COLOR}}>(</span>
-              <span style={{color: TEXT_COLOR}}>标准差: <span style={{color: '#11d1e4'}}>{stockStats.stdOverMean}</span></span>
-              <span style={{color: TEXT_COLOR}}>|</span>
-              <span style={{color: TEXT_COLOR}}>最大涨跌幅: <span style={{color: '#ff00ff'}}>{stockStats.maxFluct}</span></span>
-              <span style={{color: TEXT_COLOR}}>)</span>
+            <div style={{display: 'flex', flexWrap: 'wrap', gap: '8px'}}>
+              <span>价位 100天:</span>
+              <span style={{
+                color: '#11d1e4',
+                fontWeight: 'bold',
+                marginLeft: '4px'
+              }}>{currentStock.priceLevel100}%</span>
+              <span>200天:</span>
+              <span style={{
+                color: '#11d1e4',
+                fontWeight: 'bold',
+                marginLeft: '4px'
+              }}>{currentStock.priceLevel200}%</span>
+              <span>1000天：</span>
+              <span style={{
+                color: '#11d1e4',
+                fontWeight: 'bold',
+                marginLeft: '4px'
+              }}>{currentStock.priceLevel1000}%</span>
             </div>
             <div style={{display: 'flex', flexWrap: 'wrap'}}>
               <span style={{color: TEXT_COLOR}}>综合波动系数V2: <span style={{color: '#11d1e4'}}>{stockStats.volatilityV2?.volatility || 0}</span></span>
@@ -2574,10 +2586,10 @@ const getWarmUpStockCodes = () => {
                       <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
                         <thead>
                           <tr>
-                            <th style={{ textAlign: 'left', paddingRight: 6, paddingBottom: 4, fontSize: 10 }}>名称(附加分)</th>
-                            <th style={{ textAlign: 'left', paddingRight: 6, paddingBottom: 4, fontSize: 10 }}>原始值</th>
-                            <th style={{ textAlign: 'left', paddingBottom: 4, fontSize: 10, fontWeight: 'bold'}}>分数</th>
-                            <th style={{ textAlign: 'left', paddingBottom: 4, fontSize: 10 }}>权重</th>
+                            <th style={{ textAlign: 'left', paddingRight: 6, paddingBottom: 4, fontSize: 12 }}>名称(附加分)</th>
+                            <th style={{ textAlign: 'left', paddingRight: 6, paddingBottom: 4, fontSize: 12 }}>原始值</th>
+                            <th style={{ textAlign: 'left', paddingBottom: 4, fontSize: 12, fontWeight: 'bold'}}>分数</th>
+                            <th style={{ textAlign: 'left', paddingBottom: 4, fontSize: 12 }}>权重</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -2589,9 +2601,9 @@ const getWarmUpStockCodes = () => {
                               return (
                                 <tr key={key}>
                                   <td style={{ paddingBottom: 2, fontSize: 10 }}>{item?.name}</td>
-                                  <td style={{ textAlign: 'left', color: '#1e90ff', paddingBottom: 2, fontSize: 10 }}>{formatNumber(item?.value)}</td>
-                                  <td style={{ textAlign: 'left', color: '#ffd700', paddingBottom: 2, fontSize: 10, fontWeight: 'bold' }}>{formatNumber(item?.score)}</td>
-                                  <td style={{ textAlign: 'left', paddingBottom: 2, fontSize: 10 }}>{formatNumber(item?.weight)}</td>
+                                  <td style={{ textAlign: 'left', color: '#1e90ff', paddingBottom: 2, fontSize: 12 }}>{formatNumber(item?.value)}</td>
+                                  <td style={{ textAlign: 'left', color: '#ffd700', paddingBottom: 2, fontSize: 12, fontWeight: 'bold' }}>{formatNumber(item?.score)}</td>
+                                  <td style={{ textAlign: 'left', paddingBottom: 2, fontSize: 12 }}>{formatNumber(item?.weight)}</td>
                                 </tr>
                               );
                             })}
@@ -2775,7 +2787,7 @@ const getWarmUpStockCodes = () => {
               allowClear
             />
             <span style={{marginLeft: 1, color: '#fff'}}>区间:</span>
-            {[0.5, 1, 3, 5, 10, 20].map(y => (
+            {[0.5, 1, 2, 3, 5, 10, 20].map(y => (
               <button
                 key={y}
                 onClick={() => handleRangeChange(y)}
@@ -3048,8 +3060,7 @@ const getWarmUpStockCodes = () => {
           backgroundColor: BG_COLOR, 
           width: '100%', 
           height: {bottomHeight},
-          // paddingLeft: '10px',
-          padding: '5px, 0px, 10px, 0px'
+          marginTop: "5px",
           }}>
             <div style={{
               color: 'red',
