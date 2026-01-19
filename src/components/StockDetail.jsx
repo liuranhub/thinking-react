@@ -2724,12 +2724,12 @@ const getWarmUpStockCodes = () => {
                 // height: '24px',
               }}
               onMouseOver={e => {
-                e.target.style.background = '#333';
-                e.target.style.borderColor = hasWatchConfig() ? '#1e90ff' : '#666';
+                e.target.style.background = '#2a2f3a';
+                e.target.style.borderColor = '#1e90ff';
               }}
               onMouseOut={e => {
                 e.target.style.background = '#23263a';
-                e.target.style.borderColor = hasWatchConfig() ? '#1e90ff' : '#444';
+                e.target.style.borderColor = '#444';
               }}
               title={hasWatchConfig() ? '已有监控配置，点击修改' : '添加监控配置'}
             >
@@ -2758,7 +2758,7 @@ const getWarmUpStockCodes = () => {
                 }}
                 onMouseOver={e => {
                   e.target.style.background = '#2a2f3a';
-                  e.target.style.borderColor = '#ff6b35';
+                  e.target.style.borderColor = '#1e90ff';
                 }}
                 onMouseOut={e => {
                   e.target.style.background = '#23263a';
@@ -2774,14 +2774,14 @@ const getWarmUpStockCodes = () => {
             <Select
               value={selectedMAs ?? undefined}
               onChange={value => setSelectedMAs(value ?? null)}
-              style={{ minWidth: 50, width: 90, height:25, background: '#181c26', color: '#fff', border: 'none' }}
+              style={{ minWidth: 50, width: 65, height:25, background: '#181c26', color: '#fff', border: 'none' }}
               dropdownStyle={{ background: '#23263a', color: '#fff' }}
               popupClassName="ma-select-dark"
               options={MA_CONFIG.map(ma => ({
                 value: ma.key,
                 label: <span style={{ color: ma.color }}>{ma.label}</span>
               }))}
-              placeholder="选择均线"
+              placeholder="均线"
               bordered={false}
               size="small"
               allowClear
@@ -2804,6 +2804,20 @@ const getWarmUpStockCodes = () => {
                   outline: 'none',
                   transition: 'all 0.2s',
                 }}
+                onMouseOver={e => {
+                  if (rangeYears !== y) {
+                    e.target.style.background = '#2a2f3a';
+                    e.target.style.borderColor = '#1e90ff';
+                  }
+
+                }}
+                onMouseOut={e => {
+                  if (rangeYears !== y) {
+                    e.target.style.background = '#23263a';
+                    e.target.style.borderColor = '#444';
+                  }
+
+                }}
               >
                 {y === 0.5 ? '半年' : y}
               </button>
@@ -2823,8 +2837,14 @@ const getWarmUpStockCodes = () => {
                 outline: 'none',
                 transition: 'all 0.2s',
               }}
-              onMouseOver={e => e.target.style.background = '#333'}
-              onMouseOut={e => e.target.style.background = '#23263a'}
+              onMouseOver={e => {
+                e.target.style.background = '#2a2f3a';
+                e.target.style.borderColor = '#1e90ff';
+              }}
+              onMouseOut={e => {
+                e.target.style.background = '#23263a';
+                e.target.style.borderColor = '#444';
+              }}
             >
               模拟
             </button>
@@ -2832,18 +2852,23 @@ const getWarmUpStockCodes = () => {
               onClick={handleReset}
               style={{
                 marginLeft: 2,
-                padding: '2px 12px',
+                padding: '2px 8px',
                 backgroundColor: '#23263a',
                 color: '#fff',
                 border: '1px solid #444',
                 borderRadius: '3px',
                 cursor: 'pointer',
                 fontSize: '13px',
-                fontWeight: 'bold',
                 transition: 'background 0.2s',
               }}
-              onMouseOver={e => e.target.style.backgroundColor = '#333'}
-              onMouseOut={e => e.target.style.backgroundColor = '#23263a'}
+              onMouseOver={e => {
+                e.target.style.background = '#2a2f3a';
+                e.target.style.borderColor = '#1e90ff';
+              }}
+              onMouseOut={e => {
+                e.target.style.background = '#23263a';
+                e.target.style.borderColor = '#444';
+              }}
             >
               重置
             </button>
