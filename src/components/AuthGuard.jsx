@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { isAuthenticated, setAuthorization } from '../utils/auth';
+import { API_HOST } from '../config/config';
 import './AuthGuard.css';
 
 /**
@@ -12,14 +13,21 @@ function AuthGuard({ children }) {
   const [authInput, setAuthInput] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
     // 从 IndexedDB 检查认证状态
     const checkAuth = async () => {
-      setLoading(true);
-      const authenticated = await isAuthenticated();
-      setIsAuth(authenticated);
-      setLoading(false);
+      try {
+        const authenticated = await isAuthenticated();
+        setIsAuth(authenticated);
+      } catch (error) {
+        console.error('检查认证状态失败:', error);
+        setIsAuth(false);
+      } finally {
+        setLoading(false);
+        setInitialized(true);
+      }
     };
 
     checkAuth();
@@ -27,7 +35,8 @@ function AuthGuard({ children }) {
     // 监听 401 错误事件
     const handleUnauthorized = () => {
       setIsAuth(false);
-      setError('认证已失效，请重新输入 Authorization');
+      setAuthInput(''); // 清除之前输入的内容
+      setError(''); // 清除错误信息
     };
 
     window.addEventListener('unauthorized', handleUnauthorized);
@@ -46,15 +55,34 @@ function AuthGuard({ children }) {
       return;
     }
 
+    const authToken = authInput.trim();
+
     try {
-      await setAuthorization(authInput.trim());
+      // 先调用 /auth/login 接口验证 Authorization
+      const response = await fetch(`${API_HOST}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': authToken,
+        },
+      });
+
+      // 检查响应状态
+      if (response.status !== 200) {
+        const errorText = await response.text();
+        setError('认证失败，请检查 Authorization 是否正确');
+        return;
+      }
+
+      // 认证成功，保存 Authorization
+      await setAuthorization(authToken);
       setIsAuth(true);
       setAuthInput('');
       // 刷新页面以确保所有请求都使用新的 Authorization
       window.location.reload();
     } catch (error) {
-      console.error('保存 Authorization 失败:', error);
-      setError('保存失败，请重试');
+      console.error('认证失败:', error);
+      setError('认证失败，请检查网络连接或重试');
     }
   };
 
@@ -71,17 +99,15 @@ function AuthGuard({ children }) {
     }
   };
 
-  // 加载中显示空白或加载提示
-  if (loading) {
-    return (
-      <div className="auth-container">
-        <div className="auth-box">
-          <div className="auth-header">
-            <h2>加载中...</h2>
-          </div>
-        </div>
-      </div>
-    );
+  // 加载中且未初始化时，如果已认证则直接渲染子组件，避免闪烁
+  // 如果未认证，返回 null（不显示任何内容），避免闪烁
+  if (loading && !initialized) {
+    // 如果已经认证，直接渲染子组件，避免闪烁
+    if (isAuth) {
+      return <>{children}</>;
+    }
+    // 如果未认证且未初始化，返回 null（不显示加载提示），避免闪烁
+    return null;
   }
 
   // 如果已认证，渲染子组件
@@ -109,6 +135,7 @@ function AuthGuard({ children }) {
               autoFocus
               autoComplete="off"
             />
+            {error && <div className="auth-error">{error}</div>}
           </div>
           <button
             type="submit"

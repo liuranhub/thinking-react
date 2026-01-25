@@ -20,7 +20,8 @@ const handleResponse = async (response) => {
     });
     // 触发自定义事件，通知 AuthGuard 组件显示登录界面
     window.dispatchEvent(new CustomEvent('unauthorized'));
-    throw new Error('认证失败，请重新登录');
+    // 直接返回，不抛出错误，避免显示错误信息
+    return null;
   }
 
   // 检查响应状态

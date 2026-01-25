@@ -618,6 +618,10 @@ const StockDetail = () => {
     
     try {
       const data = await post(API_HOST + `/stock/stockScoreAnalyser/${stockCode}/${chartEndDate}`);
+      if (data === null) {
+        // 401 错误，已触发跳转到认证页面，这里不需要做任何处理
+        return;
+      }
       setApiScoreResult(data);
     } catch (error) {
       console.error('获取接口总分失败:', error);
@@ -932,6 +936,12 @@ const StockDetail = () => {
           'Accept-Encoding': 'gzip, deflate, br',
         }
       });
+      
+      // 如果返回 null（401 错误），直接返回
+      if (!data || !Array.isArray(data)) {
+        return;
+      }
+      
       // 解析紧凑数据格式：日期、OpenPrice、ClosePrice、MinPrice、MaxPrice、ChenJiaoLiang、ZhangDieFu
       const parsedData = data.map(item => {
         const [date, openPrice, closePrice, minPrice, maxPrice, chenJiaoLiang, zhangDieFu, huanShouLv] = item.split(',');

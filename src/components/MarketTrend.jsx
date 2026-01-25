@@ -16,6 +16,10 @@ const MarketTrend = () => {
   const fetchData = async () => {
     try {
       const response = await get(`${host}/stock/statMarketRiseDown`);
+      if (!response || !Array.isArray(response)) {
+        // 401 或其他错误，已触发跳转到认证页面，这里不需要做任何处理
+        return;
+      }
       setData(response);
     } catch (error) {
       console.error('Error fetching market trend data:', error);
@@ -23,6 +27,9 @@ const MarketTrend = () => {
   };
 
   const getOption = () => {
+    if (!data || !Array.isArray(data) || data.length === 0) {
+      return {};
+    }
     const dates = data.map(item => item.date);
     const defaultStartValue = Math.max(0, dates.length - DISPLAY_COUNT);
     const defaultEndValue = dates.length - 1;

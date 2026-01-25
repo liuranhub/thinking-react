@@ -419,11 +419,17 @@ const StockList = () => {
 
   const getAllFieldConfigType = useCallback(async () => {
     const response = await get(host + '/stock/stockFieldConfig/allType');
+    if (!response || !Array.isArray(response)) {
+      return; // 401 或其他错误，直接返回
+    }
     setStockFieldConfigTypes(response);
   }, [host]);
 
   const getAllDate = useCallback(async () => { 
     const response = await get(host + '/stock/getAllDate');
+    if (!response || !Array.isArray(response)) {
+      return; // 401 或其他错误，直接返回
+    }
     const dates = [...response];
     // dates.unshift('');
     setDates(dates);
@@ -445,6 +451,9 @@ const StockList = () => {
   const getFieldConfigDetail = useCallback(async () => { 
     get(host + '/stock/stockFieldConfig/' + queryParams.stockFieldConfigType)
     .then(response => {
+      if (!response || !Array.isArray(response)) {
+        return; // 401 或其他错误，直接返回
+      }
       setColumns(response.map(col => ({
         field: col.field,
         fieldName: col.fieldName,
@@ -606,7 +615,7 @@ const StockList = () => {
       });
     }
     
-    if (response) {
+    if (response && response.records) {
       const result = {
         records: response.records,
         total: response.total,
@@ -618,6 +627,9 @@ const StockList = () => {
       setTotal(result.total);
       setRiseCount(result.extInfo?.riseCount || 0);
       setZhangTingCount(result.extInfo?.zhangTingCount || 0);
+    } else if (response === null) {
+      // 401 错误，已触发跳转到认证页面，这里不需要做任何处理
+      return;
     }
   }, [queryParams, host]);
 
