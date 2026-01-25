@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { post } from '../utils/httpClient';
 import { API_HOST } from '../config/config';
 import './WatchStockH5.css';
 
@@ -12,7 +12,7 @@ const WatchStockH5 = () => {
   const fetchWatchStockData = async () => {
     try {
       setLoading(true);
-      const response = await axios.post(API_HOST + '/stock/stockDataWatchedPage', {
+      const response = await post(API_HOST + '/stock/stockDataWatchedPage', {
         pageSize: 1000, // 不分页，获取所有数据
         pageIndex: 1,
         keywords: '',
@@ -22,12 +22,12 @@ const WatchStockH5 = () => {
         fieldQuery: {}
       });
 
-      if (response.data && response.data.records) {
-        setData(response.data.records);
+      if (response && response.records) {
+        setData(response.records);
         
         // 设置页面标题，取第一条数据的date字段
-        if (response.data.records.length > 0 && response.data.records[0].date) {
-          const date = response.data.records[0].date;
+        if (response.records.length > 0 && response.records[0].date) {
+          const date = response.records[0].date;
           // 格式化日期为 MM-DD 格式
           const formattedDate = date.substring(5, 10); // 从 YYYY-MM-DD 中提取 MM-DD
           setPageTitle(`监控股票(${date})`);

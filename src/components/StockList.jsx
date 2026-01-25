@@ -1,5 +1,5 @@
 import React, {memo, useCallback, useEffect, useMemo, useRef, useState} from 'react';
-import axios from 'axios';
+import { get, post } from '../utils/httpClient';
 import '../App.css';
 import {FixedSizeList as List} from 'react-window';
 
@@ -27,14 +27,14 @@ const StockList = () => {
 
   // API函数定义（必须在事件处理函数之前）
   const addFavorite = useCallback(async (stockCode) => {
-    await axios.post(host + '/stock/addFavorite', {
+    await post(host + '/stock/addFavorite', {
       stockCode: stockCode,
       nextClosePriceAnalysis: nextClosePriceAnalysis
     });
   }, [host, nextClosePriceAnalysis]);
 
   const removeFavorite = useCallback(async (stockCode) => {
-    await axios.post(host + '/stock/removeFavorite/' + stockCode, {});
+    await post(host + '/stock/removeFavorite/' + stockCode);
   }, [host]);
 
   // 事件处理函数定义（必须在TAB_CONFIG之前）
@@ -418,13 +418,13 @@ const StockList = () => {
   }, [activeTab]);
 
   const getAllFieldConfigType = useCallback(async () => {
-    const response = await axios.get(host + '/stock/stockFieldConfig/allType');
-    setStockFieldConfigTypes(response.data);
+    const response = await get(host + '/stock/stockFieldConfig/allType');
+    setStockFieldConfigTypes(response);
   }, [host]);
 
   const getAllDate = useCallback(async () => { 
-    const response = await axios.get(host + '/stock/getAllDate');
-    const dates = [...response.data];
+    const response = await get(host + '/stock/getAllDate');
+    const dates = [...response];
     // dates.unshift('');
     setDates(dates);
     if (dates.length > 0) {
@@ -443,9 +443,9 @@ const StockList = () => {
   }, [host]);
 
   const getFieldConfigDetail = useCallback(async () => { 
-    axios.get(host + '/stock/stockFieldConfig/' + queryParams.stockFieldConfigType)
+    get(host + '/stock/stockFieldConfig/' + queryParams.stockFieldConfigType)
     .then(response => {
-      setColumns(response.data.map(col => ({
+      setColumns(response.map(col => ({
         field: col.field,
         fieldName: col.fieldName,
         colorRules: col.colorRules
@@ -453,7 +453,7 @@ const StockList = () => {
 
       // 只为支持查询的字段创建查询条件
       const newFieldQueries = {};
-      response.data.forEach(field => {
+      response.forEach(field => {
         if (field.supportQuery) {
           newFieldQueries[field.field] = {
             start: field.queryStart === null ? '-100' : field.queryStart,
@@ -486,8 +486,7 @@ const StockList = () => {
   }, [getAllFieldConfigType, getAllDate]);
 
   const getStockDetail = async (stockCode) => {
-    const response = await axios.get(host + '/stock/stockDetail/' + stockCode);
-    return response.data;
+    return await get(host + '/stock/stockDetail/' + stockCode);
   };
 
 
@@ -501,7 +500,7 @@ const StockList = () => {
     
     if(activeTab === TAB_CONFIG.latestMain.key 
       || activeTab === TAB_CONFIG.latestTechGem.key ) {
-      response = await axios.post(host + '/stock/stockDataAnalysisPage', {
+      response = await post(host + '/stock/stockDataAnalysisPage', {
         pageSize: queryParams.pageSize,
         pageIndex: queryParams.pageIndex,
         date: queryParams.date,
@@ -513,14 +512,14 @@ const StockList = () => {
         dateType: "latest"
       });
     } else if (activeTab === TAB_CONFIG.stockSector.key) {
-      response = await axios.post(host + '/stock/stockDataAnalysisPageCommon', {
+      response = await post(host + '/stock/stockDataAnalysisPageCommon', {
         pageSize: queryParams.pageSize,
         pageIndex: queryParams.pageIndex,
         tableName: "stock_data_analysis_latest_sector",
         keywords: queryParams.keywords,
       });
     } else if (activeTab === TAB_CONFIG.hammer.key) {
-      response = await axios.post(host + '/stock/stockDataAnalysisPageCommon', {
+      response = await post(host + '/stock/stockDataAnalysisPageCommon', {
         pageSize: queryParams.pageSize,
         pageIndex: queryParams.pageIndex,
         tableName: "stock_data_analysis_latest_hammer",
@@ -530,7 +529,7 @@ const StockList = () => {
         orderRule: queryParams.orderRule,
       });
     } else if (activeTab === TAB_CONFIG.possibleHammer.key) {
-      response = await axios.post(host + '/stock/stockDataAnalysisPageCommon', {
+      response = await post(host + '/stock/stockDataAnalysisPageCommon', {
         pageSize: queryParams.pageSize,
         pageIndex: queryParams.pageIndex,
         tableName: "stock_data_analysis_latest_possible_hammer",
@@ -540,7 +539,7 @@ const StockList = () => {
         orderRule: queryParams.orderRule,
       });
     } else if (activeTab === TAB_CONFIG.preOrder.key) {
-      response = await axios.post(host + '/stock/stockDataAnalysisPageCommon', {
+      response = await post(host + '/stock/stockDataAnalysisPageCommon', {
         pageSize: queryParams.pageSize,
         pageIndex: queryParams.pageIndex,
         tableName: "stock_data_analysis_pre_order",
@@ -550,7 +549,7 @@ const StockList = () => {
         orderRule: queryParams.orderRule,
       });
     } else if (activeTab === TAB_CONFIG.hammerTest.key) {
-      response = await axios.post(host + '/stock/stockDataAnalysisPageCommon', {
+      response = await post(host + '/stock/stockDataAnalysisPageCommon', {
         pageSize: queryParams.pageSize,
         pageIndex: queryParams.pageIndex,
         tableName: "stock_data_analysis_hammer",
@@ -560,7 +559,7 @@ const StockList = () => {
         orderRule: queryParams.orderRule,
       });
     } else if(activeTab === TAB_CONFIG.all.key) {
-      response = await axios.post(host + '/stock/stockDataAnalysisPage', {
+      response = await post(host + '/stock/stockDataAnalysisPage', {
         pageSize: queryParams.pageSize,
         pageIndex: queryParams.pageIndex,
         date: queryParams.date,
@@ -571,7 +570,7 @@ const StockList = () => {
         fieldQuery: queryParams.fieldQueries
       });
     }  else if(activeTab === TAB_CONFIG.favorites.key) {
-      response = await axios.post(host + '/stock/stockDataFavoritePage', {
+      response = await post(host + '/stock/stockDataFavoritePage', {
         pageSize: queryParams.pageSize,
         pageIndex: queryParams.pageIndex,
         dateType: 'latest',
@@ -583,7 +582,7 @@ const StockList = () => {
         fieldQuery: queryParams.fieldQueries
       });
     } else if (activeTab === TAB_CONFIG.watched.key) {
-      response = await axios.post(host + '/stock/stockDataWatchedPage', {
+      response = await post(host + '/stock/stockDataWatchedPage', {
         pageSize: queryParams.pageSize,
         pageIndex: queryParams.pageIndex,
         keywords: queryParams.keywords,
@@ -593,7 +592,7 @@ const StockList = () => {
         fieldQuery: queryParams.fieldQueries
       });
     } else if (activeTab === TAB_CONFIG.incrementalDecline.key) {
-      response = await axios.post(host + '/stock/stockDataAnalysisPage', {
+      response = await post(host + '/stock/stockDataAnalysisPage', {
         pageSize: queryParams.pageSize,
         pageIndex: queryParams.pageIndex,
         date: queryParams.date,
@@ -609,9 +608,9 @@ const StockList = () => {
     
     if (response) {
       const result = {
-        records: response.data.records,
-        total: response.data.total,
-        extInfo: response.data.extInfo
+        records: response.records,
+        total: response.total,
+        extInfo: response.extInfo
       };
       
       setData(result.records);

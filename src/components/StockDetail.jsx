@@ -9,6 +9,7 @@ import 'antd/dist/reset.css';
 import '../App.css';
 import { pinyin } from 'pinyin-pro';
 import { API_HOST } from '../config/config';
+import { get, post, del as deleteMethod } from '../utils/httpClient';
 import dayjs from 'dayjs';
 import LoadingButton from './LoadingButton';
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
@@ -507,14 +508,8 @@ const StockDetail = () => {
   // 获取监控模式选项
   const fetchWatchModelOptions = async () => {
     try {
-      const response = await fetch(`${API_HOST}/stock/watch/getWatchModelMap`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      const result = await get(`${API_HOST}/stock/watch/getWatchModelMap`);
 
-      const result = await response.json();
       if (result && typeof result === 'object') {
         const options = Object.entries(result).map(([key, value]) => ({
           value: key,
@@ -566,19 +561,13 @@ const StockDetail = () => {
   // 创建或更新监控配置
   const createWatchConfig = async (values) => {
     try {
-      const response = await fetch(`${API_HOST}/stock/watch/createOrUpdateWatchConfig`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...values,
-          stockCode: stockCode,
-          startDate: values.startDate.format('YYYY-MM-DD'),
-        }),
+      const response = await post(`${API_HOST}/stock/watch/createOrUpdateWatchConfig`, {
+        ...values,
+        stockCode: stockCode,
+        startDate: values.startDate.format('YYYY-MM-DD'),
       });
 
-      if (response.ok) {
+      if (response) {
         // 使用setStockDetail更新状态，触发重新渲染
         setStockDetail(prev => ({
           ...prev,
@@ -628,18 +617,8 @@ const StockDetail = () => {
     if (!stockCode || !chartEndDate) return;
     
     try {
-      const response = await fetch(API_HOST + `/stock/stockScoreAnalyser/${stockCode}/${chartEndDate}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setApiScoreResult(data);
-      } else {
-        setApiScoreResult({});
-      }
+      const data = await post(API_HOST + `/stock/stockScoreAnalyser/${stockCode}/${chartEndDate}`);
+      setApiScoreResult(data);
     } catch (error) {
       console.error('获取接口总分失败:', error);
       setApiScoreResult({});
@@ -693,9 +672,8 @@ const StockDetail = () => {
   const fetchDetail = async () => {
     if (!stockCode) return;
     try {
-      const resp = await fetch(API_HOST + `/stock/stockDetail/${stockCode}`);
-      if (resp.ok) {
-        const detail = await resp.json();
+      const detail = await get(API_HOST + `/stock/stockDetail/${stockCode}`);
+      if (detail) {
         setStockDetail(detail);
         setYaoGu(!!detail.yaoGu);
         setIsFavorite(!!detail.favorite); // 新增收藏状态
@@ -739,20 +717,10 @@ const StockDetail = () => {
 
     try {
       const browserHostServer = getBrowserHost()+ ":18888";
-      const response = await fetch(`${browserHostServer}/stock/stockDataAnalyserOne/${currentStockCode}/${currentDate}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (response.ok) {
-        message.success('股票数据计算完成！', 2);
-        await fetchDetail();
-        setChartRefreshTrigger(Date.now());
-      } else {
-        message.error('计算失败，请稍后重试', 2);
-      }
+      await post(`${browserHostServer}/stock/stockDataAnalyserOne/${currentStockCode}/${currentDate}`);
+      message.success('股票数据计算完成！', 2);
+      await fetchDetail();
+      setChartRefreshTrigger(Date.now());
     } catch (error) {
       console.error('计算股票数据失败:', error);
       message.error('网络错误，计算失败', 2);
@@ -792,9 +760,8 @@ const StockDetail = () => {
     if (!stockCode) return;
     
     try {
-      const resp = await fetch(API_HOST + `/stock/getStockKLineLatestData/${stockCode}`);
-      if (resp.ok) {
-        const latestData = await resp.json();
+      const latestData = await get(API_HOST + `/stock/getStockKLineLatestData/${stockCode}`);
+      if (latestData) {
         setLatestStockData(latestData);
         console.log('最新股价数据已更新:', latestData.closePrice);
       }
@@ -897,20 +864,10 @@ const StockDetail = () => {
     if (!stockCode || !date) return;
     
     try {
-      const response = await fetch(API_HOST + `/stock/updateHammerDateIsEffective/${stockCode}/${date}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      if (response.ok) {
-        message.success('Hammer状态更新成功');
-        // 重新获取股票详情以更新数据
-        fetchDetail();
-      } else {
-        message.error('Hammer状态更新失败');
-      }
+      await post(API_HOST + `/stock/updateHammerDateIsEffective/${stockCode}/${date}`);
+      message.success('Hammer状态更新成功');
+      // 重新获取股票详情以更新数据
+      fetchDetail();
     } catch (error) {
       console.error('更新Hammer状态失败:', error);
       message.error('Hammer状态更新失败');
@@ -970,17 +927,11 @@ const StockDetail = () => {
         });
       }
       
-      const response = await fetch(url.toString(), {
+      const data = await get(url.toString(), {
         headers: {
           'Accept-Encoding': 'gzip, deflate, br',
-          'Content-Type': 'application/json'
         }
       });
-      
-      if (!response.ok) {
-        throw new Error('网络请求失败');
-      }
-      const data = await response.json();
       // 解析紧凑数据格式：日期、OpenPrice、ClosePrice、MinPrice、MaxPrice、ChenJiaoLiang、ZhangDieFu
       const parsedData = data.map(item => {
         const [date, openPrice, closePrice, minPrice, maxPrice, chenJiaoLiang, zhangDieFu, huanShouLv] = item.split(',');
@@ -1937,15 +1888,9 @@ const getWarmUpStockCodes = () => {
   // 添加预购买
   const handleAddPreOrder = async () => {
     try {
-      const resp = await fetch(API_HOST + `/stock/addPreOrder/${stockCode}`, {
-        method: 'POST'
-      });
-      if (resp.ok) {
-        message.success('添加预购买成功！', 2);
-        await fetchDetail();
-      } else {
-        message.error('添加预购买失败', 2);
-      }
+      await post(API_HOST + `/stock/addPreOrder/${stockCode}`);
+      message.success('添加预购买成功！', 2);
+      await fetchDetail();
     } catch (e) {
       message.error('网络错误，添加预购买失败', 2);
     }
@@ -1954,15 +1899,9 @@ const getWarmUpStockCodes = () => {
   // 取消预购买
   const handleRemovePreOrder = async () => {
     try {
-      const resp = await fetch(API_HOST + `/stock/removePreOrder/${stockCode}`, {
-        method: 'POST'
-      });
-      if (resp.ok) {
-        message.success('取消预购买成功！', 2);
-        await fetchDetail();
-      } else {
-        message.error('取消预购买失败', 2);
-      }
+      await post(API_HOST + `/stock/removePreOrder/${stockCode}`);
+      message.success('取消预购买成功！', 2);
+      await fetchDetail();
     } catch (e) {
       message.error('网络错误，取消预购买失败', 2);
     }
@@ -1982,26 +1921,16 @@ const getWarmUpStockCodes = () => {
         [itemName]: newStatus
       };
       
-      const resp = await fetch(API_HOST + `/stock/updateCheckList`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          stockCode: stockCode,
-          checkListStatus: updatedCheckListStatus
-        })
+      await post(API_HOST + `/stock/updateCheckList`, {
+        stockCode: stockCode,
+        checkListStatus: updatedCheckListStatus
       });
       
-      if (resp.ok) {
-        // 更新本地状态
-        setStockDetail(prev => ({
-          ...prev,
-          checkListStatus: updatedCheckListStatus
-        }));
-      } else {
-        message.error('更新失败', 2);
-      }
+      // 更新本地状态
+      setStockDetail(prev => ({
+        ...prev,
+        checkListStatus: updatedCheckListStatus
+      }));
     } catch (e) {
       message.error('网络错误，更新失败', 2);
     }
@@ -2012,17 +1941,9 @@ const getWarmUpStockCodes = () => {
     const stockName = chartData[0]?.stockName || currentStock.stockName || '';
     const date = chartEndDate;
     try {
-      const resp = await fetch(API_HOST + '/stock/addYaogu', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ stockCode, stockName, date })
-      });
-      if (resp.ok) {
-        message.success('添加为妖股成功！', 2);
-        await fetchDetail();
-      } else {
-        message.error('添加失败', 2);
-      }
+      await post(API_HOST + '/stock/addYaogu', { stockCode, stockName, date });
+      message.success('添加为妖股成功！', 2);
+      await fetchDetail();
     } catch (e) {
       message.error('网络错误，添加失败', 2);
     }
@@ -2031,13 +1952,9 @@ const getWarmUpStockCodes = () => {
   // 取消妖股
   const handleRemoveYaogu = async () => {
     try {
-      const resp = await fetch(API_HOST + `/stock/removeYaogu/${stockCode}`, { method: 'DELETE' });
-      if (resp.ok) {
-        message.success('取消妖股成功！', 2);
-        await fetchDetail();
-      } else {
-        message.error('取消失败', 2);
-      }
+      await deleteMethod(API_HOST + `/stock/removeYaogu/${stockCode}`);
+      message.success('取消妖股成功！', 2);
+      await fetchDetail();
     } catch (e) {
       message.error('网络错误，取消失败', 2);
     }
@@ -2047,14 +1964,10 @@ const getWarmUpStockCodes = () => {
   const stockFavorite = async (star = 3) => {
     try {
       if(star === 0) {
-        await fetch(API_HOST + `/stock/removeFavorite/${stockCode}`, { method: 'POST' });
+        await post(API_HOST + `/stock/removeFavorite/${stockCode}`);
         message.success('取消收藏成功！', 2);
       } else {
-        await fetch(API_HOST + '/stock/addFavorite', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ stockCode, favoriteStar: star })
-          });
+        await post(API_HOST + '/stock/addFavorite', { stockCode, favoriteStar: star });
           message.success('添加收藏成功！', 2);
       }
       setIsFavorite(true);

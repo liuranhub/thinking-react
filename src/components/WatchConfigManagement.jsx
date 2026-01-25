@@ -4,6 +4,7 @@ import { SearchOutlined, PlusOutlined, EditOutlined, DeleteOutlined } from '@ant
 import dayjs from 'dayjs';
 import { useSearchParams } from 'react-router-dom';
 import { API_HOST } from '../config/config';
+import { get, post, put, del as deleteMethod } from '../utils/httpClient';
 import './WatchConfigManagement.css';
 
 const { Option } = Select;
@@ -28,14 +29,7 @@ const WatchConfigManagement = () => {
   // 获取监控模式选项
   const fetchWatchModelOptions = async () => {
     try {
-      const response = await fetch(`${API_HOST}/stock/watch/getWatchModelMap`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      const result = await response.json();
+      const result = await get(`${API_HOST}/stock/watch/getWatchModelMap`);
       if (result && typeof result === 'object') {
         // 将对象转换为数组格式
         const options = Object.entries(result).map(([key, value]) => ({
@@ -56,14 +50,7 @@ const WatchConfigManagement = () => {
   const fetchStockList = async (searchText = '') => {
     setStockLoading(true);
     try {
-      const response = await fetch(`${API_HOST}/stock/stockListSimple`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      const result = await response.json();
+      const result = await get(`${API_HOST}/stock/stockListSimple`);
       if (Array.isArray(result)) {
         setStockList(result);
       } else {
@@ -81,19 +68,11 @@ const WatchConfigManagement = () => {
   const fetchWatchConfigList = async (pageIndex = 1, pageSize = 10, stockCode = '') => {
     setLoading(true);
     try {
-      const response = await fetch(`${API_HOST}/stock/watch/getWatchConfigList`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          pageIndex,
-          pageSize,
-          stockCode: stockCode || undefined,
-        }),
+      const result = await post(`${API_HOST}/stock/watch/getWatchConfigList`, {
+        pageIndex,
+        pageSize,
+        stockCode: stockCode || undefined,
       });
-
-      const result = await response.json();
       console.log('API返回数据:', result); // 调试日志
       
       // 根据实际返回数据结构处理
@@ -119,21 +98,15 @@ const WatchConfigManagement = () => {
   // 创建或更新监控配置
   const createOrUpdateWatchConfig = async (values) => {
     try {
-      const response = await fetch(`${API_HOST}/stock/watch/createOrUpdateWatchConfig`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          stockCode: values.stockCode,
-          watchModel: values.watchModel,
-          targetPrice: values.targetPrice,
-          startDate: values.startDate.format('YYYY-MM-DD'),
-          ...(editingRecord && { id: editingRecord.id }),
-        }),
+      const result = await post(`${API_HOST}/stock/watch/createOrUpdateWatchConfig`, {
+        stockCode: values.stockCode,
+        watchModel: values.watchModel,
+        targetPrice: values.targetPrice,
+        startDate: values.startDate.format('YYYY-MM-DD'),
+        ...(editingRecord && { id: editingRecord.id }),
       });
 
-      if (response.ok) {
+      if (result) {
         message.success(editingRecord ? '更新成功' : '创建成功');
         setIsModalVisible(false);
         form.resetFields();
@@ -151,19 +124,9 @@ const WatchConfigManagement = () => {
   // 更新监控配置状态
   const updateWatchConfigStatus = async (id, status) => {
     try {
-      const response = await fetch(`${API_HOST}/stock/watch/updateStatus/${id}/${status}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (response.ok) {
-        message.success(status === 'ENABLE' ? '启用成功' : '禁用成功');
-        fetchWatchConfigList(pagination.current, pagination.pageSize, searchText);
-      } else {
-        message.error(status === 'ENABLE' ? '启用失败' : '禁用失败');
-      }
+      await put(`${API_HOST}/stock/watch/updateStatus/${id}/${status}`);
+      message.success(status === 'ENABLE' ? '启用成功' : '禁用成功');
+      fetchWatchConfigList(pagination.current, pagination.pageSize, searchText);
     } catch (error) {
       console.error('更新监控配置状态失败:', error);
       message.error('网络错误，请稍后重试');
@@ -173,16 +136,9 @@ const WatchConfigManagement = () => {
   // 删除监控配置
   const deleteWatchConfig = async (id) => {
     try {
-      const response = await fetch(`${API_HOST}/stock/watch/deleteWatchConfig/${id}`, {
-        method: 'DELETE',
-      });
-
-      if (response.ok) {
-        message.success('删除成功');
-        fetchWatchConfigList(pagination.current, pagination.pageSize, searchText);
-      } else {
-        message.error('删除失败');
-      }
+      await deleteMethod(`${API_HOST}/stock/watch/deleteWatchConfig/${id}`);
+      message.success('删除成功');
+      fetchWatchConfigList(pagination.current, pagination.pageSize, searchText);
     } catch (error) {
       console.error('删除监控配置失败:', error);
       message.error('网络错误，请稍后重试');

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import ReactECharts from 'echarts-for-react';
-import axios from 'axios';
+import { get } from '../utils/httpClient';
 import { API_HOST } from '../config/config';
 
 const MarketTrend = () => {
@@ -15,8 +15,8 @@ const MarketTrend = () => {
 
   const fetchData = async () => {
     try {
-      const response = await axios.get(`${host}/stock/statMarketRiseDown`);
-      setData(response.data);
+      const response = await get(`${host}/stock/statMarketRiseDown`);
+      setData(response);
     } catch (error) {
       console.error('Error fetching market trend data:', error);
     }
