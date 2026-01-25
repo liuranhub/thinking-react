@@ -2006,7 +2006,12 @@ const getWarmUpStockCodes = () => {
     let pinyinStr = noTone.replace(/[^a-z]/gi, '').toLowerCase();
     return {
       value: item.stockCode,
-      label: `${item.stockName} (${item.stockCode})`,
+      label: (
+        <span>
+          <span style={{ fontWeight: 'bold' }}>{item.stockName}</span>
+          {' '}({item.stockCode})
+        </span>
+      ),
       pinyin: pinyinStr
     };
   });
@@ -2340,19 +2345,16 @@ const getWarmUpStockCodes = () => {
               <span style={{
                 color: '#11d1e4',
                 fontWeight: 'bold',
-                marginLeft: '4px'
               }}>{currentStock.priceLevel100}%</span>
               <span>200天:</span>
               <span style={{
                 color: '#11d1e4',
                 fontWeight: 'bold',
-                marginLeft: '4px'
               }}>{currentStock.priceLevel200}%</span>
               <span>1000天：</span>
               <span style={{
                 color: '#11d1e4',
                 fontWeight: 'bold',
-                marginLeft: '4px'
               }}>{currentStock.priceLevel1000}%</span>
             </div>
             <div style={{display: 'flex', flexWrap: 'wrap'}}>
