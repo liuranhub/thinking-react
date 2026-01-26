@@ -130,7 +130,7 @@ function AuthGuard({ children }) {
               value={authInput}
               onChange={handleInputChange}
               onKeyPress={handleKeyPress}
-              placeholder="请输入您的Authorization令牌"
+              placeholder="请输入您的令牌"
               className="auth-input"
               autoFocus
               autoComplete="off"
