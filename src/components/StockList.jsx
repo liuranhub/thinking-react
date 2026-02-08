@@ -82,6 +82,20 @@ const StockList = () => {
       orderRule: 'desc',
       showDateSelector: false // 妖股Tab不显示日期选择器
     },
+    latestIdx: {
+      key: 'latestIdx',
+      label: '指数',
+      fieldConfigType: 'simple',
+      // operations: [{
+      //   modalType: MODAL_TYPE_CONFIRM,
+      //   name: "收藏",
+      //   handler: handleAddFavoriteClick,
+      // }],
+      stockTypes: ['IDX'],
+      orderByField: 'score',
+      orderRule: 'desc',
+      showDateSelector: false // 妖股Tab不显示日期选择器
+    },
     stockSector: {
       key: 'stockSector',
       label: '板块',
@@ -508,6 +522,7 @@ const StockList = () => {
     const currentStockTypes = TAB_CONFIG[activeTab]?.stockTypes || queryParams.stockTypes;
     
     if(activeTab === TAB_CONFIG.latestMain.key 
+      || activeTab === TAB_CONFIG.latestIdx.key
       || activeTab === TAB_CONFIG.latestTechGem.key ) {
       response = await post(host + '/stock/stockDataAnalysisPage', {
         pageSize: queryParams.pageSize,

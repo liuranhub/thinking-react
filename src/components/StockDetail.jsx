@@ -2318,7 +2318,7 @@ const getWarmUpStockCodes = () => {
                           color: color || TEXT_COLOR,
                           border: color ? `1px solid ${color}` : '1px solid #444',
                           fontWeight: color ? 'bold' : 'normal',
-                          marginRight: '2px',
+                          marginRight: '4px',
                           marginBottom: '2px',
                           fontSize: '12px',
                           borderRadius: '16px',
