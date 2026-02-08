@@ -3,7 +3,7 @@ import { get, post } from '../utils/httpClient';
 import '../App.css';
 import {FixedSizeList as List} from 'react-window';
 
-import {Dropdown, message, Select} from 'antd';
+import {Dropdown, message, Select, Radio} from 'antd';
 import 'antd/dist/reset.css';
 import {Link, useNavigate, useSearchParams} from 'react-router-dom';
 import {API_HOST} from '../config/config';
@@ -1242,21 +1242,34 @@ const StockList = () => {
       /> */}
       
       <div style={{ overflowY: 'hidden' }}>
-        <div style={{ borderBottom: '1px solid #BEBEBE', marginBottom: '2px'}}>
+        <div style={{ borderBottom: '1px solid #BEBEBE', marginBottom: '2px', display: 'flex', alignItems: 'center'}}>
+          <Radio.Group 
+            value={activeTab} 
+            onChange={(e) => handleTabChange(e.target.value)}
+            buttonStyle="solid"
+            size="small"
+            style={{ display: 'flex', flexWrap: 'wrap' }}
+          >
             {Object.entries(TAB_CONFIG)
               .filter(([tabKey, config]) => !config.hiddle) // 过滤掉hiddle为true的Tab
               .map(([tabKey, config]) => (
-              <button
-                key={tabKey}
-                onClick={() => handleTabChange(tabKey)}
-                onDoubleClick={() => fetchData()}
-                style={{ marginRight: '2px'}}
-                width={maxWidth}
-                className={activeTab === tabKey ? 'tab-button tab-button-active' : 'tab-button'}
-              >
-                {config.label}
-              </button>
-            ))}
+                <Radio.Button
+                  key={tabKey}
+                  value={tabKey}
+                  onDoubleClick={() => fetchData()}
+                  style={{ 
+                    height: '24px',
+                    lineHeight: '22px',
+                    padding: '0 8px',
+                    fontSize: '12px',
+                    borderRadius: '0',
+                    borderLeft: 'none'
+                  }}
+                >
+                  {config.label}
+                </Radio.Button>
+              ))}
+          </Radio.Group>
 
           {/* <Button
             type="primary"

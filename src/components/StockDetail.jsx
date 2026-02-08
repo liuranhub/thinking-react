@@ -41,6 +41,8 @@ const HIGHLIGHT_TAG_CONFIG = [
   { tagName: '无人机', color: '#f672ff' },    // 粉紫
   { tagName: '大飞机', color: '#f672ff' },    // 粉紫
   { tagName: '机器人', color: '#f672ff' },    // 粉紫
+  { tagName: 'AI', color: '#f672ff' },    // 粉紫
+  { tagName: '人工智能', color: '#f672ff' },    // 粉紫
   { tagName: '石油', color: '#ff9800' },  // 青色
   { tagName: '机构重仓', color: '#00bcd4' },  // 橙色
     ];
@@ -944,7 +946,7 @@ const StockDetail = () => {
       
       // 解析紧凑数据格式：日期、OpenPrice、ClosePrice、MinPrice、MaxPrice、ChenJiaoLiang、ZhangDieFu
       const parsedData = data.map(item => {
-        const [date, openPrice, closePrice, minPrice, maxPrice, chenJiaoLiang, zhangDieFu, huanShouLv] = item.split(',');
+        const [date, openPrice, closePrice, minPrice, maxPrice, chenJiaoLiang, zhangDieFu, huanShouLv, zhenFu] = item.split(',');
         return {
           date,
           openPrice: parseFloat(openPrice),
@@ -953,7 +955,8 @@ const StockDetail = () => {
           maxPrice: parseFloat(maxPrice),
           chenJiaoLiang: parseFloat(chenJiaoLiang),
           zhangDieFu: parseFloat(zhangDieFu),
-          huanShouLv: parseFloat(huanShouLv)
+          huanShouLv: parseFloat(huanShouLv),
+          zhenFu: parseFloat(zhenFu)
         };
       });
       const sorted = parsedData.slice().sort((a, b) => a.date.localeCompare(b.date));
@@ -1243,6 +1246,8 @@ const getWarmUpStockCodes = () => {
           
           const zhangDieFu = currentData?.zhangDieFu ?? 0;
           const zhangDieFuColor = zhangDieFu >= 0 ? '#ef232a' : '#14b143'; // 红涨绿跌
+          const zhenFu = currentData?.zhenFu ?? 0;
+          const zhenFuValue = isNaN(zhenFu) ? 0 : Number(zhenFu);
           
             return `
              <div style="color: #fff; font-size: 12px; line-height: 1.4;">
@@ -1252,6 +1257,7 @@ const getWarmUpStockCodes = () => {
                <div style="margin-bottom: 2px;">最低: ${currentData.minPrice ?? '--'}</div>
                <div style="margin-bottom: 2px;">最高: ${currentData.maxPrice ?? '--'}</div>
                <div style="margin-bottom: 2px;">涨跌幅: <span style="color:${zhangDieFuColor};font-weight:bold">${Number(zhangDieFu).toFixed(2)}%</span></div>
+               <div style="margin-bottom: 2px;">振幅: <span style="color:#ffa500;font-weight:bold">${zhenFuValue.toFixed(2)}%</span></div>
                <div style="margin-bottom: 2px;">换手率: <span style="color:#11d1e4;font-weight:bold">${Number(currentData.huanShouLv).toFixed(2)}%</span></div>
                <div>成交量: ${chenJiaoLiangConvert(currentData.chenJiaoLiang ?? 0)}</div>
                <div>Hammer总长度: ${Number((currentData.maxPrice - currentData.minPrice) / currentData.minPrice).toFixed(2)}</div>
@@ -1386,56 +1392,121 @@ const getWarmUpStockCodes = () => {
                 return `锤子线信号<br/>日期: ${params.data.value}`;
               }
             },
-            data: stockDetail.hummerDates ? stockDetail.hummerDates
-              .filter(item => dates.includes(item.date)) // 只显示当前图表范围内的日期
-              .map(item => {
-                // 找到对应日期的K线数据，获取最低价
-                const dateIndex = dates.indexOf(item.date);
-                const klineItem = klineData[dateIndex];
-                const minPrice = klineItem ? klineItem[2] : 0; // K线数据格式: [open, close, low, high]
+            data: [
+              // 锤子线标记点
+              ...(stockDetail.hummerDates ? stockDetail.hummerDates
+                .filter(item => dates.includes(item.date)) // 只显示当前图表范围内的日期
+                .map(item => {
+                  // 找到对应日期的K线数据，获取最低价
+                  const dateIndex = dates.indexOf(item.date);
+                  const klineItem = klineData[dateIndex];
+                  const minPrice = klineItem ? klineItem[2] : 0; // K线数据格式: [open, close, low, high]
 
-                // 根据effective字段确定颜色
-                const color = item.effective === 1 ? '#9932CC' : '#00FFFF'; // 有效为紫色，否则为青色
+                  // 根据effective字段确定颜色
+                  const color = item.effective === 1 ? '#9932CC' : '#00FFFF'; // 有效为紫色，否则为青色
 
-                // 如果type为'T'，不显示pin形状，只显示文字标签
-                const isTType = item.type === 'T';
-                const symbol = isTType ? 'circle' : 'pin';
-                const symbolSize = isTType ? 1 : 12;
-                const symbolRotate = isTType ? 0 : 180;
+                  // 如果type为'T'，不显示pin形状，只显示文字标签
+                  const isTType = item.type === 'T';
+                  const symbol = isTType ? 'circle' : 'pin';
+                  const symbolSize = isTType ? 1 : 12;
+                  const symbolRotate = isTType ? 0 : 180;
 
-                return {
-                  name: '锤子线',
-                  xAxis: item.date,
-                  yAxis: minPrice - (minPrice * 0.005), // 显示在最低价下方一点点
-                  value: item.date,
-                  symbol: symbol,
-                  symbolSize: symbolSize,
-                  symbolRotate: symbolRotate,
-                  itemStyle: {
-                    color: color,
-                    borderWidth: 0
-                  },
-                  label: {
-                    show: true, // 确保文字标签显示
-                    position: 'bottom',
-                    distance: 0,
-                    fontSize: isTType ? 10 : 8, // T类型稍微大一点，确保可见
-                    fontWeight: 'bold',
-                    color: 'red',
-                    formatter: function(params) {
-                      return params.data.type || 'N';
+                  return {
+                    name: '锤子线',
+                    xAxis: item.date,
+                    yAxis: minPrice - (minPrice * 0.005), // 显示在最低价下方一点点
+                    value: item.date,
+                    symbol: symbol,
+                    symbolSize: symbolSize,
+                    symbolRotate: symbolRotate,
+                    itemStyle: {
+                      color: color,
+                      borderWidth: 0
+                    },
+                    label: {
+                      show: true, // 确保文字标签显示
+                      position: 'bottom',
+                      distance: 0,
+                      fontSize: isTType ? 10 : 8, // T类型稍微大一点，确保可见
+                      fontWeight: 'bold',
+                      color: 'red',
+                      formatter: function(params) {
+                        return params.data.type || 'N';
+                      }
+                    },
+                    tooltip: {
+                      formatter: function(params) {
+                        return `锤子线信号<br/>日期: ${params.data.value}`;
+                      }
+                    },
+                    effective: item.effective,
+                    id: item.id,
+                    type: item.type // 保存type字段
+                  };
+                }) : []),
+              // 多空策略日期标记点（黄色，不显示文字标签）
+              ...(stockDetail.longShortStrategyDates && Array.isArray(stockDetail.longShortStrategyDates) ? stockDetail.longShortStrategyDates
+                .filter(date => dates.includes(date)) // 只显示当前图表范围内的日期
+                .map(date => {
+                  // 找到对应日期的K线数据，获取最低价
+                  const dateIndex = dates.indexOf(date);
+                  const klineItem = klineData[dateIndex];
+                  const minPrice = klineItem ? klineItem[2] : 0; // K线数据格式: [open, close, low, high]
+
+                  return {
+                    name: '多空策略',
+                    xAxis: date,
+                    yAxis: minPrice - (minPrice * 0.005), // 显示在最低价下方一点点
+                    value: date,
+                    symbol: 'pin',
+                    symbolSize: 12,
+                    symbolRotate: 180,
+                    itemStyle: {
+                      color: '#ffd700', // 黄色
+                      borderWidth: 0
+                    },
+                    label: {
+                      show: false // 不显示文字标签
+                    },
+                    tooltip: {
+                      formatter: function(params) {
+                        return `多空策略信号<br/>日期: ${params.data.value}`;
+                      }
                     }
-                  },
-                  tooltip: {
-                    formatter: function(params) {
-                      return `锤子线信号<br/>日期: ${params.data.value}`;
+                  };
+                }) : []),
+              // 非涨停倍量柱标记点（红色，不显示文字标签）
+              ...(stockDetail.highVolumeWithoutPriceLimitDates && Array.isArray(stockDetail.highVolumeWithoutPriceLimitDates) ? stockDetail.highVolumeWithoutPriceLimitDates
+                .filter(date => dates.includes(date)) // 只显示当前图表范围内的日期
+                .map(date => {
+                  // 找到对应日期的K线数据，获取最低价
+                  const dateIndex = dates.indexOf(date);
+                  const klineItem = klineData[dateIndex];
+                  const minPrice = klineItem ? klineItem[2] : 0; // K线数据格式: [open, close, low, high]
+
+                  return {
+                    name: '非涨停倍量柱',
+                    xAxis: date,
+                    yAxis: minPrice - (minPrice * 0.005), // 显示在最低价下方一点点
+                    value: date,
+                    symbol: 'pin',
+                    symbolSize: 12,
+                    symbolRotate: 180,
+                    itemStyle: {
+                      color: '#9932CC', // 紫色
+                      borderWidth: 0
+                    },
+                    label: {
+                      show: false // 不显示文字标签
+                    },
+                    tooltip: {
+                      formatter: function(params) {
+                        return `非涨停倍量柱信号<br/>日期: ${params.data.value}`;
+                      }
                     }
-                  },
-                  effective: item.effective,
-                  id: item.id,
-                  type: item.type // 保存type字段
-                };
-              }) : []
+                  };
+                }) : [])
+            ]
           }
         },
         ...maList.map(ma => ({
@@ -2239,18 +2310,23 @@ const getWarmUpStockCodes = () => {
                   const renderTag = (tag, idx, isHighlight = false) => {
                     const color = getTagColor(tag);
                     return (
-                      <span key={`${tag}-${idx}-${isHighlight ? 'highlight' : 'normal'}`} style={{
-                        background: color ? color + '22' : BG_COLOR,
-                        color: color || TEXT_COLOR,
-                        borderRadius: '12px',
-                        padding: '2px 3px',
-                        fontSize: '12px',
-                        marginRight: '8px',
-                        marginBottom: '4px',
-                        display: 'inline-block',
-                        border: color ? `1px solid ${color}` : '1px solid #444',
-                        fontWeight: color ? 'bold' : 'normal',
-                      }}>{tag}</span>
+                      <Tag
+                        key={`${tag}-${idx}-${isHighlight ? 'highlight' : 'normal'}`}
+                        color={color || undefined}
+                        style={{
+                          background: color ? color + '22' : BG_COLOR,
+                          color: color || TEXT_COLOR,
+                          border: color ? `1px solid ${color}` : '1px solid #444',
+                          fontWeight: color ? 'bold' : 'normal',
+                          marginRight: '2px',
+                          marginBottom: '2px',
+                          fontSize: '12px',
+                          borderRadius: '16px',
+                          padding: '0px 4px',
+                        }}
+                      >
+                        {tag}
+                      </Tag>
                     );
                   };
                   
