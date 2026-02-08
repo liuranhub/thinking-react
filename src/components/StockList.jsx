@@ -63,11 +63,11 @@ const StockList = () => {
       orderRule: 'desc',
       showDateSelector: false // 妖股Tab不显示日期选择器
     },
-    latestTechGem: {
-      key: 'latestTechGem',
-      label: '科创/创业',
+    latestSt:{
+      key: 'latestSt',
+      label: 'ST',
       fieldConfigType: 'simple',
-      stockTypes: ['TECH','GEM'],
+      stockTypes: ['ST'],
       orderByField: 'score',
       orderRule: 'desc',
       showDateSelector: false // 妖股Tab不显示日期选择器
@@ -86,6 +86,15 @@ const StockList = () => {
       label: '板块',
       fieldConfigType: 'stockSector',
       stockTypes: ['BK'],
+      showDateSelector: false // 妖股Tab不显示日期选择器
+    },
+    latestAll:{
+      key: 'allStock',
+      label: '所有股票',
+      fieldConfigType: 'simple',
+      stockTypes: ['TECH','GEM', 'BJ', 'MAIN', 'ST'],
+      orderByField: 'score',
+      orderRule: 'desc',
       showDateSelector: false // 妖股Tab不显示日期选择器
     },
     all: {
@@ -141,21 +150,32 @@ const StockList = () => {
       orderByField: 'targetPriceIntervalPrecent',
       orderRule: 'ASC'
     },
+    latestTechGem: {
+      key: 'latestTechGem',
+      label: '科创/创业/北京',
+      fieldConfigType: 'simple',
+      stockTypes: ['TECH','GEM', 'BJ'],
+      orderByField: 'score',
+      orderRule: 'desc',
+      hiddle: true,
+      showDateSelector: false // 妖股Tab不显示日期选择器
+    },
     // 屏蔽妖股列表
-    // yaogu: {
-    //   key: 'yaogu',
-    //   label: '妖股',
-    //   fieldConfigType: 'simple',
-    //   operations: [{
-    //     modalType: MODAL_TYPE_CONFIRM,
-    //     name: "不支持",
-    //     handler: handleNotSupportClick,
-    //     width: 40
-    //   }],
-    //   orderByField: 'stockCode',
-    //   orderRule: 'ASC',
-    //   showDateSelector: false // 妖股Tab不显示日期选择器
-    // },
+    yaogu: {
+      key: 'yaogu',
+      label: '妖股',
+      fieldConfigType: 'simple',
+      operations: [{
+        modalType: MODAL_TYPE_CONFIRM,
+        name: "不支持",
+        handler: handleNotSupportClick,
+        width: 40
+      }],
+      orderByField: 'stockCode',
+      orderRule: 'ASC',
+      hiddle: true,
+      showDateSelector: false // 妖股Tab不显示日期选择器
+    },
     hammerTest: {
       key: 'hammerTest',
       label: 'TEST',
@@ -455,7 +475,10 @@ const StockList = () => {
     
     if(activeTab === TAB_CONFIG.latestMain.key 
       || activeTab === TAB_CONFIG.latestIdx.key
-      || activeTab === TAB_CONFIG.latestTechGem.key ) {
+      || activeTab === TAB_CONFIG.latestTechGem.key 
+      || activeTab === TAB_CONFIG.latestAll.key 
+      || activeTab === TAB_CONFIG.latestSt.key
+    ) {
       response = await post(host + '/stock/stockDataAnalysisPage', {
         pageSize: queryParams.pageSize,
         pageIndex: queryParams.pageIndex,
