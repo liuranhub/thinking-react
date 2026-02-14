@@ -120,6 +120,7 @@ const StockDetail = () => {
   const refreshTimerRef = useRef(null); // 刷新定时器引用
   const [chartRefreshTrigger, setChartRefreshTrigger] = useState(0); // 图表刷新触发器
   const [isLoading, setIsLoading] = useState(false); // 计算按钮加载状态
+  const [rmbFxData, setRmbFxData] = useState(null); // 人民币汇率数据
   
   // 龙虎榜tooltip状态
   const [lhbTooltip, setLhbTooltip] = useState({ visible: false, x: 0, y: 0 });
@@ -776,6 +777,19 @@ const StockDetail = () => {
     }
   };
 
+  // 获取人民币汇率数据
+  const fetchRMBFx = async () => {
+    try {
+      const fxData = await get(API_HOST + `/stock/getRMBFx`);
+      if (fxData) {
+        setRmbFxData(fxData);
+      }
+    } catch (error) {
+      console.error('获取人民币汇率失败:', error);
+      setRmbFxData(null);
+    }
+  };
+
   // 启动定时刷新
   const startAutoRefresh = () => {
     // 先清除现有定时器
@@ -884,6 +898,7 @@ const StockDetail = () => {
     fetchDetail();
     setLatestStockData(null)
     fetchLatestStockData();
+    fetchRMBFx(); // 获取人民币汇率数据
     
     // 启动定时刷新
     startAutoRefresh();
@@ -2319,7 +2334,7 @@ const getWarmUpStockCodes = () => {
                           border: color ? `1px solid ${color}` : '1px solid #444',
                           fontWeight: color ? 'bold' : 'normal',
                           marginRight: '4px',
-                          marginBottom: '2px',
+                          marginBottom: '1px',
                           fontSize: '12px',
                           borderRadius: '16px',
                           padding: '0px 4px',
@@ -2365,8 +2380,36 @@ const getWarmUpStockCodes = () => {
              textAlign: 'left',
              overflowY: 'auto',
              overflowX: 'hidden',}}>
+            <div style={{display: 'flex', flexWrap: 'wrap', marginBottom: '8px', gap: '8px'}}>
+              {rmbFxData ? (
+                <>
+                  <span style={{color: TEXT_COLOR}}>
+                    人民币汇率:
+                    <span style={{
+                      color: rmbFxData.zhangDieFu >= 0 ? '#ef232a' : '#14b143',
+                      fontWeight: 'bold',
+                      marginLeft: '4px'
+                    }}>
+                      {rmbFxData.closePrice ? rmbFxData.closePrice.toFixed(4) : '--'}
+                    </span>
+                  </span>
+                  <span style={{color: TEXT_COLOR}}>
+                    振幅:
+                    <span style={{
+                      color: '#ffa500',
+                      fontWeight: 'bold',
+                      marginLeft: '4px'
+                    }}>
+                      {rmbFxData.zhenFu ? `${rmbFxData.zhenFu.toFixed(2)}%` : '--'}
+                    </span>
+                  </span>
+                </>
+              ) : (
+                <span style={{color: TEXT_COLOR}}>汇率: 加载中...</span>
+              )}
+            </div>
             <div style={{display: 'flex', flexWrap: 'wrap', fontWeight: 'bold',}}>
-              <span style={{color: TEXT_COLOR}}>市值: <span style={{color: '#11d1e4'}}>{stockDetail.totalMarketValue ? Number(stockDetail.totalMarketValue / 100000000).toFixed(2): 0}亿</span></span>
+              <span style={{color: TEXT_COLOR}}>市值: <span style={{color: '#11d1e4'}}>{stockDetail.outstandingMarketValue ? Number(stockDetail.outstandingMarketValue / 100000000).toFixed(2): 0}亿</span></span>
             </div>
             {/* 最新股价信息 */}
             {latestStockData && (

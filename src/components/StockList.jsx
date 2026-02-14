@@ -89,7 +89,7 @@ const StockList = () => {
       showDateSelector: false // 妖股Tab不显示日期选择器
     },
     latestAll:{
-      key: 'allStock',
+      key: 'latestAll',
       label: '所有股票',
       fieldConfigType: 'simple',
       stockTypes: ['TECH','GEM', 'BJ', 'MAIN', 'ST'],
@@ -1393,6 +1393,11 @@ const StockList = () => {
                   key: 'watch-config',
                   label: '监控配置',
                   onClick: () => navigate('/watch-config'),
+                },
+                {
+                  key: 'sector-up-limit-trend',
+                  label: '板块涨停趋势',
+                  onClick: () => navigate('/sector-up-limit-trend'),
                 },
               ],
             }}
