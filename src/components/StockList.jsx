@@ -3,9 +3,9 @@ import { get, post } from '../utils/httpClient';
 import '../App.css';
 import {FixedSizeList as List} from 'react-window';
 
-import {Dropdown, message, Select, Radio} from 'antd';
+import {Dropdown, message, Select, Radio, Avatar} from 'antd';
 import 'antd/dist/reset.css';
-import {Link, useNavigate, useSearchParams} from 'react-router-dom';
+import {useNavigate, useSearchParams} from 'react-router-dom';
 import {API_HOST} from '../config/config';
 
 const StockList = () => {
@@ -109,6 +109,13 @@ const StockList = () => {
       label: '预购',
       fieldConfigType: 'preOrder',
       stockTypes: ['MAIN','TECH','GEM'],
+      showDateSelector: false // 妖股Tab不显示日期选择器
+    },
+    impulseWave: {
+      key: 'impulseWave',
+      label: '脉冲波动',
+      fieldConfigType: 'impulseWave',
+      stockTypes: ['MAIN'],
       showDateSelector: false // 妖股Tab不显示日期选择器
     },
     hammer: {
@@ -495,6 +502,13 @@ const StockList = () => {
         pageSize: queryParams.pageSize,
         pageIndex: queryParams.pageIndex,
         tableName: "stock_data_analysis_latest_sector",
+        keywords: queryParams.keywords,
+      });
+    } else if(activeTab === TAB_CONFIG.impulseWave.key) {
+      response = await post(host + '/stock/stockDataAnalysisPageCommon', {
+        pageSize: queryParams.pageSize,
+        pageIndex: queryParams.pageIndex,
+        tableName: "stock_data_analysis_latest_impulse_wave",
         keywords: queryParams.keywords,
       });
     } else if (activeTab === TAB_CONFIG.hammer.key) {
@@ -968,18 +982,41 @@ const StockList = () => {
               onClick={column.field === 'index' ? (e) => handleIndexClick(e, row.stockCode) : undefined}
             >
               {column.field === 'stockCode' ? (
-                <Link
-                  to={generateStockDetailLink(row)}
-                  state={{ stockList: data }}
+                <span
                   style={{
                     color: '#1890ff',
                     textDecoration: 'none',
                     cursor: 'pointer'
                   }}
-                  onClick={(e) => e.stopPropagation()}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    // 只存储必要的字段，减少 sessionStorage 占用
+                    const minimalStockList = data.map(item => ({
+                      stockCode: item.stockCode,
+                      stockName: item.stockName,
+                      date: item.date,
+                      priceLevel100: item.priceLevel100,
+                      priceLevel200: item.priceLevel200,
+                      priceLevel1000: item.priceLevel1000
+                    }));
+                    try {
+                      sessionStorage.setItem('stockList', JSON.stringify(minimalStockList));
+                    } catch (error) {
+                      console.error('Failed to save stockList to sessionStorage:', error);
+                      // 如果存储失败，尝试清除旧的存储后重试
+                      try {
+                        sessionStorage.removeItem('stockList');
+                        sessionStorage.setItem('stockList', JSON.stringify(minimalStockList));
+                      } catch (retryError) {
+                        console.error('Retry failed:', retryError);
+                      }
+                    }
+                    // 在新标签页打开详情页
+                    window.open(generateStockDetailLink(row), '_blank');
+                  }}
                 >
                   {row[column.field]}
-                </Link>
+                </span>
               ) : (
                 row[column.field]
               )}
@@ -1387,17 +1424,17 @@ const StockList = () => {
                 {
                   key: 'market-trend',
                   label: '市场趋势',
-                  onClick: () => navigate('/market-trend'),
+                  onClick: () => window.open('/market-trend', '_blank'),
                 },
                 {
                   key: 'watch-config',
                   label: '监控配置',
-                  onClick: () => navigate('/watch-config'),
+                  onClick: () => window.open('/watch-config', '_blank'),
                 },
                 {
                   key: 'sector-up-limit-trend',
                   label: '板块涨停趋势',
-                  onClick: () => navigate('/sector-up-limit-trend'),
+                  onClick: () => window.open('/sector-up-limit-trend', '_blank'),
                 },
               ],
             }}

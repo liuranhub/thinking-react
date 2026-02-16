@@ -3,7 +3,7 @@ import ReactECharts from 'echarts-for-react';
 import { get } from '../utils/httpClient';
 import { API_HOST } from '../config/config';
 import { useNavigate } from 'react-router-dom';
-import { DatePicker, Select } from 'antd';
+import { DatePicker, Input, Tag } from 'antd';
 import dayjs from 'dayjs';
 import weekOfYear from 'dayjs/plugin/weekOfYear';
 
@@ -33,11 +33,26 @@ const SectorUpLimitTrend = () => {
   const [allSectors, setAllSectors] = useState([]); // 所有板块列表
   const [selectedSectorCode, setSelectedSectorCode] = useState(null); // 手动选中的板块code
   const [isManualSelection, setIsManualSelection] = useState(false); // 是否手动选择了板块
+  const [searchKeyword, setSearchKeyword] = useState(''); // 搜索关键词
+  const [highlightedIndex, setHighlightedIndex] = useState(-1); // 键盘高亮的索引
+  const [stockList, setStockList] = useState([]); // 板块股票列表
+  const [stockListLoading, setStockListLoading] = useState(false); // 股票列表加载状态
+  const sectorListRef = useRef(null); // 板块列表容器的引用
   const highlightedSeriesRef = useRef(null); // 记录当前高亮的系列名称
   const dataRef = useRef([]); // 存储最新的 data，避免闭包问题
   const fetchNDaysDataRef = useRef(null); // 存储最新的 fetchNDaysData，避免闭包问题
   const host = API_HOST;
   const navigate = useNavigate();
+
+  // 滚动到高亮的板块
+  const scrollToHighlighted = useCallback((index) => {
+    if (sectorListRef.current) {
+      const items = sectorListRef.current.querySelectorAll('[data-index]');
+      if (items[index]) {
+        items[index].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+  }, []);
 
   // 获取所有板块列表
   useEffect(() => {
@@ -53,6 +68,11 @@ const SectorUpLimitTrend = () => {
     };
     fetchAllSectors();
   }, [host]);
+
+  // 搜索关键词变化时重置高亮索引
+  useEffect(() => {
+    setHighlightedIndex(-1);
+  }, [searchKeyword]);
 
   useEffect(() => {
     fetchData();
@@ -87,6 +107,10 @@ const SectorUpLimitTrend = () => {
             const firstSector = response[0]; // 后端已按sort降序排序，第一个就是sort最大的
             if (firstSector && firstSector.sectorStockCode) {
               const sectorName = firstSector.sectorStockName || firstSector.sectorStockCode;
+              // 设置 selectedSectorCode，触发股票列表的自动获取
+              setSelectedSectorCode(firstSector.sectorStockCode);
+              setIsManualSelection(false); // 保持为自动选择状态
+              // 加载该板块的图表数据
               fetchNDaysDataRef.current?.(firstSector.sectorStockCode, sectorName);
             }
           }
@@ -173,6 +197,38 @@ const SectorUpLimitTrend = () => {
   useEffect(() => {
     fetchNDaysDataRef.current = fetchNDaysData;
   }, [fetchNDaysData]);
+
+  // 获取板块股票列表
+  const fetchStockList = useCallback(async (sectorStockCode) => {
+    if (!sectorStockCode) {
+      setStockList([]);
+      return;
+    }
+    
+    setStockListLoading(true);
+    try {
+      const response = await get(`${host}/stock/getSectorStockAnalysisList?sectorStockCode=${sectorStockCode}`);
+      if (response && Array.isArray(response)) {
+        setStockList(response);
+      } else {
+        setStockList([]);
+      }
+    } catch (error) {
+      console.error('Error fetching stock list:', error);
+      setStockList([]);
+    } finally {
+      setStockListLoading(false);
+    }
+  }, [host]);
+
+  // 当选择板块时，获取股票列表
+  useEffect(() => {
+    if (selectedSectorCode) {
+      fetchStockList(selectedSectorCode);
+    } else {
+      setStockList([]);
+    }
+  }, [selectedSectorCode, fetchStockList]);
 
   // 图表实例引用
   const chartInstanceRef = useRef(null);
@@ -544,9 +600,16 @@ const SectorUpLimitTrend = () => {
       return a.week - b.week;
     });
     
-    // 格式化周显示（例如：2024-W01 -> 2024年第1周）
-    const weeks = weekDataArray.map(item => {
-      return `${item.year}年第${item.week}周`;
+    // 格式化X轴显示为年月（例如：2024-01）
+    // 从dates数组中取第一个日期来确定月份
+    const months = weekDataArray.map(item => {
+      if (item.dates && item.dates.length > 0) {
+        const firstDate = dayjs(item.dates[0]);
+        return `${firstDate.year()}-${String(firstDate.month() + 1).padStart(2, '0')}`;
+      }
+      // 如果没有日期，使用year和week推算（可能不准确，但作为后备）
+      const month = Math.floor((item.week - 1) / 4) + 1;
+      return `${item.year}-${String(month).padStart(2, '0')}`;
     });
     const counts = weekDataArray.map(item => item.count);
 
@@ -595,7 +658,7 @@ const SectorUpLimitTrend = () => {
       xAxis: {
         type: 'category',
         boundaryGap: false,
-        data: weeks,
+        data: months,
         axisLine: {
           lineStyle: {
             color: '#ccc'
@@ -603,7 +666,15 @@ const SectorUpLimitTrend = () => {
         },
         axisLabel: {
           rotate: 45,
-          fontSize: 10
+          fontSize: 10,
+          // 只显示唯一的年月，避免重复
+          interval: function(index, value) {
+            // 如果当前值和前一个值相同，则不显示
+            if (index > 0 && months[index - 1] === value) {
+              return true; // 跳过显示
+            }
+            return false; // 显示
+          }
         }
       },
       yAxis: {
@@ -667,17 +738,17 @@ const SectorUpLimitTrend = () => {
               opacity: 0.6
             },
             data: [
-              {
-                yAxis: 15,
-                label: {
-                  show: true,
-                  position: 'end',
-                  formatter: '15',
-                  fontSize: 12,
-                  color: '#ff4d4f',
-                  backgroundColor: 'transparent'
-                }
-              }
+              // {
+              //   yAxis: 15,
+              //   label: {
+              //     show: true,
+              //     position: 'end',
+              //     formatter: '15',
+              //     fontSize: 12,
+              //     color: '#ff4d4f',
+              //     backgroundColor: 'transparent'
+              //   }
+              // }
             ]
           }
         }
@@ -751,9 +822,16 @@ const SectorUpLimitTrend = () => {
       return a.biweekIndex - b.biweekIndex;
     });
     
-    // 格式化两周显示（例如：2024年第1-2周）
-    const biweeks = biweekDataArray.map(item => {
-      return `${item.year}年第${item.startWeek}-${item.endWeek}周`;
+    // 格式化X轴显示为年月（例如：2024-01）
+    // 从dates数组中取第一个日期来确定月份
+    const months = biweekDataArray.map(item => {
+      if (item.dates && item.dates.length > 0) {
+        const firstDate = dayjs(item.dates[0]);
+        return `${firstDate.year()}-${String(firstDate.month() + 1).padStart(2, '0')}`;
+      }
+      // 如果没有日期，使用year和startWeek推算（可能不准确，但作为后备）
+      const month = Math.floor((item.startWeek - 1) / 4) + 1;
+      return `${item.year}-${String(month).padStart(2, '0')}`;
     });
     const counts = biweekDataArray.map(item => item.count);
 
@@ -801,7 +879,7 @@ const SectorUpLimitTrend = () => {
       xAxis: {
         type: 'category',
         boundaryGap: false,
-        data: biweeks,
+        data: months,
         axisLine: {
           lineStyle: {
             color: '#ccc'
@@ -809,7 +887,15 @@ const SectorUpLimitTrend = () => {
         },
         axisLabel: {
           rotate: 45,
-          fontSize: 10
+          fontSize: 10,
+          // 只显示唯一的年月，避免重复
+          interval: function(index, value) {
+            // 如果当前值和前一个值相同，则不显示
+            if (index > 0 && months[index - 1] === value) {
+              return true; // 跳过显示
+            }
+            return false; // 显示
+          }
         }
       },
       yAxis: {
@@ -873,17 +959,17 @@ const SectorUpLimitTrend = () => {
               opacity: 0.6
             },
             data: [
-              {
-                yAxis: 15,
-                label: {
-                  show: true,
-                  position: 'end',
-                  formatter: '15',
-                  fontSize: 12,
-                  color: '#ff4d4f',
-                  backgroundColor: 'transparent'
-                }
-              }
+              // {
+              //   yAxis: 15,
+              //   label: {
+              //     show: true,
+              //     position: 'end',
+              //     formatter: '15',
+              //     fontSize: 12,
+              //     color: '#ff4d4f',
+              //     backgroundColor: 'transparent'
+              //   }
+              // }
             ]
           }
         }
@@ -1130,167 +1216,478 @@ const SectorUpLimitTrend = () => {
   }, [data, selectedSectors]);
 
   return (
-    <div style={{ 
-      padding: '10px',
-      backgroundColor: '#fff',
-      minHeight: '100vh'
-    }}>
-      <div style={{ marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
-        <button
-          onClick={() => navigate('/')}
+    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
+      {/* 左侧板块列表 */}
+      <div style={{
+        width: '200px',
+        backgroundColor: '#f5f5f5',
+        borderRight: '1px solid #d9d9d9',
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100vh',
+        overflow: 'hidden',
+        flexShrink: 0
+      }}>
+        {/* 日期选择和搜索框 */}
+        <div style={{
+          padding: '12px',
+          borderBottom: '1px solid #d9d9d9',
+          backgroundColor: '#fff',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '8px'
+        }}>
+          {/* 选择日期行 */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}>
+            <span style={{ fontSize: '12px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>日期:</span>
+            <DatePicker
+              value={selectedDate}
+              onChange={(date) => {
+                if (date) {
+                  setSelectedDate(date);
+                }
+              }}
+              format="YYYY-MM-DD"
+              style={{ flex: 1 }}
+              allowClear={false}
+              size="small"
+            />
+          </div>
+          {/* 搜索板块行 */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}>
+            <span style={{ fontSize: '12px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>板块:</span>
+            <Input
+              placeholder="输入板块名称搜索"
+              value={searchKeyword}
+              onChange={(e) => setSearchKeyword(e.target.value)}
+              allowClear
+              size="small"
+              style={{ flex: 1 }}
+            />
+          </div>
+        </div>
+        
+        {/* 可滚动板块列表 */}
+        <div 
+          ref={sectorListRef}
+          tabIndex={0}
           style={{
-            padding: '8px 16px',
-            border: '1px solid #d9d9d9',
-            borderRadius: '4px',
-            backgroundColor: '#fff',
-            cursor: 'pointer'
+            flex: 1,
+            overflowY: 'auto',
+            overflowX: 'hidden',
+            padding: '4px 0',
+            outline: 'none'
+          }}
+          onKeyDown={(e) => {
+            const filteredSectors = allSectors.filter(sector => {
+              if (!searchKeyword.trim()) {
+                return true;
+              }
+              const keyword = searchKeyword.toLowerCase().trim();
+              return sector.stockName && sector.stockName.toLowerCase().includes(keyword);
+            });
+            
+            if (filteredSectors.length === 0) return;
+            
+            let newIndex = highlightedIndex;
+            
+            if (e.key === 'ArrowDown') {
+              e.preventDefault();
+              // 如果当前没有高亮，从第一个开始；否则向下移动
+              if (highlightedIndex < 0) {
+                newIndex = 0;
+              } else {
+                newIndex = highlightedIndex < filteredSectors.length - 1 ? highlightedIndex + 1 : 0;
+              }
+              setHighlightedIndex(newIndex);
+              // 滚动到可见区域
+              setTimeout(() => scrollToHighlighted(newIndex), 0);
+            } else if (e.key === 'ArrowUp') {
+              e.preventDefault();
+              // 如果当前没有高亮，从最后一个开始；否则向上移动
+              if (highlightedIndex < 0) {
+                newIndex = filteredSectors.length - 1;
+              } else {
+                newIndex = highlightedIndex > 0 ? highlightedIndex - 1 : filteredSectors.length - 1;
+              }
+              setHighlightedIndex(newIndex);
+              // 滚动到可见区域
+              setTimeout(() => scrollToHighlighted(newIndex), 0);
+            } else if (e.key === 'Enter' && highlightedIndex >= 0 && highlightedIndex < filteredSectors.length) {
+              e.preventDefault();
+              const sector = filteredSectors[highlightedIndex];
+              if (sector) {
+                const isSelected = selectedSectorCode === sector.stockCode;
+                if (isSelected) {
+                  setSelectedSectorCode(null);
+                  setIsManualSelection(false);
+                  setBottomChartData([]);
+                  setBottomChartSectorName('');
+                  setYearChartData([]);
+                  setYearChartSectorName('');
+                  setYear3ChartData([]);
+                  setYear3ChartSectorName('');
+                } else {
+                  setSelectedSectorCode(sector.stockCode);
+                  setIsManualSelection(true);
+                  fetchNDaysDataRef.current?.(sector.stockCode, sector.stockName);
+                }
+              }
+            }
           }}
         >
-          ← 返回
-        </button>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontSize: '14px', fontWeight: 'bold' }}>选择板块：</span>
-          <Select
-            showSearch
-            placeholder="请选择板块"
-            value={selectedSectorCode}
-            onChange={(value) => {
-              if (value) {
-                setSelectedSectorCode(value);
-                setIsManualSelection(true);
-                // 找到选中的板块名称
-                const selectedSector = allSectors.find(s => s.stockCode === value);
-                if (selectedSector) {
-                  // 加载该板块的数据（fetchData 会在 useEffect 中自动调用）
-                  // 同时加载90天、365天和1095天数据
-                  fetchNDaysDataRef.current?.(value, selectedSector.stockName);
-                }
-              } else {
-                setSelectedSectorCode(null);
-                setIsManualSelection(false);
-                // 清空下方图表数据
-                setBottomChartData([]);
-                setBottomChartSectorName('');
-                setYearChartData([]);
-                setYearChartSectorName('');
-                setYear3ChartData([]);
-                setYear3ChartSectorName('');
+          {allSectors
+            .filter(sector => {
+              if (!searchKeyword.trim()) {
+                return true;
               }
+              const keyword = searchKeyword.toLowerCase().trim();
+              return sector.stockName && sector.stockName.toLowerCase().includes(keyword);
+            })
+            .map((sector, index) => {
+            const isSelected = selectedSectorCode === sector.stockCode;
+            const isHighlighted = highlightedIndex === index;
+            return (
+              <div
+                key={sector.stockCode}
+                data-index={index}
+                onClick={() => {
+                  setHighlightedIndex(index);
+                  if (isSelected) {
+                    // 如果已选中，取消选择
+                    setSelectedSectorCode(null);
+                    setIsManualSelection(false);
+                    // 清空下方图表数据
+                    setBottomChartData([]);
+                    setBottomChartSectorName('');
+                    setYearChartData([]);
+                    setYearChartSectorName('');
+                    setYear3ChartData([]);
+                    setYear3ChartSectorName('');
+                  } else {
+                    // 选择新板块
+                    setSelectedSectorCode(sector.stockCode);
+                    setIsManualSelection(true);
+                    // 加载该板块的数据
+                    fetchNDaysDataRef.current?.(sector.stockCode, sector.stockName);
+                  }
+                }}
+                style={{
+                  padding: '10px 12px',
+                  cursor: 'pointer',
+                  backgroundColor: isSelected ? '#1890ff' : (isHighlighted ? '#e6f7ff' : 'transparent'),
+                  color: isSelected ? '#fff' : '#333',
+                  borderLeft: isSelected ? '3px solid #0050b3' : (isHighlighted ? '3px solid #1890ff' : '3px solid transparent'),
+                  transition: 'all 0.2s',
+                  fontSize: '13px'
+                }}
+                onMouseEnter={(e) => {
+                  setHighlightedIndex(index);
+                  if (!isSelected) {
+                    e.currentTarget.style.backgroundColor = '#e6f7ff';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isSelected && !isHighlighted) {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                  }
+                }}
+                title={sector.stockName}
+              >
+                <div style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '2px',
+                  flexWrap: 'wrap'
+                }}>
+                  <span style={{
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    flex: '0 1 auto'
+                  }}>
+                    {sector.stockName}
+                  </span>
+                  {sector.types && Array.isArray(sector.types) && sector.types.length > 0 && (
+                    <div style={{ 
+                      display: 'flex', 
+                      gap: '2px', 
+                      flexWrap: 'wrap',
+                      flex: '0 1 auto'
+                    }}>
+                      {sector.types.map((type, index) => (
+                        <Tag
+                          key={index}
+                          style={{
+                            margin: 0,
+                            fontSize: '10px',
+                            padding: '0 4px',
+                            height: '18px',
+                            lineHeight: '18px',
+                            backgroundColor: isSelected ? 'rgba(255, 255, 255, 0.2)' : '#f0f0f0',
+                            color: isSelected ? '#fff' : '#666',
+                            border: isSelected ? '1px solid rgba(255, 255, 255, 0.3)' : '1px solid #d9d9d9'
+                          }}
+                        >
+                          {type}
+                        </Tag>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* 中间股票列表 */}
+      <div style={{
+        width: '200px',
+        backgroundColor: '#f5f5f5',
+        borderRight: '1px solid #d9d9d9',
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100vh',
+        overflow: 'hidden',
+        flexShrink: 0
+      }}>
+        <div style={{
+          padding: '12px',
+          borderBottom: '1px solid #d9d9d9',
+          backgroundColor: '#fff'
+        }}>
+          <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#333' }}>
+            {selectedSectorCode ? `板块股票列表 (${stockList.length})` : '请选择板块'}
+          </div>
+        </div>
+        
+        {/* 股票列表 */}
+        <div style={{
+          flex: 1,
+          overflowY: 'auto',
+          overflowX: 'hidden',
+          padding: '4px 0'
+        }}>
+          {stockListLoading ? (
+            <div style={{ textAlign: 'center', padding: '50px', color: '#999' }}>加载中...</div>
+          ) : stockList.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '50px', color: '#999' }}>
+              {selectedSectorCode ? '暂无股票数据' : '请先选择板块'}
+            </div>
+          ) : (
+            stockList.map((stock, index) => (
+              <div
+                key={stock.stockCode}
+                style={{
+                  padding: '10px 12px',
+                  fontSize: '13px',
+                  borderBottom: '1px solid #f0f0f0',
+                  backgroundColor: '#fff',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#e6f7ff';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = '#fff';
+                }}
+                onClick={(e) => {
+                  // 只存储必要的字段，减少 sessionStorage 占用
+                  const minimalStockList = stockList.map(item => ({
+                    stockCode: item.stockCode,
+                    stockName: item.stockName,
+                    date: item.date,
+                    priceLevel100: item.priceLevel100,
+                    priceLevel200: item.priceLevel200,
+                    priceLevel1000: item.priceLevel1000
+                  }));
+                  try {
+                    sessionStorage.setItem('stockList', JSON.stringify(minimalStockList));
+                  } catch (error) {
+                    console.error('Failed to save stockList to sessionStorage:', error);
+                    // 如果存储失败，尝试清除旧的存储后重试
+                    try {
+                      sessionStorage.removeItem('stockList');
+                      sessionStorage.setItem('stockList', JSON.stringify(minimalStockList));
+                    } catch (retryError) {
+                      console.error('Retry failed:', retryError);
+                    }
+                  }
+                  // 在新标签页打开详情页
+                  window.open(`/stock-detail/${stock.stockCode}/latest?tab=stockSector`, '_blank');
+                }}
+              >
+                <div style={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: '4px'
+                }}>
+                  <span style={{ fontWeight: 'bold', color: '#333' }}>
+                    {stock.stockName}
+                  </span>
+                  {stock.totalScore !== undefined && (
+                    <span style={{ 
+                      fontSize: '12px', 
+                      color: stock.totalScore >= 0 ? '#52c41a' : '#ff4d4f',
+                      fontWeight: 'bold'
+                    }}>
+                      {stock.totalScore.toFixed(2)}
+                    </span>
+                  )}
+                  
+                </div>
+                <div style={{fontSize: '11px', color: '#666',}}>
+                  价位：
+                  <strong>
+                  {stock.priceLevel100.toFixed(0)}%,{stock.priceLevel200.toFixed(0)}%,{stock.priceLevel1000.toFixed(0)}%
+                  </strong>
+                </div>
+                  {(stock.closePrice !== undefined || stock.zhangDieFu !== undefined) && (
+                    <div style={{ 
+                      fontSize: '11px', 
+                      color: '#666',
+                      marginTop: '4px',
+                      display: 'flex',
+                      gap: '8px'
+                    }}>
+                      {stock.closePrice !== undefined && (
+                        <span style={{ 
+                          display: 'flex', 
+                          alignItems: 'center',
+                          minWidth: '70px'
+                        }}>
+                          股价: <strong style={{
+                            color: stock.zhangDieFu > 0 ? '#ef232a' : stock.zhangDieFu < 0 ? '#14b143' : '#666',
+                            marginLeft: '4px'
+                          }}>{stock.closePrice.toFixed(2)}</strong>
+                        </span>
+                      )}
+                      {stock.zhangDieFu !== undefined && (
+                        <span style={{ 
+                          display: 'flex', 
+                          alignItems: 'center',
+                          minWidth: '90px'
+                        }}>
+                          涨跌幅: <strong style={{
+                            color: stock.zhangDieFu > 0 ? '#ef232a' : stock.zhangDieFu < 0 ? '#14b143' : '#666',
+                            marginLeft: '4px'
+                          }}>{stock.zhangDieFu >= 0 ? '+' : ''}{stock.zhangDieFu.toFixed(2)}%</strong>
+                        </span>
+                      )}
+                    </div>
+                  )}
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* 右侧内容区域 */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto', overflowX: 'hidden', padding: '10px' }}>
+        {/* 上方图表区域 - 占一半 */}
+        <div style={{ 
+          backgroundColor: '#fff',
+          borderRadius: '4px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+          marginBottom: '10px',
+          padding: '10px',
+          height: 'calc(50vh - 20px)',
+          minHeight: '350px',
+          flexShrink: 0
+        }}>
+          <ReactECharts
+            option={topChartOption}
+            style={{ height: '100%', width: '100%' }}
+            opts={{ renderer: 'svg' }}
+            onChartReady={onChartReady}
+            onEvents={{
+              'click': handleChartClick,
+              'legendselectchanged': handleChartClick // 也监听图例点击事件
             }}
-            allowClear
-            style={{ width: '200px' }}
-            filterOption={(input, option) =>
-              (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-            }
-            options={allSectors.map(sector => ({
-              value: sector.stockCode,
-              label: sector.stockName
-            }))}
+            notMerge={true}
           />
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontSize: '14px', fontWeight: 'bold' }}>选择日期：</span>
-          <DatePicker
-            value={selectedDate}
-            onChange={(date) => {
-              if (date) {
-                setSelectedDate(date);
-              }
-            }}
-            format="YYYY-MM-DD"
-            style={{ width: '150px' }}
-            allowClear={false}
-          />
+
+        {/* 下方图表区域 - 90天和一年垂直排列 */}
+        {/* 90天图表 */}
+        <div style={{ 
+          backgroundColor: '#fff',
+          borderRadius: '4px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+          marginBottom: '10px',
+          padding: '10px',
+          height: 'calc(16.67vh - 20px)',
+          minHeight: '200px',
+          flexShrink: 0
+        }}>
+          {bottomChartLoading ? (
+            <div style={{ textAlign: 'center', padding: '50px' }}>加载中...</div>
+          ) : (
+            <ReactECharts
+              option={bottomChartOption}
+              style={{ height: '100%', width: '100%' }}
+              opts={{ renderer: 'svg' }}
+              notMerge={true}
+            />
+          )}
         </div>
-      </div>
 
-      {/* 上方图表区域 - 占一半 */}
-      <div style={{ 
-        backgroundColor: '#fff',
-        borderRadius: '4px',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-        marginBottom: '10px',
-        padding: '10px',
-        height: 'calc(50vh - 60px)',
-        minHeight: '350px'
-      }}>
-        <ReactECharts
-          option={topChartOption}
-          style={{ height: '100%', width: '100%' }}
-          opts={{ renderer: 'svg' }}
-          onChartReady={onChartReady}
-          onEvents={{
-            'click': handleChartClick,
-            'legendselectchanged': handleChartClick // 也监听图例点击事件
-          }}
-          notMerge={true}
-        />
-      </div>
+        {/* 一年图表 */}
+        <div style={{ 
+          backgroundColor: '#fff',
+          borderRadius: '4px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+          marginBottom: '10px',
+          padding: '10px',
+          height: 'calc(16.67vh - 20px)',
+          minHeight: '200px',
+          flexShrink: 0
+        }}>
+          {yearChartLoading ? (
+            <div style={{ textAlign: 'center', padding: '50px' }}>加载中...</div>
+          ) : (
+            <ReactECharts
+              option={yearChartOption}
+              style={{ height: '100%', width: '100%' }}
+              opts={{ renderer: 'svg' }}
+              notMerge={true}
+            />
+          )}
+        </div>
 
-      {/* 下方图表区域 - 90天和一年垂直排列 */}
-      {/* 90天图表 */}
-      <div style={{ 
-        backgroundColor: '#fff',
-        borderRadius: '4px',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-        marginBottom: '10px',
-        padding: '10px',
-        height: 'calc(25vh - 60px)',
-        minHeight: '200px'
-      }}>
-        {bottomChartLoading ? (
-          <div style={{ textAlign: 'center', padding: '50px' }}>加载中...</div>
-        ) : (
-          <ReactECharts
-            option={bottomChartOption}
-            style={{ height: '100%', width: '100%' }}
-            opts={{ renderer: 'svg' }}
-            notMerge={true}
-          />
-        )}
-      </div>
-
-      {/* 一年图表 */}
-      <div style={{ 
-        backgroundColor: '#fff',
-        borderRadius: '4px',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-        marginBottom: '10px',
-        padding: '10px',
-        height: 'calc(16.67vh - 20px)',
-        minHeight: '200px'
-      }}>
-        {yearChartLoading ? (
-          <div style={{ textAlign: 'center', padding: '50px' }}>加载中...</div>
-        ) : (
-          <ReactECharts
-            option={yearChartOption}
-            style={{ height: '100%', width: '100%' }}
-            opts={{ renderer: 'svg' }}
-            notMerge={true}
-          />
-        )}
-      </div>
-
-      {/* 3年图表 */}
-      <div style={{ 
-        backgroundColor: '#fff',
-        borderRadius: '4px',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-        padding: '10px',
-        height: 'calc(16.67vh - 20px)',
-        minHeight: '200px'
-      }}>
-        {year3ChartLoading ? (
-          <div style={{ textAlign: 'center', padding: '50px' }}>加载中...</div>
-        ) : (
-          <ReactECharts
-            option={year3ChartOption}
-            style={{ height: '100%', width: '100%' }}
-            opts={{ renderer: 'svg' }}
-            notMerge={true}
-          />
-        )}
+        {/* 3年图表 */}
+        <div style={{ 
+          backgroundColor: '#fff',
+          borderRadius: '4px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+          marginBottom: '10px',
+          padding: '10px',
+          height: 'calc(16.67vh - 20px)',
+          minHeight: '200px',
+          flexShrink: 0
+        }}>
+          {year3ChartLoading ? (
+            <div style={{ textAlign: 'center', padding: '50px' }}>加载中...</div>
+          ) : (
+            <ReactECharts
+              option={year3ChartOption}
+              style={{ height: '100%', width: '100%' }}
+              opts={{ renderer: 'svg' }}
+              notMerge={true}
+            />
+          )}
+        </div>
       </div>
     </div>
   );

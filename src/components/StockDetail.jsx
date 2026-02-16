@@ -84,11 +84,37 @@ const StockDetail = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { stockCode: paramStockCode } = useParams();
-  // 股票列表
-  const [stockList, setStockList] = useState(location.state?.stockList || []);
+  // 股票列表 - 优先从 location.state 获取，如果没有则从 sessionStorage 获取
+  const [stockList, setStockList] = useState(() => {
+    if (location.state?.stockList) {
+      return location.state.stockList;
+    }
+    // 尝试从 sessionStorage 获取
+    try {
+      const stored = sessionStorage.getItem('stockList');
+      if (stored) {
+        return JSON.parse(stored);
+      }
+    } catch (e) {
+      console.error('Failed to parse stockList from sessionStorage:', e);
+    }
+    return [];
+  });
   // 当前索引
   const [currentIndex, setCurrentIndex] = useState(() => {
-    const idx = (location.state?.stockList || []).findIndex(s => s.stockCode === paramStockCode);
+    // 优先从 location.state 获取 stockList，如果没有则从 sessionStorage 获取
+    let list = location.state?.stockList;
+    if (!list || list.length === 0) {
+      try {
+        const stored = sessionStorage.getItem('stockList');
+        if (stored) {
+          list = JSON.parse(stored);
+        }
+      } catch (e) {
+        console.error('Failed to parse stockList from sessionStorage:', e);
+      }
+    }
+    const idx = (list || []).findIndex(s => s.stockCode === paramStockCode);
     return idx >= 0 ? idx : 0;
   });
   // 当前股票
