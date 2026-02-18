@@ -2100,7 +2100,7 @@ const getWarmUpStockCodes = () => {
   };
 
   // 格式化数值函数
-  const formatNumber = (num, length = 3) => {
+  const formatNumber = (num, length = 2) => {
     if (num === null || num === undefined || num === '') return num;
     const parsed = parseFloat(num);
     if (isNaN(parsed)) return num;
@@ -2986,7 +2986,7 @@ const getWarmUpStockCodes = () => {
             )}
             {/* 妖股操作按钮 */}
             {/* 屏蔽妖股按钮--2025-11-08 */}
-            {/* {stockDetail.yaoGu ? (
+            {stockDetail.yaoGu ? (
               <button
                 onClick={handleRemoveYaogu}
                 style={{
@@ -3026,7 +3026,7 @@ const getWarmUpStockCodes = () => {
               >
                 添加妖股
               </button>
-            )} */}
+            )}
             <span style={{marginRight: 0, color: '#fff'}}>收藏:</span>
             <Rate
                 count={5}

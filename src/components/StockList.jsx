@@ -180,7 +180,7 @@ const StockList = () => {
       }],
       orderByField: 'stockCode',
       orderRule: 'ASC',
-      hiddle: true,
+      hiddle: false,
       showDateSelector: false // 妖股Tab不显示日期选择器
     },
     hammerTest: {
@@ -510,8 +510,21 @@ const StockList = () => {
         pageIndex: queryParams.pageIndex,
         tableName: "stock_data_analysis_latest_impulse_wave",
         keywords: queryParams.keywords,
+        stockTypes: currentStockTypes,
+        orderByField: queryParams.orderByField,
+        orderRule: queryParams.orderRule,
       });
-    } else if (activeTab === TAB_CONFIG.hammer.key) {
+    } else if (activeTab === TAB_CONFIG.yaogu.key) {
+      response = await post(host + '/stock/stockDataYaoguPage', {
+        pageSize: queryParams.pageSize,
+        pageIndex: queryParams.pageIndex,
+        tableName: "stock_data_analysis_yaogu",
+        keywords: queryParams.keywords,
+        orderByField: queryParams.orderByField,
+        orderRule: queryParams.orderRule,
+      });
+    }
+    else if (activeTab === TAB_CONFIG.hammer.key) {
       response = await post(host + '/stock/stockDataAnalysisPageCommon', {
         pageSize: queryParams.pageSize,
         pageIndex: queryParams.pageIndex,
