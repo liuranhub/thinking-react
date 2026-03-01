@@ -3,9 +3,10 @@ import ReactECharts from 'echarts-for-react';
 import { get } from '../utils/httpClient';
 import { API_HOST } from '../config/config';
 import { useNavigate } from 'react-router-dom';
-import { DatePicker, Input, Tag } from 'antd';
+import { DatePicker, Input, Tag, Select } from 'antd';
 import dayjs from 'dayjs';
 import weekOfYear from 'dayjs/plugin/weekOfYear';
+import { openWindow } from '../utils/windowManager';
 
 dayjs.extend(weekOfYear);
 
@@ -37,6 +38,7 @@ const SectorUpLimitTrend = () => {
   const [highlightedIndex, setHighlightedIndex] = useState(-1); // 键盘高亮的索引
   const [stockList, setStockList] = useState([]); // 板块股票列表
   const [stockListLoading, setStockListLoading] = useState(false); // 股票列表加载状态
+  const [sortBy, setSortBy] = useState('zhangDieFu'); // 排序方式：'zhangDieFu' 或 'totalScore'
   const sectorListRef = useRef(null); // 板块列表容器的引用
   const highlightedSeriesRef = useRef(null); // 记录当前高亮的系列名称
   const dataRef = useRef([]); // 存储最新的 data，避免闭包问题
@@ -73,6 +75,18 @@ const SectorUpLimitTrend = () => {
   useEffect(() => {
     setHighlightedIndex(-1);
   }, [searchKeyword]);
+
+  // 设置窗口标题（从 URL 参数读取）
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const windowTitle = urlParams.get('_windowTitle');
+    if (windowTitle) {
+      document.title = decodeURIComponent(windowTitle);
+    } else {
+      // 如果没有传递标题，使用默认标题
+      document.title = '板块涨停趋势';
+    }
+  }, []);
 
   useEffect(() => {
     fetchData();
@@ -229,6 +243,29 @@ const SectorUpLimitTrend = () => {
       setStockList([]);
     }
   }, [selectedSectorCode, fetchStockList]);
+
+  // 对股票列表进行排序
+  const sortedStockList = useMemo(() => {
+    if (!stockList || stockList.length === 0) {
+      return [];
+    }
+    const sorted = [...stockList];
+    sorted.sort((a, b) => {
+      if (sortBy === 'zhangDieFu') {
+        // 按涨跌幅倒序排序
+        const aValue = a.zhangDieFu !== undefined ? a.zhangDieFu : -Infinity;
+        const bValue = b.zhangDieFu !== undefined ? b.zhangDieFu : -Infinity;
+        return bValue - aValue; // 倒序
+      } else if (sortBy === 'totalScore') {
+        // 按总分倒序排序
+        const aValue = a.totalScore !== undefined ? a.totalScore : -Infinity;
+        const bValue = b.totalScore !== undefined ? b.totalScore : -Infinity;
+        return bValue - aValue; // 倒序
+      }
+      return 0;
+    });
+    return sorted;
+  }, [stockList, sortBy]);
 
   // 图表实例引用
   const chartInstanceRef = useRef(null);
@@ -1465,9 +1502,21 @@ const SectorUpLimitTrend = () => {
           borderBottom: '1px solid #d9d9d9',
           backgroundColor: '#fff'
         }}>
-          <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#333' }}>
+          <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#333', marginBottom: '8px' }}>
             {selectedSectorCode ? `板块股票列表 (${stockList.length})` : '请选择板块'}
           </div>
+          {selectedSectorCode && stockList.length > 0 && (
+            <Select
+              value={sortBy}
+              onChange={setSortBy}
+              size="small"
+              style={{ width: '100%' }}
+              options={[
+                { label: '按涨跌幅排序', value: 'zhangDieFu' },
+                { label: '按总分排序', value: 'totalScore' }
+              ]}
+            />
+          )}
         </div>
         
         {/* 股票列表 */}
@@ -1484,7 +1533,7 @@ const SectorUpLimitTrend = () => {
               {selectedSectorCode ? '暂无股票数据' : '请先选择板块'}
             </div>
           ) : (
-            stockList.map((stock, index) => (
+            sortedStockList.map((stock, index) => (
               <div
                 key={stock.stockCode}
                 style={{
@@ -1503,7 +1552,7 @@ const SectorUpLimitTrend = () => {
                 }}
                 onClick={(e) => {
                   // 只存储必要的字段，减少 sessionStorage 占用
-                  const minimalStockList = stockList.map(item => ({
+                  const minimalStockList = sortedStockList.map(item => ({
                     stockCode: item.stockCode,
                     stockName: item.stockName,
                     date: item.date,
@@ -1524,7 +1573,8 @@ const SectorUpLimitTrend = () => {
                     }
                   }
                   // 在新标签页打开详情页
-                  window.open(`/stock-detail/${stock.stockCode}/latest?tab=stockSector`, '_blank');
+                  // const windowTitle = `${stock.stockName || stock.stockCode} - 股票详情`;
+                  openWindow(`/stock-detail/${stock.stockCode}/latest?tab=stockSector`, "股票详情");
                 }}
               >
                 <div style={{ 

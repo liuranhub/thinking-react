@@ -7,6 +7,7 @@ import {Dropdown, message, Select, Radio, Avatar} from 'antd';
 import 'antd/dist/reset.css';
 import {useNavigate, useSearchParams} from 'react-router-dom';
 import {API_HOST} from '../config/config';
+import { openWindow } from '../utils/windowManager';
 
 const StockList = () => {
   const host = API_HOST;
@@ -86,6 +87,7 @@ const StockList = () => {
       label: '板块',
       fieldConfigType: 'stockSector',
       stockTypes: ['BK'],
+      hiddle: true,
       showDateSelector: false // 妖股Tab不显示日期选择器
     },
     latestAll:{
@@ -102,7 +104,8 @@ const StockList = () => {
       label: '所有数据',
       fieldConfigType: 'simple',
       orderByField: 'stockCode',
-      orderRule: 'ASC'
+      orderRule: 'ASC',
+      hiddle: true,
     },
     preOrder: {
       key: 'preOrder',
@@ -115,6 +118,13 @@ const StockList = () => {
       key: 'impulseWave',
       label: '脉冲波动',
       fieldConfigType: 'impulseWave',
+      stockTypes: ['MAIN'],
+      showDateSelector: false // 妖股Tab不显示日期选择器
+    },
+    highvolume: {
+      key: 'highvolume',
+      label: '非涨停倍量',
+      fieldConfigType: 'simple',
       stockTypes: ['MAIN'],
       showDateSelector: false // 妖股Tab不显示日期选择器
     },
@@ -172,12 +182,7 @@ const StockList = () => {
       key: 'yaogu',
       label: '妖股',
       fieldConfigType: 'simple',
-      operations: [{
-        modalType: MODAL_TYPE_CONFIRM,
-        name: "不支持",
-        handler: handleNotSupportClick,
-        width: 40
-      }],
+      stockTypes: ['TECH','GEM', 'BJ', 'MAIN', 'ST'],
       orderByField: 'stockCode',
       orderRule: 'ASC',
       hiddle: false,
@@ -509,6 +514,16 @@ const StockList = () => {
         pageSize: queryParams.pageSize,
         pageIndex: queryParams.pageIndex,
         tableName: "stock_data_analysis_latest_impulse_wave",
+        keywords: queryParams.keywords,
+        stockTypes: currentStockTypes,
+        orderByField: queryParams.orderByField,
+        orderRule: queryParams.orderRule,
+      });
+    }else if(activeTab === TAB_CONFIG.highvolume.key) {
+      response = await post(host + '/stock/stockDataAnalysisPageCommon', {
+        pageSize: queryParams.pageSize,
+        pageIndex: queryParams.pageIndex,
+        tableName: "stock_data_analysis_highvolume",
         keywords: queryParams.keywords,
         stockTypes: currentStockTypes,
         orderByField: queryParams.orderByField,
@@ -1025,7 +1040,8 @@ const StockList = () => {
                       }
                     }
                     // 在新标签页打开详情页
-                    window.open(generateStockDetailLink(row), '_blank');
+                    // const windowTitle = `${row.stockName || row.stockCode} - 股票详情`;
+                    openWindow(generateStockDetailLink(row), "股票详情");
                   }}
                 >
                   {row[column.field]}
@@ -1437,17 +1453,17 @@ const StockList = () => {
                 {
                   key: 'market-trend',
                   label: '市场趋势',
-                  onClick: () => window.open('/market-trend', '_blank'),
+                  onClick: () => openWindow('/market-trend', '市场趋势'),
                 },
                 {
                   key: 'watch-config',
                   label: '监控配置',
-                  onClick: () => window.open('/watch-config', '_blank'),
+                  onClick: () => openWindow('/watch-config', '监控配置'),
                 },
                 {
                   key: 'sector-up-limit-trend',
                   label: '板块涨停趋势',
-                  onClick: () => window.open('/sector-up-limit-trend', '_blank'),
+                  onClick: () => openWindow('/sector-up-limit-trend', '板块涨停趋势'),
                 },
               ],
             }}
