@@ -4,6 +4,7 @@ import './App.css';
 import StockList from './components/StockList';
 import MarketTrend from './components/MarketTrend';
 import StockDetail from './components/StockDetail';
+import StockDetailGrid from './components/StockDetailGrid';
 import WatchConfigManagement from './components/WatchConfigManagement';
 import WatchStockH5 from './components/WatchStockH5';
 import SectorUpLimitTrend from './components/SectorUpLimitTrend';
@@ -36,7 +37,7 @@ function PWAThemeController() {
 
   useEffect(() => {
     // 判断当前路由是否为详情页
-    const isDetailPage = location.pathname.startsWith('/stock-detail');
+    const isDetailPage = location.pathname.startsWith('/stock-detail') || location.pathname.startsWith('/stock-detail-grid');
     
     // 详情页使用与背景色一致的主题色（#181c26），列表页使用白色主题
     const themeColor = isDetailPage ? '#181c26' : '#ffffff';
@@ -77,6 +78,7 @@ function App() {
             <Route path="/market-trend" element={<MarketTrend />} />
             <Route path="/sector-up-limit-trend" element={<SectorUpLimitTrend />} />
             <Route path="/stock-detail/:stockCode/:date" element={<StockDetail />} />
+            <Route path="/stock-detail-grid" element={<StockDetailGrid />} />
             <Route path="/watch-config" element={<WatchConfigManagement />} />
           </Routes>
         </div>

@@ -116,6 +116,13 @@ const StockList = () => {
     },
     impulseWave: {
       key: 'impulseWave',
+      label: '脉冲波动(分数)',
+      fieldConfigType: 'impulseWave',
+      stockTypes: ['MAIN'],
+      showDateSelector: false // 妖股Tab不显示日期选择器
+    },
+    impulseWaveAll: {
+      key: 'impulseWaveAll',
       label: '脉冲波动',
       fieldConfigType: 'impulseWave',
       stockTypes: ['MAIN'],
@@ -125,6 +132,13 @@ const StockList = () => {
       key: 'highvolume',
       label: '非涨停倍量',
       fieldConfigType: 'simple',
+      stockTypes: ['MAIN'],
+      showDateSelector: false // 妖股Tab不显示日期选择器
+    },
+    abnormalChange: {
+      key: 'abnormalChange',
+      label: '异动分析',
+      fieldConfigType: 'impulseWave',
       stockTypes: ['MAIN'],
       showDateSelector: false // 妖股Tab不显示日期选择器
     },
@@ -519,11 +533,31 @@ const StockList = () => {
         orderByField: queryParams.orderByField,
         orderRule: queryParams.orderRule,
       });
-    }else if(activeTab === TAB_CONFIG.highvolume.key) {
+    }else if(activeTab === TAB_CONFIG.impulseWaveAll.key) {
+      response = await post(host + '/stock/stockDataAnalysisPageCommon', {
+        pageSize: queryParams.pageSize,
+        pageIndex: queryParams.pageIndex,
+        tableName: "stock_data_analysis_latest_impulse_wave_all",
+        keywords: queryParams.keywords,
+        stockTypes: currentStockTypes,
+        orderByField: queryParams.orderByField,
+        orderRule: queryParams.orderRule,
+      });
+    } else if(activeTab === TAB_CONFIG.highvolume.key) {
       response = await post(host + '/stock/stockDataAnalysisPageCommon', {
         pageSize: queryParams.pageSize,
         pageIndex: queryParams.pageIndex,
         tableName: "stock_data_analysis_highvolume",
+        keywords: queryParams.keywords,
+        stockTypes: currentStockTypes,
+        orderByField: queryParams.orderByField,
+        orderRule: queryParams.orderRule,
+      });
+    }else if(activeTab === TAB_CONFIG.abnormalChange.key) {
+      response = await post(host + '/stock/stockDataAnalysisPageCommon', {
+        pageSize: queryParams.pageSize,
+        pageIndex: queryParams.pageIndex,
+        tableName: "stock_data_analysis_latest_abnormal_change",
         keywords: queryParams.keywords,
         stockTypes: currentStockTypes,
         orderByField: queryParams.orderByField,

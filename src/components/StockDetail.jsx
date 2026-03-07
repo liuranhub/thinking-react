@@ -13,6 +13,7 @@ import { get, post, del as deleteMethod } from '../utils/httpClient';
 import dayjs from 'dayjs';
 import LoadingButton from './LoadingButton';
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
+import { Client } from '@stomp/stompjs';
 
 dayjs.extend(isSameOrBefore);
 
@@ -147,6 +148,13 @@ const StockDetail = () => {
   const [chartRefreshTrigger, setChartRefreshTrigger] = useState(0); // 图表刷新触发器
   const [isLoading, setIsLoading] = useState(false); // 计算按钮加载状态
   const [rmbFxData, setRmbFxData] = useState(null); // 人民币汇率数据
+  
+  // WebSocket 相关状态
+  const [wsConnected, setWsConnected] = useState(false); // WebSocket 连接状态
+  const stompClientRef = useRef(null); // STOMP 客户端引用
+  const clientIdRef = useRef(null); // 客户端ID引用
+  const stockCodeRef = useRef(stockCode); // 股票代码引用，用于 WebSocket 回调
+  const stockListRef = useRef(stockList); // 股票列表引用，用于 WebSocket 回调
   
   // 龙虎榜tooltip状态
   const [lhbTooltip, setLhbTooltip] = useState({ visible: false, x: 0, y: 0 });
@@ -932,6 +940,138 @@ const StockDetail = () => {
     }
   };
 
+  // 更新 ref 值
+  useEffect(() => {
+    stockCodeRef.current = stockCode;
+  }, [stockCode]);
+  
+  useEffect(() => {
+    stockListRef.current = stockList;
+  }, [stockList]);
+
+  // WebSocket 连接和注册
+  const connectWebSocket = useCallback(() => {
+    if (!stockCode) return;
+    
+    // 生成唯一的客户端ID
+    const clientId = `client_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    clientIdRef.current = clientId;
+    
+    // 构建 WebSocket URL（使用原生 WebSocket，避免 polyfill 问题）
+    const wsUrl = API_HOST.replace('http://', 'ws://').replace('https://', 'wss://') + '/ws';
+    
+    // 创建 STOMP 客户端（使用原生 WebSocket）
+    const client = new Client({
+      brokerURL: wsUrl,
+      connectHeaders: {},
+      // 使用原生 WebSocket，避免需要 polyfill
+      webSocketFactory: () => new WebSocket(wsUrl),
+      reconnectDelay: 5000,
+      heartbeatIncoming: 4000,
+      heartbeatOutgoing: 4000,
+      onConnect: () => {
+        console.log('WebSocket 连接成功');
+        setWsConnected(true);
+        
+        // 注册客户端
+        if (client.connected && stockCode) {
+          client.publish({
+            destination: '/app/register',
+            body: JSON.stringify({
+              clientId: clientId,
+              stockCode: stockCode
+            })
+          });
+          console.log('客户端注册成功: clientId=', clientId, 'stockCode=', stockCode);
+        }
+        
+        // 订阅注册响应队列
+        client.subscribe(`/user/${clientId}/queue/register`, (message) => {
+          const data = JSON.parse(message.body);
+          console.log('收到注册响应:', data);
+          if (data.status === 'success') {
+            console.log('客户端注册成功');
+          }
+        });
+        
+        // 订阅消息队列
+        client.subscribe(`/user/${clientId}/queue/message`, (message) => {
+          const data = JSON.parse(message.body);
+          console.log('收到WebSocket消息:', data);
+          
+          // 处理不同类型的消息
+          if (data.type === 'stockUpdate') {
+            // 股票数据更新
+            if (data.stockCode === stockCode) {
+              // 更新最新股价数据
+              if (data.latestStockData) {
+                setLatestStockData(data.latestStockData);
+              }
+              // 刷新股票详情
+              if (data.refreshDetail) {
+                fetchDetail();
+              }
+            }
+          } else if (data.type === 'notification') {
+            // 通知消息
+            message.info(data.content || '收到新消息');
+          }
+        });
+        
+        // 订阅广播主题
+        client.subscribe('/topic/broadcast', (message) => {
+          const data = JSON.parse(message.body);
+          console.log('收到广播消息:', data);
+          
+          // 处理 loadDetail 类型的消息
+          if (data.type === 'loadDetail' && data.stockCode) {
+            const targetStockCode = data.stockCode;
+            const currentStockCode = stockCodeRef.current;
+            const currentStockList = stockListRef.current;
+            // 如果目标股票代码与当前股票代码不同，则切换股票
+            if (targetStockCode !== currentStockCode) {
+              console.log('收到切换股票请求:', targetStockCode, '当前股票:', currentStockCode);
+              // 在股票列表中查找目标股票
+              const targetIndex = currentStockList.findIndex(s => s.stockCode === targetStockCode);
+              if (targetIndex >= 0) {
+                setCurrentIndex(targetIndex);
+                console.log('已切换到股票:', targetStockCode);
+              } else {
+                console.warn('未找到股票:', targetStockCode);
+              }
+            }
+          }
+        });
+      },
+      onDisconnect: () => {
+        console.log('WebSocket 断开连接');
+        setWsConnected(false);
+      },
+      onStompError: (frame) => {
+        console.error('STOMP 错误:', frame);
+        setWsConnected(false);
+      },
+      onWebSocketError: (event) => {
+        console.error('WebSocket 错误:', event);
+        setWsConnected(false);
+      }
+    });
+    
+    // 激活客户端
+    client.activate();
+    stompClientRef.current = client;
+  }, [stockCode]);
+  
+  // 断开 WebSocket 连接
+  const disconnectWebSocket = useCallback(() => {
+    if (stompClientRef.current) {
+      stompClientRef.current.deactivate();
+      stompClientRef.current = null;
+      setWsConnected(false);
+      console.log('WebSocket 已断开');
+    }
+  }, []);
+
   useEffect(() => {
     fetchDetail();
     setLatestStockData(null)
@@ -941,12 +1081,16 @@ const StockDetail = () => {
     // 启动定时刷新
     startAutoRefresh();
     
-    // 清理函数：组件卸载或stockCode变化时清理定时器
+    // 连接 WebSocket
+    connectWebSocket();
+    
+    // 清理函数：组件卸载或stockCode变化时清理定时器和WebSocket
     return () => {
       stopAutoRefresh();
+      disconnectWebSocket();
     };
     // eslint-disable-next-line
-  }, [stockCode, currentStock]);
+  }, [stockCode, currentStock, connectWebSocket, disconnectWebSocket]);
 
   // 监听页面可见性变化，优化性能
   useEffect(() => {
@@ -2736,6 +2880,41 @@ const getWarmUpStockCodes = () => {
             padding: '6px 14px',
             boxShadow: '0 2px 8px #0003',
           }}>
+        {/* 网格视图按钮组 */}
+            <button
+              onClick={() => {
+                // 保存stockList到sessionStorage
+                if (stockList && stockList.length > 0) {
+                  sessionStorage.setItem('stockList', JSON.stringify(stockList));
+                }
+                // 打开新窗口
+                window.open('/stock-detail-grid', '_blank');
+              }}
+              style={{
+                marginRight: 6,
+                padding: '2px 8px',
+                background: '#1e90ff',
+                color: '#fff',
+                border: '2px solid #1e90ff',
+                borderRadius: '3px',
+                cursor: 'pointer',
+                fontWeight: 'bold',
+                fontSize: '13px',
+                outline: 'none',
+                transition: 'all 0.2s',
+              }}
+              onMouseOver={e => {
+                e.target.style.background = '#4da6ff';
+                e.target.style.borderColor = '#4da6ff';
+              }}
+              onMouseOut={e => {
+                e.target.style.background = '#1e90ff';
+                e.target.style.borderColor = '#1e90ff';
+              }}
+              title="合并网格视图（可在页面内切换1支、2支、4支模式）"
+            >
+              网格
+            </button>
             {/* 后退按钮（极简风格，仅箭头SVG，无背景无边框） */}
             <button
               onClick={handleBackChartEndDate}
