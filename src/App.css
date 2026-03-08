@@ -427,3 +427,13 @@ input:focus {
   display: none;
 }
  
+/* 股票列表滚动条样式 - 完全隐藏（仅在 StockDetailGrid 中生效） */
+.stock-detail-grid .stock-list-scrollable::-webkit-scrollbar {
+  display: none;
+  width: 0;
+}
+
+.stock-detail-grid .stock-list-scrollable {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}

@@ -1446,6 +1446,19 @@ const getWarmUpStockCodes = () => {
           const zhenFu = currentData?.zhenFu ?? 0;
           const zhenFuValue = isNaN(zhenFu) ? 0 : Number(zhenFu);
           
+          // 计算量比：当日交易量和前一天交易量的比例
+          let liangBi = '--';
+          if (currentIndex > 0) {
+            const prevData = chartData[currentIndex - 1];
+            const currentVolume = currentData?.chenJiaoLiang ?? 0;
+            const prevVolume = prevData?.chenJiaoLiang ?? 0;
+            
+            if (prevVolume > 0 && currentVolume > 0) {
+              const ratio = currentVolume / prevVolume;
+              liangBi = ratio.toFixed(1);
+            }
+          }
+          
             return `
              <div style="color: #fff; font-size: 12px; line-height: 1.4;">
                <div style="margin-bottom: 2px;">日期: ${params[0].axisValue || '未知'}</div>
@@ -1456,7 +1469,8 @@ const getWarmUpStockCodes = () => {
                <div style="margin-bottom: 2px;">涨跌幅: <span style="color:${zhangDieFuColor};font-weight:bold">${Number(zhangDieFu).toFixed(2)}%</span></div>
                <div style="margin-bottom: 2px;">振幅: <span style="color:#ffa500;font-weight:bold">${zhenFuValue.toFixed(2)}%</span></div>
                <div style="margin-bottom: 2px;">换手率: <span style="color:#11d1e4;font-weight:bold">${Number(currentData.huanShouLv).toFixed(2)}%</span></div>
-               <div>成交量: ${chenJiaoLiangConvert(currentData.chenJiaoLiang ?? 0)}</div>
+               <div style="margin-bottom: 2px;">成交量: ${chenJiaoLiangConvert(currentData.chenJiaoLiang ?? 0)}</div>
+               <div>量比: ${liangBi}</div>
                <div>Hammer总长度: ${Number((currentData.maxPrice - currentData.minPrice) / currentData.minPrice).toFixed(2)}</div>
                <div>Hammer实体: ${Number(Math.abs(currentData.closePrice - currentData.openPrice) / Math.min(currentData.closePrice, currentData.openPrice)).toFixed(2)}</div>
              </div>

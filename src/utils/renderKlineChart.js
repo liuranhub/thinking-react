@@ -34,6 +34,8 @@ const chenJiaoLiangConvert = (value) => {
  * @param {number} params.gridIndex - 网格索引
  * @param {Object} params.chartsRef - 图表实例引用对象
  * @param {Object} params.stockDetail - 股票详情数据（可选，包含标记点数据）
+ * @param {Function} params.onDateChange - 日期变化回调
+ * @param {boolean} params.hideXAxisLabel - 是否隐藏X轴标签（默认false）
  * @returns {Object} 返回清理函数和图表实例对象
  */
 export const renderKlineChart = ({
@@ -44,11 +46,16 @@ export const renderKlineChart = ({
   chartKey,
   gridIndex,
   chartsRef,
-  stockDetail = null
+  stockDetail = null,
+  onDateChange = null,
+  hideXAxisLabel = false
 }) => {
-  if (!klineDom || !volumeDom || !allStockData || !chartData || chartData.length === 0) {
+  if (!klineDom || !allStockData || !chartData || chartData.length === 0) {
     return null;
   }
+  
+  // 如果 volumeDom 为 null，表示隐藏交易量，只渲染 K 线图
+  const shouldRenderVolume = volumeDom !== null;
 
   // 清理旧的图表实例
   if (chartsRef.current[chartKey]) {
@@ -149,6 +156,19 @@ export const renderKlineChart = ({
         const zhenFu = currentData?.zhenFu ?? 0;
         const zhenFuValue = isNaN(zhenFu) ? 0 : Number(zhenFu);
         
+        // 计算量比：当日交易量和前一天交易量的比例
+        let liangBi = '--';
+        if (currentIndex > 0) {
+          const prevData = chartData[currentIndex - 1];
+          const currentVolume = currentData?.chenJiaoLiang ?? 0;
+          const prevVolume = prevData?.chenJiaoLiang ?? 0;
+          
+          if (prevVolume > 0 && currentVolume > 0) {
+            const ratio = currentVolume / prevVolume;
+            liangBi = ratio.toFixed(1);
+          }
+        }
+        
         return `
           <div style="color: #fff; font-size: 12px; line-height: 1.4;">
             <div style="margin-bottom: 2px;">日期: ${params[0].axisValue || '未知'}</div>
@@ -159,12 +179,18 @@ export const renderKlineChart = ({
             <div style="margin-bottom: 2px;">涨跌幅: <span style="color:${zhangDieFuColor};font-weight:bold">${Number(zhangDieFu).toFixed(2)}%</span></div>
             <div style="margin-bottom: 2px;">振幅: <span style="color:#ffa500;font-weight:bold">${zhenFuValue.toFixed(2)}%</span></div>
             <div style="margin-bottom: 2px;">换手率: <span style="color:#11d1e4;font-weight:bold">${Number(currentData.huanShouLv).toFixed(2)}%</span></div>
-            <div>成交量: ${chenJiaoLiangConvert(currentData.chenJiaoLiang ?? 0)}</div>
+            <div style="margin-bottom: 2px;">成交量: ${chenJiaoLiangConvert(currentData.chenJiaoLiang ?? 0)}</div>
+            <div>量比: ${liangBi}</div>
           </div>
         `;
       }
     },
-    grid: { left: '30px', right: '10px', top: '5%', bottom: '10%' },
+    grid: { 
+      left: '30px', 
+      right: '10px', 
+      top: '5%', 
+      bottom: shouldRenderVolume ? '8%' : '5%'  // 不显示交易量时，bottom 设为 15% 以对齐X轴
+    },
     xAxis: {
       type: 'category',
       data: dates,
@@ -412,10 +438,15 @@ export const renderKlineChart = ({
       }
     ]
   };
+  
+  // 为图表组设置唯一的 groupId，用于连接K线图和交易量图
+  const chartGroupId = `chart-group-${chartKey}`;
+  klineChart.group = chartGroupId;
+  
   klineChart.setOption(klineOption);
 
-  // 成交量图配置
-  const volumeChart = echarts.init(volumeDom);
+  // 成交量图配置（仅在需要时创建）
+  const volumeChart = shouldRenderVolume ? echarts.init(volumeDom) : null;
   const volumeOption = {
     backgroundColor: BG_COLOR,
     tooltip: {
@@ -440,15 +471,28 @@ export const renderKlineChart = ({
       borderColor: '#333',
       textStyle: { color: TEXT_COLOR }
     },
-    grid: { left: '30px', right: '10px', top: '5%', bottom: '15%' },
+    grid: { left: '30px', right: '10px', top: '5%', bottom: '5%' },
     xAxis: {
       type: 'category',
       data: dates,
       scale: true,
       boundaryGap: false,
       axisLine: { onZero: false, lineStyle: { color: AXIS_COLOR } },
+      axisPointer: {
+        label: { 
+          show: true,  // 显示X轴底部的日期标签
+          backgroundColor: '#23263a',
+          color: '#fff',
+          borderColor: '#444',
+          borderWidth: 1,
+          formatter: function(params) {
+            return params.value || '';
+          }
+        }
+      },
       axisTick: { show: false },
       axisLabel: {
+        show: hideXAxisLabel, // 根据hideXAxisLabel参数控制是否显示X轴标签
         color: TEXT_COLOR,
         fontSize: 11,
         interval: function(index, value) {
@@ -545,18 +589,97 @@ export const renderKlineChart = ({
       }
     ]
   };
-  volumeChart.setOption(volumeOption);
+  if (shouldRenderVolume && volumeChart) {
+    volumeChart.group = chartGroupId;
+    volumeChart.setOption(volumeOption);
+    // 连接K线图和交易量图，使鼠标悬停在任一区域时两个图表都显示十字线
+    echarts.connect(chartGroupId);
+  }
 
   // 保存图表实例
   chartsRef.current[chartKey] = {
     klineChart,
-    volumeChart
+    volumeChart: volumeChart || null,
+    chartGroupId: shouldRenderVolume ? chartGroupId : null
   };
+
+  // 双击K线切换日期功能
+  let touchStartHandler = null;
+  if (onDateChange) {
+    // 鼠标双击事件
+    const dblclickHandler = (params) => {
+      // 获取点击位置
+      const pointInPixel = [params.offsetX, params.offsetY];
+      // 转换为图表坐标系
+      const pointInGrid = klineChart.convertFromPixel({ gridIndex: 0 }, pointInPixel);
+      const xIndex = Math.round(pointInGrid[0]);
+      
+      // 获取对应索引的日期
+      if (xIndex >= 0 && xIndex < dates.length) {
+        const targetDate = dates[xIndex];
+        if (targetDate && onDateChange) {
+          onDateChange(targetDate);
+        }
+      }
+    };
+    
+    klineChart.getZr().on('dblclick', dblclickHandler);
+    
+    // 兼容触摸设备的双击（iPad等）
+    let firstTapTime = 0;
+    let firstTapX = 0;
+    let firstTapY = 0;
+    const DOUBLE_TAP_DELAY = 300;
+    const DOUBLE_TAP_DISTANCE = 50;
+    
+    touchStartHandler = (e) => {
+      const touch = e.touches[0];
+      const currentTime = Date.now();
+      const timeDiff = currentTime - firstTapTime;
+      const distance = Math.sqrt(
+        Math.pow(touch.clientX - firstTapX, 2) + Math.pow(touch.clientY - firstTapY, 2)
+      );
+      
+      if (timeDiff < DOUBLE_TAP_DELAY && distance < DOUBLE_TAP_DISTANCE) {
+        // 执行双击切换日期功能
+        const rect = klineDom.getBoundingClientRect();
+        const x = touch.clientX - rect.left;
+        const y = touch.clientY - rect.top;
+        const pointInPixel = [x, y];
+        const pointInGrid = klineChart.convertFromPixel({ gridIndex: 0 }, pointInPixel);
+        const xIndex = Math.round(pointInGrid[0]);
+        
+        // 获取对应索引的日期
+        if (xIndex >= 0 && xIndex < dates.length) {
+          const targetDate = dates[xIndex];
+          if (targetDate && onDateChange) {
+            onDateChange(targetDate);
+          }
+        }
+        
+        // 重置双击检测变量
+        firstTapTime = 0;
+        firstTapX = 0;
+        firstTapY = 0;
+        e.preventDefault();
+        return;
+      } else {
+        // 记录第一次点击
+        firstTapTime = currentTime;
+        firstTapX = touch.clientX;
+        firstTapY = touch.clientY;
+      }
+    };
+    
+    klineDom.addEventListener('touchstart', touchStartHandler);
+  }
 
   // 窗口大小变化时调整图表
   const handleResize = () => {
     klineChart.resize();
-    volumeChart.resize();
+    if (volumeChart) {
+      volumeChart.resize();
+    }
   };
   window.addEventListener('resize', handleResize);
 
@@ -564,7 +687,15 @@ export const renderKlineChart = ({
   return {
     cleanup: () => {
       window.removeEventListener('resize', handleResize);
+      // 移除触摸事件监听器
+      if (touchStartHandler) {
+        klineDom.removeEventListener('touchstart', touchStartHandler);
+      }
       if (chartsRef.current[chartKey]) {
+        // 断开图表连接
+        if (chartsRef.current[chartKey].chartGroupId) {
+          echarts.disconnect(chartsRef.current[chartKey].chartGroupId);
+        }
         if (chartsRef.current[chartKey].klineChart) {
           chartsRef.current[chartKey].klineChart.dispose();
         }
@@ -576,7 +707,7 @@ export const renderKlineChart = ({
     },
     charts: {
       klineChart,
-      volumeChart
+      volumeChart: volumeChart || null
     }
   };
 };
