@@ -81,7 +81,8 @@ const GridHeader = ({
   stockDetail,
   latestData,
   scoreData,
-  formatNumber
+  formatNumber,
+  hideTags = false // 是否隐藏tags（9宫格模式下默认隐藏）
 }) => {
   const headerRef = useRef(null);
   const tagsContainerRef = useRef(null);
@@ -271,8 +272,8 @@ const GridHeader = ({
         )}
       </div>
       
-      {/* 第二行：标签 */}
-      {showStockInfo && visibleTags.length > 0 && (
+      {/* 第二行：标签（9宫格模式下隐藏） */}
+      {showStockInfo && !hideTags && visibleTags.length > 0 && (
         <div 
           ref={tagsContainerRef}
           style={{
@@ -534,33 +535,63 @@ const StockDetailGrid = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // 键盘上下键切换股票（统一使用 baseIndex）
+  // 键盘上下键切换股票（统一使用 baseIndex，支持循环）
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (!stockList.length) return;
       if (e.key === 'ArrowUp') {
         if (mode === MODE_1_STOCK) {
-          setBaseIndex(idx => Math.max(0, idx - 1));
+          setBaseIndex(idx => (idx > 0 ? idx - 1 : stockList.length - 1));
         } else if (mode === MODE_2_STOCK) {
-          setBaseIndex(idx => Math.max(0, idx - 2));
+          setBaseIndex(idx => {
+            if (idx >= 2) {
+              return idx - 2;
+            } else {
+              // 循环到末尾，找到最后一个有效的起始位置
+              const remainder = stockList.length % 2;
+              return stockList.length - (remainder === 0 ? 2 : remainder);
+            }
+          });
         } else if (mode === MODE_4_STOCK) {
-          setBaseIndex(idx => Math.max(0, idx - GRID_COUNT_4));
+          setBaseIndex(idx => {
+            if (idx >= GRID_COUNT_4) {
+              return idx - GRID_COUNT_4;
+            } else {
+              // 循环到末尾，找到最后一个有效的起始位置
+              const remainder = stockList.length % GRID_COUNT_4;
+              return stockList.length - (remainder === 0 ? GRID_COUNT_4 : remainder);
+            }
+          });
         } else if (mode === MODE_9_STOCK) {
-          setBaseIndex(idx => Math.max(0, idx - GRID_COUNT_9));
+          setBaseIndex(idx => {
+            if (idx >= GRID_COUNT_9) {
+              return idx - GRID_COUNT_9;
+            } else {
+              // 循环到末尾，找到最后一个有效的起始位置
+              const remainder = stockList.length % GRID_COUNT_9;
+              return stockList.length - (remainder === 0 ? GRID_COUNT_9 : remainder);
+            }
+          });
         }
       }
       if (e.key === 'ArrowDown') {
         if (mode === MODE_1_STOCK) {
-          setBaseIndex(idx => Math.min(stockList.length - 1, idx + 1));
+          setBaseIndex(idx => (idx < stockList.length - 1 ? idx + 1 : 0));
         } else if (mode === MODE_2_STOCK) {
-          const maxIndex = Math.max(0, stockList.length - 2);
-          setBaseIndex(idx => Math.min(maxIndex, idx + 2));
+          setBaseIndex(idx => {
+            const nextIdx = idx + 2;
+            return nextIdx < stockList.length ? nextIdx : 0;
+          });
         } else if (mode === MODE_4_STOCK) {
-          const maxIndex = Math.max(0, stockList.length - GRID_COUNT_4);
-          setBaseIndex(idx => Math.min(maxIndex, idx + GRID_COUNT_4));
+          setBaseIndex(idx => {
+            const nextIdx = idx + GRID_COUNT_4;
+            return nextIdx < stockList.length ? nextIdx : 0;
+          });
         } else if (mode === MODE_9_STOCK) {
-          const maxIndex = Math.max(0, stockList.length - GRID_COUNT_9);
-          setBaseIndex(idx => Math.min(maxIndex, idx + GRID_COUNT_9));
+          setBaseIndex(idx => {
+            const nextIdx = idx + GRID_COUNT_9;
+            return nextIdx < stockList.length ? nextIdx : 0;
+          });
         }
       }
     };
@@ -1761,6 +1792,7 @@ const StockDetailGrid = () => {
               latestData={latestStockDataMap[stockCode]}
               scoreData={stockScoresMap[stockCode]}
               formatNumber={formatNumber}
+              hideTags={true} // 9宫格模式下隐藏tags
             />
             <div style={{ flex: showVolume ? '80%' : '100%', position: 'relative' }}>
               {isLoading && (
@@ -2023,9 +2055,6 @@ const StockDetailGrid = () => {
                     )}
                   </>
                 )}
-                <span style={{ marginLeft: '20px', color: '#888', fontSize: '12px' }}>
-                  四块区域分别显示：左上-半年K线图（不显示交易量）、右上-2年、左下-5年、右下-10年K线图
-                </span>
                 <span style={{ marginLeft: '20px', color: '#888', fontSize: '12px' }}>
                   {baseIndex + 1} / {stockList.length} (↑↓切换股票)
                 </span>
@@ -2452,6 +2481,59 @@ const StockDetailGrid = () => {
             })}
           </div>
         )}
+        
+        {/* 第二行：MODE_9_STOCK 模式下显示选中股票的 tags */}
+        {mode === MODE_9_STOCK && selectedGrid && (() => {
+          // 从selectedGrid中提取股票代码（格式：stockCode-index）
+          // 由于index是数字，从末尾查找最后一个'-'，前面的部分就是股票代码
+          const lastDashIndex = selectedGrid.lastIndexOf('-');
+          if (lastDashIndex > 0) {
+            const selectedStockCode = selectedGrid.substring(0, lastDashIndex);
+            const selectedStockDetail = stockDetails[selectedStockCode];
+            if (selectedStockDetail?.tags && Array.isArray(selectedStockDetail.tags) && selectedStockDetail.tags.length > 0) {
+              return (
+                <div style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '4px', 
+                  marginTop: '8px',
+                  flexWrap: 'wrap',
+                }}>
+                  {selectedStockDetail.tags.map((tag, idx) => {
+                    // 获取标签颜色
+                    let tagColor = null;
+                    for (const cfg of HIGHLIGHT_TAG_CONFIG) {
+                      if (tag.includes(cfg.tagName)) {
+                        tagColor = cfg.color;
+                        break;
+                      }
+                    }
+                    return (
+                      <Tag
+                        key={`${tag}-${idx}`}
+                        color={tagColor || undefined}
+                        style={{
+                          background: tagColor ? tagColor + '22' : BG_COLOR,
+                          color: tagColor || TEXT_COLOR,
+                          border: tagColor ? `1px solid ${tagColor}` : '1px solid #444',
+                          fontWeight: tagColor ? 'bold' : 'normal',
+                          marginRight: '4px',
+                          fontSize: '12px',
+                          borderRadius: '16px',
+                          padding: '0px 4px',
+                          flexShrink: 0,
+                        }}
+                      >
+                        {tag}
+                      </Tag>
+                    );
+                  })}
+                </div>
+              );
+            }
+          }
+          return null;
+        })()}
       </div>
 
       {/* 网格容器 */}

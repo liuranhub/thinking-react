@@ -36,6 +36,7 @@ const chenJiaoLiangConvert = (value) => {
  * @param {Object} params.stockDetail - 股票详情数据（可选，包含标记点数据）
  * @param {Function} params.onDateChange - 日期变化回调
  * @param {boolean} params.hideXAxisLabel - 是否隐藏X轴标签（默认false）
+ * @param {number} params.highVolumeTargetPrice - 目标价格（可选，优先使用此值，否则从stockDetail中获取）
  * @returns {Object} 返回清理函数和图表实例对象
  */
 export const renderKlineChart = ({
@@ -48,7 +49,8 @@ export const renderKlineChart = ({
   chartsRef,
   stockDetail = null,
   onDateChange = null,
-  hideXAxisLabel = false
+  hideXAxisLabel = false,
+  highVolumeTargetPrice = null
 }) => {
   if (!klineDom || !allStockData || !chartData || chartData.length === 0) {
     return null;
@@ -318,7 +320,7 @@ export const renderKlineChart = ({
                 const symbolRotate = (isTType || isSType) ? 0 : 180;
                 
                 // 根据type设置标签颜色：S类型为蓝色，其他为红色
-                const labelColor = isSType ? '#1e90ff' : 'red';
+                const labelColor = isSType ? '#1e90ff' : 'pink';
 
                 markPointData.push({
                   name: '锤子线',
@@ -435,7 +437,37 @@ export const renderKlineChart = ({
             data: markPointData
           };
         })()
-      }
+      },
+      // 目标价格虚线（优先使用传入的highVolumeTargetPrice，否则使用stockDetail.highVolumeTargetPrice）
+      ...(() => {
+        const targetPrice = stockDetail?.highVolumeTargetPrice;
+        if (targetPrice && targetPrice > 0) {
+          return [{
+            name: '目标价格',
+            type: 'line',
+            data: new Array(dates.length).fill(targetPrice),
+            showSymbol: false,
+            symbol: 'none',  // 明确设置不显示符号
+            lineStyle: { 
+              width: 0.8, 
+              color: 'red', 
+              type: 'dashed' 
+            },
+            emphasis: {
+              scale: false, 
+              lineStyle: { width: 0.8 },
+              showSymbol: false,  // emphasis 状态也不显示符号
+              symbol: 'none'  // 明确设置不显示符号
+            },
+            tooltip: {
+              formatter: function() {
+                return `目标价格: ${targetPrice}`;
+              }
+            }
+          }];
+        }
+        return [];
+      })()
     ]
   };
   

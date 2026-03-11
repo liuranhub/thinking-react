@@ -659,7 +659,7 @@ const StockDetail = () => {
     if (chartData.length > 0 && stockDetailLoaded) {
       return renderCharts();
     }
-  }, [chartData, selectedMAs, stockDetailLoaded, stockDetail.breakBelowPriceWatch, chartRefreshTrigger]);
+  }, [chartData, selectedMAs, stockDetailLoaded, apiScoreResult.highVolumeTargetPrice, chartRefreshTrigger]);
 
   // 获取API分数
   const fetchApiScore = async () => {
@@ -1375,7 +1375,9 @@ const getWarmUpStockCodes = () => {
     const klineChart = echarts.init(document.getElementById('kline-chart'));
     klineChart.group = chartGroupId;
     const latestKlineDate = dates.length > 0 ? dates[dates.length - 1] : null;
-    const shouldShowTargetPriceLine = rangeYears > 1 && !!stockDetail.breakBelowPriceWatch && (!stockDetail.breakBelowPriceWatch.startDate || !latestKlineDate || dayjs(stockDetail.breakBelowPriceWatch.startDate).isSameOrBefore(dayjs(latestKlineDate)));
+    // 优先使用 apiScoreResult.highVolumeTargetPrice，如果没有则使用 stockDetail.highVolumeTargetPrice
+    const highVolumeTargetPrice = apiScoreResult.highVolumeTargetPrice;
+    const shouldShowTargetPriceLine = !!highVolumeTargetPrice && highVolumeTargetPrice > 0;
     const klineOption = {
       backgroundColor: BG_COLOR,
       title: {
@@ -1739,11 +1741,11 @@ const getWarmUpStockCodes = () => {
             symbol: 'none'  // 明确设置不显示符号
           },
         })),
-        // 目标价格虚线
+        // 目标价格虚线（优先使用apiScoreResult.highVolumeTargetPrice，否则使用stockDetail.highVolumeTargetPrice）
         ...(shouldShowTargetPriceLine ? [{
           name: '目标价格',
           type: 'line',
-          data: new Array(dates.length).fill(stockDetail.breakBelowPriceWatch.targetPrice),
+          data: new Array(dates.length).fill(highVolumeTargetPrice),
           showSymbol: false,
           symbol: 'none',  // 明确设置不显示符号
           lineStyle: { 
@@ -1759,7 +1761,7 @@ const getWarmUpStockCodes = () => {
           },
           tooltip: {
             formatter: function() {
-              return `目标价格: ${stockDetail.breakBelowPriceWatch.targetPrice}`;
+              return `目标价格: ${highVolumeTargetPrice}`;
             }
           }
         }] : []),

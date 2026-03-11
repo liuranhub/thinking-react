@@ -1080,6 +1080,42 @@ const StockList = () => {
                 >
                   {row[column.field]}
                 </span>
+              ) : column.field === 'stockName' ? (
+                <span
+                  style={{
+                    color: '#1890ff',
+                    textDecoration: 'none',
+                    cursor: 'pointer'
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    // 只存储必要的字段，减少 sessionStorage 占用
+                    const minimalStockList = data.map(item => ({
+                      stockCode: item.stockCode,
+                      stockName: item.stockName,
+                      date: item.date,
+                      priceLevel100: item.priceLevel100,
+                      priceLevel200: item.priceLevel200,
+                      priceLevel1000: item.priceLevel1000
+                    }));
+                    try {
+                      sessionStorage.setItem('stockList', JSON.stringify(minimalStockList));
+                    } catch (error) {
+                      console.error('Failed to save stockList to sessionStorage:', error);
+                      // 如果存储失败，尝试清除旧的存储后重试
+                      try {
+                        sessionStorage.removeItem('stockList');
+                        sessionStorage.setItem('stockList', JSON.stringify(minimalStockList));
+                      } catch (retryError) {
+                        console.error('Retry failed:', retryError);
+                      }
+                    }
+                    // 跳转到 StockDetailGrid，并传递当前股票信息
+                    openWindow('/stock-detail-grid', "股票网格视图");
+                  }}
+                >
+                  {row[column.field]}
+                </span>
               ) : (
                 row[column.field]
               )}
