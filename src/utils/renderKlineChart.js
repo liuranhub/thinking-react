@@ -293,150 +293,65 @@ export const renderKlineChart = ({
           borderColor0: GREEN
         },
         // 添加锤子线标记点
-        markPoint: (() => {
-          if (!stockDetail) return undefined;
-          
-          // 收集所有标记点数据
-          const markPointData = [];
-          
-          // 锤子线标记点
-          if (stockDetail.hummerDates && Array.isArray(stockDetail.hummerDates)) {
-            stockDetail.hummerDates
-              .filter(item => dates.includes(item.date)) // 只显示当前图表范围内的日期
-              .forEach(item => {
+        markPoint: {
+          tooltip: {
+            show: false // 不显示tooltip
+          },
+          data: [
+            // 根据后端返回的marks字段动态生成标记点
+            ...(stockDetail?.marks && Array.isArray(stockDetail.marks) ? stockDetail.marks
+              .map(markStr => {
+                // 解析mark字符串：日期,显示文本,symbol类型,symbol颜色,文本颜色
+                const parts = markStr.split(',');
+                if (parts.length !== 5) {
+                  console.warn('Invalid mark format:', markStr);
+                  return null;
+                }
+                
+                const [date, text, symbol, symbolColor, textColor] = parts;
+                
+                // 只显示当前图表范围内的日期
+                if (!dates.includes(date)) {
+                  return null;
+                }
+                
                 // 找到对应日期的K线数据，获取最低价
-                const dateIndex = dates.indexOf(item.date);
+                const dateIndex = dates.indexOf(date);
                 const klineItem = klineData[dateIndex];
                 const minPrice = klineItem ? klineItem[2] : 0; // K线数据格式: [open, close, low, high]
-
-                // 根据effective字段确定颜色
-                const color = item.effective === 1 ? '#9932CC' : '#00FFFF'; // 有效为紫色，否则为青色
-
-                // 如果type为'T'或'S'，不显示pin形状，只显示文字标签
-                const isTType = item.type === 'T';
-                const isSType = item.type === 'S' || item.type === 'SS';
-                const symbol = (isTType || isSType) ? 'circle' : 'pin';
-                const symbolSize = (isTType || isSType) ? 1 : 12;
-                const symbolRotate = (isTType || isSType) ? 0 : 180;
                 
-                // 根据type设置标签颜色：S类型为蓝色，其他为红色
-                const labelColor = isSType ? '#1e90ff' : 'pink';
-
-                markPointData.push({
-                  name: '锤子线',
-                  xAxis: item.date,
+                // 判断是否显示symbol（circle表示不显示实际图形）
+                const showSymbol = symbol !== 'circle';
+                
+                return {
+                  name: text,
+                  xAxis: date,
                   yAxis: minPrice - (minPrice * 0.005), // 显示在最低价下方一点点
-                  value: item.date,
+                  value: date,
                   symbol: symbol,
-                  symbolSize: symbolSize,
-                  symbolRotate: symbolRotate,
+                  symbolSize: showSymbol ? 12 : 1, // circle时使用极小的size
+                  symbolRotate: symbol === 'pin' ? 180 : 0,
                   itemStyle: {
-                    color: color,
+                    color: showSymbol ? symbolColor : 'transparent',
                     borderWidth: 0
                   },
                   label: {
-                    show: true, // 确保文字标签显示
+                    show: true,
                     position: 'bottom',
                     distance: 0,
-                    fontSize: (isTType || isSType) ? 10 : 8, // T和S类型稍微大一点，确保可见
+                    fontSize: showSymbol ? 8 : 10,
                     fontWeight: 'bold',
-                    color: labelColor,
-                    formatter: function(params) {
-                      return params.data.type || 'N';
-                    }
-                  },
-                  tooltip: {
-                    formatter: function(params) {
-                      return `锤子线信号<br/>日期: ${params.data.value}`;
-                    }
-                  },
-                  effective: item.effective,
-                  id: item.id,
-                  type: item.type // 保存type字段
-                });
-              });
-          }
-          
-          // 多空策略日期标记点（黄色，不显示文字标签）
-          if (stockDetail.longShortStrategyDates && Array.isArray(stockDetail.longShortStrategyDates)) {
-            stockDetail.longShortStrategyDates
-              .filter(date => dates.includes(date)) // 只显示当前图表范围内的日期
-              .forEach(date => {
-                // 找到对应日期的K线数据，获取最低价
-                const dateIndex = dates.indexOf(date);
-                const klineItem = klineData[dateIndex];
-                const minPrice = klineItem ? klineItem[2] : 0; // K线数据格式: [open, close, low, high]
-
-                markPointData.push({
-                  name: '多空策略',
-                  xAxis: date,
-                  yAxis: minPrice - (minPrice * 0.005), // 显示在最低价下方一点点
-                  value: date,
-                  symbol: 'pin',
-                  symbolSize: 12,
-                  symbolRotate: 180,
-                  itemStyle: {
-                    color: '#ffd700', // 黄色
-                    borderWidth: 0
-                  },
-                  label: {
-                    show: false // 不显示文字标签
-                  },
-                  tooltip: {
-                    formatter: function(params) {
-                      return `多空策略信号<br/>日期: ${params.data.value}`;
+                    color: textColor,
+                    formatter: function() {
+                      return text;
                     }
                   }
-                });
-              });
-          }
-          
-          // 非涨停倍量柱标记点（紫色，不显示文字标签）
-          if (stockDetail.highVolumeWithoutPriceLimitDates && Array.isArray(stockDetail.highVolumeWithoutPriceLimitDates)) {
-            stockDetail.highVolumeWithoutPriceLimitDates
-              .filter(date => dates.includes(date)) // 只显示当前图表范围内的日期
-              .forEach(date => {
-                // 找到对应日期的K线数据，获取最低价
-                const dateIndex = dates.indexOf(date);
-                const klineItem = klineData[dateIndex];
-                const minPrice = klineItem ? klineItem[2] : 0; // K线数据格式: [open, close, low, high]
-
-                markPointData.push({
-                  name: '非涨停倍量柱',
-                  xAxis: date,
-                  yAxis: minPrice - (minPrice * 0.005), // 显示在最低价下方一点点
-                  value: date,
-                  symbol: 'pin',
-                  symbolSize: 12,
-                  symbolRotate: 180,
-                  itemStyle: {
-                    color: '#9932CC', // 紫色
-                    borderWidth: 0
-                  },
-                  label: {
-                    show: false // 不显示文字标签
-                  },
-                  tooltip: {
-                    formatter: function(params) {
-                      return `非涨停倍量柱信号<br/>日期: ${params.data.value}`;
-                    }
-                  }
-                });
-              });
-          }
-          
-          // 只有当有标记点数据时才返回 markPoint 配置
-          if (markPointData.length === 0) return undefined;
-          
-          return {
-            tooltip: {
-              formatter: function(params) {
-                return `锤子线信号<br/>日期: ${params.data.value}`;
-              }
-            },
-            data: markPointData
-          };
-        })()
+                };
+              })
+              .filter(item => item !== null) // 过滤掉无效的标记点
+              : [])
+          ]
+        }
       },
       // 目标价格虚线（优先使用传入的highVolumeTargetPrice，否则使用stockDetail.highVolumeTargetPrice）
       ...(() => {

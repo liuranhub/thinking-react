@@ -138,7 +138,14 @@ const StockList = () => {
     abnormalChange: {
       key: 'abnormalChange',
       label: '异动分析',
-      fieldConfigType: 'impulseWave',
+      fieldConfigType: 'abnormalChange',
+      stockTypes: ['MAIN'],
+      showDateSelector: false // 妖股Tab不显示日期选择器
+    },
+    continuousRedVolume: {
+      key: 'continuousRedVolume',
+      label: '连续红色',
+      fieldConfigType: 'simple',
       stockTypes: ['MAIN'],
       showDateSelector: false // 妖股Tab不显示日期选择器
     },
@@ -563,7 +570,19 @@ const StockList = () => {
         orderByField: queryParams.orderByField,
         orderRule: queryParams.orderRule,
       });
-    } else if (activeTab === TAB_CONFIG.yaogu.key) {
+    }
+    else if(activeTab === TAB_CONFIG.continuousRedVolume.key) {
+      response = await post(host + '/stock/stockDataAnalysisPageCommon', {
+        pageSize: queryParams.pageSize,
+        pageIndex: queryParams.pageIndex,
+        tableName: "stock_data_analysis_continuous_red_volume",
+        keywords: queryParams.keywords,
+        stockTypes: currentStockTypes,
+        orderByField: queryParams.orderByField,
+        orderRule: queryParams.orderRule,
+      });
+    }
+    else if (activeTab === TAB_CONFIG.yaogu.key) {
       response = await post(host + '/stock/stockDataYaoguPage', {
         pageSize: queryParams.pageSize,
         pageIndex: queryParams.pageIndex,

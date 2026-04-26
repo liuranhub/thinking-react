@@ -326,6 +326,9 @@ const StockDetailGrid = () => {
   // 区间选择：9支模式的年份，默认0.5年（半年）
   const [rangeYears9, setRangeYears9] = useState(0.5);
   
+  // 9宫格模式允许的年份选项
+  const RANGE_YEARS_9_OPTIONS = [0.5, 1];
+  
   // 每个股票的K线数据
   const [stocksData, setStocksData] = useState({});
   
@@ -361,6 +364,26 @@ const StockDetailGrid = () => {
   useEffect(() => {
     setChartEndDate(null);
   }, [mode, baseIndex]);
+
+  // chartEndDate 变化时，重新获取当前显示股票的详情
+  useEffect(() => {
+    if (!chartEndDate) return;
+
+    let stockCodes = [];
+    if (mode === MODE_1_STOCK) {
+      if (currentStock?.stockCode) stockCodes = [currentStock.stockCode];
+    } else if (mode === MODE_2_STOCK) {
+      stockCodes = getCurrentStocks2().filter(s => s?.stockCode).map(s => s.stockCode);
+    } else if (mode === MODE_4_STOCK) {
+      stockCodes = getCurrentStocks4().filter(s => s?.stockCode).map(s => s.stockCode);
+    } else if (mode === MODE_9_STOCK) {
+      stockCodes = getCurrentStocks9().filter(s => s?.stockCode).map(s => s.stockCode);
+    }
+
+    if (stockCodes.length > 0) {
+      fetchStockDetailBatch(stockCodes);
+    }
+  }, [chartEndDate]);
   
   // 重置按钮事件
   const handleResetChartEndDate = () => {
@@ -636,18 +659,35 @@ const StockDetailGrid = () => {
     });
 
     try {
-      // 构建批量请求URL，stockCodes作为查询参数
-      const url = new URL(API_HOST + `/stock/stockDetail/dayKLine/compressBatch`);
-      url.searchParams.set('stockCodes', stocksToLoad.join(','));
+      let response;
       
-      console.log('批量加载：调用批量接口', url.toString());
-      console.log('批量加载：请求参数 stockCodes=', stocksToLoad.join(','));
-      
-      const response = await get(url.toString(), {
-        headers: {
-          'Accept-Encoding': 'gzip, deflate, br',
-        }
-      });
+      // 9宫格模式使用 stockDataDayKLineCompressBatchYear 接口
+      if (mode === MODE_9_STOCK) {
+        const url = API_HOST + `/stock/stockDetail/dayKLine/stockDataDayKLineCompressBatchYear`;
+        
+        console.log('批量加载（9宫格）：调用年份批量接口', url);
+        
+        response = await post(url, {
+          stockCodes: stocksToLoad,
+          years: rangeYears9
+        }, {
+          headers: {
+            'Accept-Encoding': 'gzip, deflate, br',
+          }
+        });
+      } else {
+        // 其他模式使用原有的 compressBatch 接口
+        const url = new URL(API_HOST + `/stock/stockDetail/dayKLine/compressBatch`);
+        url.searchParams.set('stockCodes', stocksToLoad.join(','));
+        
+        console.log('批量加载：调用批量接口', url.toString());
+        
+        response = await get(url.toString(), {
+          headers: {
+            'Accept-Encoding': 'gzip, deflate, br',
+          }
+        });
+      }
 
       console.log('批量加载：接口返回', response);
 
@@ -745,16 +785,10 @@ const StockDetailGrid = () => {
                 error: null
               };
             } else if (mode === MODE_9_STOCK) {
-              const allDates = sorted.map(item => item.date);
-              const maxDate = allDates[allDates.length - 1];
-              const minDate = allDates[0];
-              const startDate = getDateNDaysAgo(maxDate, rangeYears9);
-              const chartStartDate = startDate < minDate ? minDate : startDate;
-              const filtered = sorted.filter(item => item.date >= chartStartDate && item.date <= maxDate);
-              
+              // 9宫格模式：后端已经按年份过滤，直接使用返回的数据
               newData[stockCode] = {
                 allStockData: sorted,
-                chartData: Array.isArray(filtered) ? filtered : [],
+                chartData: Array.isArray(sorted) ? sorted : [],
                 loading: false,
                 error: null
               };
@@ -951,30 +985,43 @@ const StockDetailGrid = () => {
     return filtered;
   };
 
-  // 获取股票详情数据（每次调用都重新获取，不做缓存）
-  const fetchStockDetail = async (stockCode) => {
+  // 批量获取股票详情数据（所有模式使用）
+  const fetchStockDetailBatch = async (stockCodes) => {
+    if (!stockCodes || stockCodes.length === 0) {
+      return;
+    }
+    
     try {
-      const detail = await get(API_HOST + `/stock/stockDetail/${stockCode}`);
-      if (detail) {
+      const url = API_HOST + `/stock/getStockDetailBatch`;
+      const response = await post(url, stockCodes);
+      
+      if (response && typeof response === 'object') {
         setStockDetails(prev => ({
           ...prev,
-          [stockCode]: detail
+          ...response
         }));
         
-        // 从detail接口的totalScore中获取分数，设置到stockScoresMap
-        if (detail.totalScore !== undefined && detail.totalScore !== null) {
+        // 从批量详情中提取分数
+        const newScores = {};
+        Object.keys(response).forEach(stockCode => {
+          const detail = response[stockCode];
+          if (detail.totalScore !== undefined && detail.totalScore !== null) {
+            newScores[stockCode] = {
+              score: detail.totalScore || 0,
+              totalScore: detail.totalScore
+            };
+          }
+        });
+        
+        if (Object.keys(newScores).length > 0) {
           setStockScoresMap(prev => ({
             ...prev,
-            [stockCode]: {
-              score: detail.totalScore || 0,
-              // extraScore不设置，因为totalScore是总分，不需要额外分数
-              totalScore: detail.totalScore
-            }
+            ...newScores
           }));
         }
       }
     } catch (err) {
-      console.error('获取股票详情失败:', err);
+      console.error('批量获取股票详情失败:', err);
     }
   };
 
@@ -1082,28 +1129,48 @@ const StockDetailGrid = () => {
     if (mode !== MODE_9_STOCK) return;
     
     const currentStocks = getCurrentStocks9();
-    currentStocks.forEach(stock => {
-      if (stock?.stockCode) {
-        const stockData = stocksData[stock.stockCode];
-        if (stockData && stockData.allStockData && stockData.allStockData.length > 0) {
-          const allDates = stockData.allStockData.map(item => item.date);
-          const maxDate = allDates[allDates.length - 1];
-          const minDate = allDates[0];
-          const startDate = getDateNDaysAgo(maxDate, rangeYears9);
-          const chartStartDate = startDate < minDate ? minDate : startDate;
-          const filtered = stockData.allStockData.filter(item => item.date >= chartStartDate && item.date <= maxDate);
-          
-          setStocksData(prev => ({
-            ...prev,
-            [stock.stockCode]: {
-              ...prev[stock.stockCode],
-              chartData: Array.isArray(filtered) ? filtered : []
-            }
-          }));
-        }
+    
+    // 9宫格模式下，如果股票少于500条，一次性加载所有数据
+    if (stockList.length > 0 && stockList.length < 500) {
+      const allStockCodes = stockList.map(stock => stock.stockCode).filter(code => code);
+      
+      // 检查是否所有股票数据都已加载
+      const needLoad = allStockCodes.some(code => !stocksData[code] || !stocksData[code].allStockData);
+      
+      if (needLoad) {
+        console.log('9宫格模式：一次性加载所有股票数据', allStockCodes.length, '条');
+        
+        // 清空缓存，强制重新加载
+        setStocksData({});
+        setStockDetails({});
+        setLatestStockDataMap({});
+        setStockScoresMap({});
+        
+        // 批量加载K线数据
+        fetchStockDataBatch(allStockCodes);
+        
+        // 批量加载股票详情
+        fetchStockDetailBatch(allStockCodes);
       }
-    });
-  }, [mode, rangeYears9]);
+    } else {
+      // 股票数量>=500或为0时，只加载当前显示的股票
+      currentStocks.forEach(stock => {
+        if (stock?.stockCode) {
+          const stockData = stocksData[stock.stockCode];
+          if (stockData && stockData.allStockData && stockData.allStockData.length > 0) {
+            // 9宫格模式：后端已经按年份过滤，直接使用 allStockData 作为 chartData
+            setStocksData(prev => ({
+              ...prev,
+              [stock.stockCode]: {
+                ...prev[stock.stockCode],
+                chartData: Array.isArray(stockData.allStockData) ? stockData.allStockData : []
+              }
+            }));
+          }
+        }
+      });
+    }
+  }, [mode, rangeYears9, stockList.length]);
 
   // 当显示的股票变化时，批量加载数据
   useEffect(() => {
@@ -1172,12 +1239,9 @@ const StockDetailGrid = () => {
       fetchStockDataBatch(stockCodes);
       
       // 并行加载详情和最新数据（每次都重新获取）
+      fetchStockDetailBatch(stockCodes);
       stockCodes.forEach(stockCode => {
-        fetchStockDetail(stockCode);
-        // 9宫格模式下不需要调用getStockKLineLatestData接口
-        if (mode !== MODE_9_STOCK) {
-          fetchLatestStockData(stockCode);
-        }
+        fetchLatestStockData(stockCode);
       });
     }
     // 注意：不将 stocksData、stockDetails、latestStockDataMap 作为依赖项，避免无限循环
@@ -2182,7 +2246,7 @@ const StockDetailGrid = () => {
           {mode === MODE_9_STOCK && (
             <>
               <span style={{ color: '#fff', fontSize: '12px' }}>区间:</span>
-              {[0.5, 1, 2, 3, 5, 10, 20].map(y => (
+              {RANGE_YEARS_9_OPTIONS.map(y => (
                 <button
                   key={y}
                   onClick={() => setRangeYears9(y)}
