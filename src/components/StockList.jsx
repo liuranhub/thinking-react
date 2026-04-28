@@ -135,6 +135,13 @@ const StockList = () => {
       stockTypes: ['MAIN'],
       showDateSelector: false // 妖股Tab不显示日期选择器
     },
+    zthl: {
+      key: 'zthl',
+      label: '涨停回落',
+      fieldConfigType: 'tagDefault',
+      stockTypes: ['MAIN'],
+      showDateSelector: false // 妖股Tab不显示日期选择器
+    },
     abnormalChange: {
       key: 'abnormalChange',
       label: '异动分析',
@@ -597,6 +604,16 @@ const StockList = () => {
         pageSize: queryParams.pageSize,
         pageIndex: queryParams.pageIndex,
         tableName: "stock_data_analysis_latest_hammer",
+        keywords: queryParams.keywords,
+        stockTypes: currentStockTypes,
+        orderByField: queryParams.orderByField,
+        orderRule: queryParams.orderRule,
+      });
+    } else if (activeTab === TAB_CONFIG.zthl.key) {
+      response = await post(host + '/stock/stockDataAnalysisPageCommon', {
+        pageSize: queryParams.pageSize,
+        pageIndex: queryParams.pageIndex,
+        tableName: "stock_data_analysis_latest_zthl",
         keywords: queryParams.keywords,
         stockTypes: currentStockTypes,
         orderByField: queryParams.orderByField,

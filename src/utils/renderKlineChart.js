@@ -310,6 +310,8 @@ export const renderKlineChart = ({
                 
                 const [date, text, symbol, symbolColor, textColor] = parts;
                 
+                // 将text按+号分割，用于多行显示
+                const textLines = text.split('+');
                 // 只显示当前图表范围内的日期
                 if (!dates.includes(date)) {
                   return null;
@@ -343,7 +345,7 @@ export const renderKlineChart = ({
                     fontWeight: 'bold',
                     color: textColor,
                     formatter: function() {
-                      return text;
+                      return textLines.join('\n');
                     }
                   }
                 };
