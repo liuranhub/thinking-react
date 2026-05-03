@@ -186,6 +186,13 @@ const StockList = () => {
       orderByField: 'stockCode',
       orderRule: 'ASC'
     },
+     review: {
+      key: 'review',
+      label: '复盘',
+      fieldConfigType: 'review',
+      showDateSelector: false,
+      stockTypes: ['MAIN'],
+    },
     watched: {
       key: 'watched',
       label: '监控列表',
@@ -614,6 +621,16 @@ const StockList = () => {
         pageSize: queryParams.pageSize,
         pageIndex: queryParams.pageIndex,
         tableName: "stock_data_analysis_latest_zthl",
+        keywords: queryParams.keywords,
+        stockTypes: currentStockTypes,
+        orderByField: queryParams.orderByField,
+        orderRule: queryParams.orderRule,
+      });
+    }else if (activeTab === TAB_CONFIG.review.key) {
+      response = await post(host + '/stock/stockDataAnalysisPageCommon', {
+        pageSize: queryParams.pageSize,
+        pageIndex: queryParams.pageIndex,
+        tableName: "stock_data_review_latest",
         keywords: queryParams.keywords,
         stockTypes: currentStockTypes,
         orderByField: queryParams.orderByField,
@@ -1148,6 +1165,43 @@ const StockList = () => {
                     }
                     // 跳转到 StockDetailGrid，并传递当前股票信息
                     openWindow('/stock-detail-grid', "股票网格视图");
+                  }}
+                >
+                  {row[column.field]}
+                </span>
+              ) : column.field === 'tagDate' && row.tagDate ? (
+                <span
+                  style={{
+                    color: '#1890ff',
+                    textDecoration: 'none',
+                    cursor: 'pointer'
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    // 只存储必要的字段，减少 sessionStorage 占用
+                    const minimalStockList = data.map(item => ({
+                      stockCode: item.stockCode,
+                      stockName: item.stockName,
+                      date: item.date,
+                      tagDate: item.tagDate,
+                      priceLevel100: item.priceLevel100,
+                      priceLevel200: item.priceLevel200,
+                      priceLevel1000: item.priceLevel1000
+                    }));
+                    try {
+                      sessionStorage.setItem('stockList', JSON.stringify(minimalStockList));
+                    } catch (error) {
+                      console.error('Failed to save stockList to sessionStorage:', error);
+                      try {
+                        sessionStorage.removeItem('stockList');
+                        sessionStorage.setItem('stockList', JSON.stringify(minimalStockList));
+                      } catch (retryError) {
+                        console.error('Retry failed:', retryError);
+                      }
+                    }
+                    // 进入测试模式，传递 testMode 和 tagDate 参数
+                    const testModeLink = `/stock-detail/${row.stockCode}/${row.date}?tab=${activeTab}&testMode=true&tagDate=${row.tagDate}`;
+                    openWindow(testModeLink, "涨停测试模式");
                   }}
                 >
                   {row[column.field]}

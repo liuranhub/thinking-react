@@ -88,6 +88,17 @@ const StockDetail = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { stockCode: paramStockCode } = useParams();
+  
+  // 解析 URL 参数获取测试模式信息
+  const searchParams = new URLSearchParams(location.search);
+  const testMode = searchParams.get('testMode') === 'true';
+  const tagDateFromUrl = searchParams.get('tagDate');
+  
+  // 测试模式相关状态
+  const [isTestMode, setIsTestMode] = useState(testMode);
+  const [testTagDate, setTestTagDate] = useState(tagDateFromUrl);
+  const [showTestResult, setShowTestResult] = useState(false); // 是否显示测试结果（14天后的数据）
+  
   // 股票列表 - 优先从 location.state 获取，如果没有则从 sessionStorage 获取
   const [stockList, setStockList] = useState(() => {
     if (location.state?.stockList) {
@@ -124,6 +135,16 @@ const StockDetail = () => {
   // 当前股票
   const currentStock = stockList[currentIndex] || {};
   const stockCode = currentStock.stockCode;
+  
+  // 测试模式下，当切换股票时更新 testTagDate 并重置测试状态
+  useEffect(() => {
+    if (isTestMode && currentStock.tagDate) {
+      setTestTagDate(currentStock.tagDate);
+      setShowTestResult(false); // 重置测试结果状态
+      setChartEndDate(currentStock.tagDate); // 设置到新股票的 tagDate
+    }
+  }, [currentStock.stockCode, isTestMode]); // 只监听 stockCode 变化，避免循环依赖
+  
   // 全量数据
   const [allStockData, setAllStockData] = useState([]);
   // 当前区间数据
@@ -549,13 +570,25 @@ const StockDetail = () => {
 
   // fetchStockData后自动重置结束日期为最新
   useEffect(() => {
+    // 测试模式下，如果已经显示测试结果，不要重置日期
+    if (isTestMode && showTestResult) {
+      return;
+    }
+    
+    // 测试模式下使用 tagDate 作为结束日期
+    if (isTestMode && testTagDate) {
+      setChartEndDate(testTagDate);
+      chartEndDateHistory.current = [];
+      return;
+    }
+    
     // 优先使用 kLineLatestDate，如果没有则使用 currentStock.date 作为后备
     const targetDate = kLineLatestDate || currentStock.date;
     if (targetDate) {
       setChartEndDate(targetDate);
       chartEndDateHistory.current = [];
     }
-  }, [currentStock, kLineLatestDate]);
+  }, [currentStock, kLineLatestDate, isTestMode, testTagDate, showTestResult]);
 
   // 获取监控模式选项
   const fetchWatchModelOptions = async () => {
@@ -1262,6 +1295,70 @@ const getWarmUpStockCodes = () => {
       setChartEndDate(targetDate);
     }
     setRangeYears(10);
+    
+    // 如果在测试模式，重置测试状态
+    if (isTestMode) {
+      setShowTestResult(false);
+      setChartEndDate(testTagDate);
+    }
+  };
+
+  // 计算指定日期后的第N个交易日
+  const getDateAfterNTradingDays = (startDate, n) => {
+    if (!allStockData || allStockData.length === 0) return null;
+    
+    // 找到 startDate 在数据中的索引
+    const startIndex = allStockData.findIndex(item => item.date === startDate);
+    if (startIndex === -1) return null;
+    
+    // 计算目标索引（向后数N个交易日）
+    const targetIndex = startIndex + n;
+    
+    // 确保索引在有效范围内
+    if (targetIndex >= allStockData.length) {
+      // 如果超出范围，返回最后一个交易日
+      return allStockData[allStockData.length - 1].date;
+    }
+    
+    return allStockData[targetIndex].date;
+  };
+
+  // 测试模式：上涨按钮
+  const handleTestRise = () => {
+    if (!testTagDate) return;
+    
+    // 计算 tagDate 后的第14个交易日
+    const targetDate = getDateAfterNTradingDays(testTagDate, 30);
+    if (targetDate) {
+      // 先设置 showTestResult，再设置日期
+      setShowTestResult(true);
+      // 使用 setTimeout 确保状态更新后再设置日期
+      setTimeout(() => {
+        setChartEndDate(targetDate);
+        message.success(`显示 ${testTagDate} 后14个交易日的数据（${targetDate}）`, 2);
+      }, 0);
+    } else {
+      message.warning('无法计算14个交易日后的日期', 2);
+    }
+  };
+
+  // 测试模式：下跌按钮
+  const handleTestFall = () => {
+    if (!testTagDate) return;
+    
+    // 计算 tagDate 后的第14个交易日
+    const targetDate = getDateAfterNTradingDays(testTagDate, 60);
+    if (targetDate) {
+      // 先设置 showTestResult，再设置日期
+      setShowTestResult(true);
+      // 使用 setTimeout 确保状态更新后再设置日期
+      setTimeout(() => {
+        setChartEndDate(targetDate);
+        message.info(`显示 ${testTagDate} 后14个交易日的数据（${targetDate}）`, 2);
+      }, 0);
+    } else {
+      message.warning('无法计算14个交易日后的日期', 2);
+    }
   };
 
   // 后退按钮事件
@@ -2164,6 +2261,31 @@ const getWarmUpStockCodes = () => {
     }
   };
 
+  // 添加复盘
+  const handleAddReview = async () => {
+    try {
+      await post(API_HOST + `/stock/addReview`, {
+        stockCode: stockCode,
+        date: chartEndDate
+      });
+      message.success('添加复盘成功！', 2);
+      await fetchDetail();
+    } catch (e) {
+      message.error('网络错误，添加复盘失败', 2);
+    }
+  };
+
+  // 取消复盘
+  const handleCancelReview = async () => {
+    try {
+      await deleteMethod(API_HOST + `/stock/cancelReview/${stockCode}`);
+      message.success('取消复盘成功！', 2);
+      await fetchDetail();
+    } catch (e) {
+      message.error('网络错误，取消复盘失败', 2);
+    }
+  };
+
   // 更新checkList状态
   const handleUpdateCheckList = async (itemName, newStatus) => {
     if (!stockCode) return;
@@ -2541,6 +2663,8 @@ const getWarmUpStockCodes = () => {
              textAlign: 'left',
              overflowY: 'auto',
              overflowX: 'hidden',}}>
+
+            <div>数据日期：{chartEndDate}</div>
             <div style={{display: 'flex', flexWrap: 'wrap', marginBottom: '8px', gap: '8px'}}>
               {rmbFxData ? (
                 <>
@@ -2573,7 +2697,7 @@ const getWarmUpStockCodes = () => {
               <span style={{color: TEXT_COLOR}}>市值: <span style={{color: '#11d1e4'}}>{stockDetail.outstandingMarketValue ? Number(stockDetail.outstandingMarketValue / 100000000).toFixed(2): 0}亿</span></span>
             </div>
             {/* 最新股价信息 */}
-            {latestStockData && (
+            {!isTestMode && latestStockData && (
               <div style={{display: 'flex', flexWrap: 'wrap', marginTop: '2px', gap: '8px'}}>
                 <span style={{color: TEXT_COLOR}}>
                   股价:
@@ -3004,6 +3128,75 @@ const getWarmUpStockCodes = () => {
               allowClear
             />
             <span style={{marginLeft: 1, color: '#fff'}}>区间:</span>
+            {/* 测试模式按钮 */}
+            {isTestMode && (
+              <>
+                <button
+                  onClick={handleTestRise}
+                  disabled={showTestResult}
+                  style={{
+                    marginRight: 6,
+                    padding: '2px 8px',
+                    background: showTestResult ? '#666' : '#23b14d',
+                    color: '#fff',
+                    border: '2px solid ' + (showTestResult ? '#666' : '#23b14d'),
+                    borderRadius: '3px',
+                    cursor: showTestResult ? 'not-allowed' : 'pointer',
+                    fontWeight: 'bold',
+                    fontSize: '13px',
+                    outline: 'none',
+                    transition: 'all 0.2s',
+                  }}
+                  onMouseOver={e => {
+                    if (!showTestResult) {
+                      e.target.style.background = '#2ecc71';
+                      e.target.style.borderColor = '#2ecc71';
+                    }
+                  }}
+                  onMouseOut={e => {
+                    if (!showTestResult) {
+                      e.target.style.background = '#23b14d';
+                      e.target.style.borderColor = '#23b14d';
+                    }
+                  }}
+                  title={`显示 ${testTagDate} 后14个交易日的数据`}
+                >
+                  上涨
+                </button>
+                <button
+                  onClick={handleTestFall}
+                  disabled={showTestResult}
+                  style={{
+                    marginRight: 6,
+                    padding: '2px 8px',
+                    background: showTestResult ? '#666' : '#ef232a',
+                    color: '#fff',
+                    border: '2px solid ' + (showTestResult ? '#666' : '#ef232a'),
+                    borderRadius: '3px',
+                    cursor: showTestResult ? 'not-allowed' : 'pointer',
+                    fontWeight: 'bold',
+                    fontSize: '13px',
+                    outline: 'none',
+                    transition: 'all 0.2s',
+                  }}
+                  onMouseOver={e => {
+                    if (!showTestResult) {
+                      e.target.style.background = '#ff4d4f';
+                      e.target.style.borderColor = '#ff4d4f';
+                    }
+                  }}
+                  onMouseOut={e => {
+                    if (!showTestResult) {
+                      e.target.style.background = '#ef232a';
+                      e.target.style.borderColor = '#ef232a';
+                    }
+                  }}
+                  title={`显示 ${testTagDate} 后14个交易日的数据`}
+                >
+                  下跌
+                </button>
+              </>
+            )}
             {[0.5, 1, 2, 3, 5, 10, 20].map(y => (
               <button
                 key={y}
@@ -3129,6 +3322,48 @@ const getWarmUpStockCodes = () => {
                 onMouseOut={e => e.target.style.backgroundColor = '#23b14d'}
               >
                 添加预购
+              </button>
+            )}
+            {/* 复盘按钮 */}
+            {stockDetail.reviewDate ? (
+              <button
+                onClick={handleCancelReview}
+                style={{
+                  marginLeft: 4,
+                  padding: '2px 2px',
+                  backgroundColor: '#ff4444',
+                  color: '#fff',
+                  border: '1px solid #ff4444',
+                  borderRadius: '3px',
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                  fontWeight: 'bold',
+                  transition: 'background 0.2s',
+                }}
+                onMouseOver={e => e.target.style.backgroundColor = '#ff8888'}
+                onMouseOut={e => e.target.style.backgroundColor = '#ff4444'}
+              >
+                取消复盘
+              </button>
+            ) : (
+              <button
+                onClick={handleAddReview}
+                style={{
+                  marginLeft: 4,
+                  padding: '2px 2px',
+                  backgroundColor: '#23b14d',
+                  color: '#fff',
+                  border: '1px solid #23b14d',
+                  borderRadius: '3px',
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                  fontWeight: 'bold',
+                  transition: 'background 0.2s',
+                }}
+                onMouseOver={e => e.target.style.backgroundColor = '#4be37a'}
+                onMouseOut={e => e.target.style.backgroundColor = '#23b14d'}
+              >
+                添加复盘
               </button>
             )}
             {/* 妖股操作按钮 */}
