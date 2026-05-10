@@ -14,6 +14,7 @@ import dayjs from 'dayjs';
 import LoadingButton from './LoadingButton';
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
 import { Client } from '@stomp/stompjs';
+import MinuteChartModal from './MinuteChartModal';
 
 dayjs.extend(isSameOrBefore);
 
@@ -23,7 +24,7 @@ const MA_CONFIG = [
     { key: 10, label: 'MA10', color: '#ff00ff', default: false },
     { key: 20, label: 'MA20', color: '#11d1e4', default: false },
     { key: 30, label: 'MA30', color: '#23b14d', default: false },
-    { key: 60, label: 'MA60', color: '#bdbdbd', default: false },
+    { key: 60, label: 'MA60', color: '#bdbdbd', default: true },
     { key: 120, label: 'MA120', color: '#1e90ff', default: false },
     { key: 250, label: 'MA250', color: '#ffd700', default: false },
     { key: 500, label: 'MA500', color: '#ffd700', default: false },
@@ -117,6 +118,14 @@ const StockDetail = () => {
   });
   // 当前索引
   const [currentIndex, setCurrentIndex] = useState(() => {
+    // 优先从 URL 参数获取索引
+    const urlParams = new URLSearchParams(window.location.search);
+    const idxFromUrl = urlParams.get('idx');
+    if (idxFromUrl !== null && !isNaN(parseInt(idxFromUrl, 10))) {
+      return parseInt(idxFromUrl, 10);
+    }
+    
+    // 如果没有索引参数，则通过 stockCode 查找（兼容旧链接）
     // 优先从 location.state 获取 stockList，如果没有则从 sessionStorage 获取
     let list = location.state?.stockList;
     if (!list || list.length === 0) {
@@ -191,6 +200,13 @@ const StockDetail = () => {
   // AI分析结果tooltip状态
   const [aiTooltip, setAiTooltip] = useState({ visible: false, x: 0, y: 0 });
   const isMouseInAiTooltipRef = useRef(false);
+  
+  // 分时图弹窗状态
+  const [minuteChartModal, setMinuteChartModal] = useState({
+    visible: false,
+    date: '',
+    klineData: null
+  });
   
   // 处理龙虎榜tooltip显示
   const handleLhbMouseEnter = (e) => {
@@ -1328,7 +1344,7 @@ const getWarmUpStockCodes = () => {
     if (!testTagDate) return;
     
     // 计算 tagDate 后的第14个交易日
-    const targetDate = getDateAfterNTradingDays(testTagDate, 30);
+    const targetDate = getDateAfterNTradingDays(testTagDate, 60);
     if (targetDate) {
       // 先设置 showTestResult，再设置日期
       setShowTestResult(true);
@@ -1547,7 +1563,7 @@ const getWarmUpStockCodes = () => {
             
             if (prevVolume > 0 && currentVolume > 0) {
               const ratio = currentVolume / prevVolume;
-              liangBi = ratio.toFixed(1);
+              liangBi = ratio.toFixed(2);
             }
           }
           
@@ -1768,7 +1784,7 @@ const getWarmUpStockCodes = () => {
                       show: true,
                       position: 'bottom',
                       distance: 0,
-                      fontSize: showSymbol ? 8 : 10,
+                      fontSize: showSymbol ? 10 : 12,
                       fontWeight: 'bold',
                       color: textColor,
                       formatter: function() {
@@ -1877,8 +1893,19 @@ const getWarmUpStockCodes = () => {
     });
     
     
+    // 用于区分单击和双击的定时器
+    let clickTimer = null;
+    let isDoubleClick = false;
+    
     // 鼠标双击K线图，立即设置结束日期
     klineChart.getZr().on('dblclick', function (params) {
+      // 标记为双击，取消单击定时器
+      isDoubleClick = true;
+      if (clickTimer) {
+        clearTimeout(clickTimer);
+        clickTimer = null;
+      }
+      
       // 直接使用ECharts的convertFromPixel方法获取对应的数据索引
       const pointInGrid = klineChart.convertFromPixel({gridIndex: 0}, [params.offsetX, params.offsetY]);
       const xIndex = Math.round(pointInGrid[0]);
@@ -1892,6 +1919,43 @@ const getWarmUpStockCodes = () => {
           setChartEndDate(targetDate);
         }
       }
+    });
+    
+    // 鼠标单击K线图，弹出分时图（延时执行，避免与双击冲突）
+    klineChart.getZr().on('click', function (params) {
+      // 重置双击标记
+      isDoubleClick = false;
+      
+      // 延时执行单击逻辑，等待可能的双击事件
+      clickTimer = setTimeout(() => {
+        // 如果已经触发了双击，则不执行单击逻辑
+        if (isDoubleClick) {
+          return;
+        }
+        
+        // 直接使用ECharts的convertFromPixel方法获取对应的数据索引
+        const pointInGrid = klineChart.convertFromPixel({gridIndex: 0}, [params.offsetX, params.offsetY]);
+        const xIndex = Math.round(pointInGrid[0]);
+        
+        // 直接获取对应索引的日期和K线数据
+        if (xIndex >= 0 && xIndex < dates.length) {
+          const targetDate = dates[xIndex];
+          const klineItem = chartData[xIndex];
+          if (targetDate && klineItem) {
+            setMinuteChartModal({
+              visible: true,
+              date: targetDate,
+              klineData: {
+                openPrice: klineItem.openPrice,
+                closePrice: klineItem.closePrice,
+                maxPrice: klineItem.maxPrice,
+                minPrice: klineItem.minPrice,
+                zhangDieFu: klineItem.zhangDieFu
+              }
+            });
+          }
+        }
+      }, 250); // 250ms延时，足够区分单击和双击
     });
     
     // 重复的mouseout事件处理已移除，统一在上面处理
@@ -2367,21 +2431,24 @@ const getWarmUpStockCodes = () => {
 
   // 去除拼音声调
   const removeTone = s => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-  // 生成股票下拉选项，增加拼音首字母
-  const stockOptions = stockList.map(item => {
+  // 生成股票下拉选项，增加拼音首字母，使用索引作为value避免重复股票问题
+  const stockOptions = stockList.map((item, index) => {
     let arr = pinyin(item.stockName || '', { pattern: 'first', type: 'array' });
     let joined = arr.join('');
     let noTone = removeTone(joined);
     let pinyinStr = noTone.replace(/[^a-z]/gi, '').toLowerCase();
     return {
-      value: item.stockCode,
+      value: index,  // 使用索引作为value
       label: (
         <span>
+          <span style={{ color: '#888', marginRight: '4px' }}>{index + 1}.</span>
           <span style={{ fontWeight: 'bold' }}>{item.stockName}</span>
           {' '}({item.stockCode})
         </span>
       ),
-      pinyin: pinyinStr
+      pinyin: pinyinStr,
+      stockCode: item.stockCode,
+      stockName: item.stockName
     };
   });
 
@@ -2434,7 +2501,7 @@ const getWarmUpStockCodes = () => {
                 <Select
                   popupClassName='stock-detail-dropdown'
                   showSearch
-                  value={stockCode}
+                  value={currentIndex}
                   style={{
                     height: 30,
                     fontSize: 14,
@@ -2454,17 +2521,20 @@ const getWarmUpStockCodes = () => {
                   options={stockOptions}
                   placeholder="输入股票代码或名称搜索"
                   filterOption={(input, option) => {
-                    const { stockName, stockCode } = stockList.find(s => s.stockCode === option.value) || {};
-                    const pinyin = option.pinyin || '';
+                    // Ant Design Select 的 option 参数包含我们定义的所有属性
+                    const stockName = option.stockName || option.data?.stockName || '';
+                    const stockCode = option.stockCode || option.data?.stockCode || '';
+                    const pinyinStr = option.pinyin || option.data?.pinyin || '';
+                    const inputLower = input.toLowerCase();
                     return (
-                      (stockName && stockName.toLowerCase().includes(input.toLowerCase())) ||
-                      (stockCode && stockCode.toLowerCase().includes(input.toLowerCase())) ||
-                      (pinyin && pinyin.includes(input.toLowerCase()))
+                      stockName.toLowerCase().includes(inputLower) ||
+                      stockCode.toLowerCase().includes(inputLower) ||
+                      pinyinStr.includes(inputLower)
                     );
                   }}
-                  onChange={val => {
-                    const idx = stockList.findIndex(s => s.stockCode === val);
-                    if (idx >= 0) setCurrentIndex(idx);
+                  onChange={idx => {
+                    console.log('Select onChange, idx:', idx);
+                    setCurrentIndex(idx);
                   }}
                   onKeyDown={(e) => {
                     if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
@@ -4123,6 +4193,16 @@ const getWarmUpStockCodes = () => {
           </div>
         </div>
       )}
+      
+      {/* 分时图弹窗 */}
+      <MinuteChartModal
+        visible={minuteChartModal.visible}
+        onClose={() => setMinuteChartModal({ visible: false, date: '', klineData: null })}
+        stockCode={stockCode}
+        stockName={currentStock.stockName || chartData[0]?.stockName}
+        date={minuteChartModal.date}
+        klineData={minuteChartModal.klineData}
+      />
       
       {/* 顶部提示标签 */}
       

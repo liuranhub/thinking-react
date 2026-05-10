@@ -7,6 +7,7 @@ import '../App.css';
 import { API_HOST } from '../config/config';
 import { get, post } from '../utils/httpClient';
 import { renderKlineChart } from '../utils/renderKlineChart';
+import { renderMinuteChart } from '../utils/renderMinuteChart';
 
 const BG_COLOR = '#181c26';
 const TEXT_COLOR = '#fff';
@@ -41,8 +42,8 @@ const GRID_ROWS_9 = 3; // 9宫格行数
 const GRID_COUNT_9 = GRID_COLS_9 * GRID_ROWS_9; // 9宫格总网格数
 
 // 1支股票模式：四个网格对应的时间范围（年）
-// 左上：半年（0.5年），右上：2年，左下：5年，右下：10年
-const GRID_RANGES = [0.5, 2, 1, 10];
+// 左上：半年（0.5年），右上：分时图（用'minute'标识），左下：1年，右下：10年
+const GRID_RANGES = [0.5, 'minute', 1, 10];
 
 // 模式类型
 const MODE_1_STOCK = '1stock'; // 1支股票，四块区域：左上-半年（不显示交易量）、右上-2年、左下-5年、右下-10年
@@ -332,6 +333,13 @@ const StockDetailGrid = () => {
   // 每个股票的K线数据
   const [stocksData, setStocksData] = useState({});
   
+  // 分时数据（MODE_1_STOCK模式下使用）
+  const [minuteData, setMinuteData] = useState([]);
+  const [minuteDataLoading, setMinuteDataLoading] = useState(false);
+  
+  // 分时图显示的日期（单击K线时更新）
+  const [minuteChartDate, setMinuteChartDate] = useState(null);
+  
   // 股票详情数据
   const [stockDetails, setStockDetails] = useState({});
   
@@ -389,6 +397,7 @@ const StockDetailGrid = () => {
   const handleResetChartEndDate = () => {
     // 重置到null（使用最新日期）
     setChartEndDate(null);
+    setMinuteChartDate(null);
   };
   
   // 选中的网格标识（格式：'gridIndex' 或 'stockCode-rangeYears'）
@@ -1040,6 +1049,29 @@ const StockDetailGrid = () => {
     }
   };
 
+  // 获取分时数据（MODE_1_STOCK模式下使用）
+  const fetchMinuteData = useCallback(async (stockCode, date) => {
+    if (!stockCode) return;
+    
+    setMinuteDataLoading(true);
+    try {
+      const response = await post(`${API_HOST}/stock/getStockOneMinuteData`, [
+        { stockCode, date }
+      ]);
+      
+      if (response && response[stockCode]) {
+        setMinuteData(response[stockCode]);
+      } else {
+        setMinuteData([]);
+      }
+    } catch (error) {
+      console.error('获取分时数据失败:', error);
+      setMinuteData([]);
+    } finally {
+      setMinuteDataLoading(false);
+    }
+  }, []);
+
   // 获取股票分数（已废弃，改为从stockDetail接口的totalScore中获取）
   // const fetchStockScore = async (stockCode) => {
   //   // 此函数已不再使用，分数从stockDetail接口的totalScore字段获取
@@ -1249,6 +1281,36 @@ const StockDetailGrid = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, currentStock, baseIndex, fetchStockDataBatch]);
 
+  // MODE_1_STOCK模式下，加载分时数据
+  useEffect(() => {
+    if (mode !== MODE_1_STOCK || !currentStock?.stockCode) {
+      setMinuteData([]);
+      return;
+    }
+    
+    // 获取最新的K线数据来确定日期
+    const stockData = stocksData[currentStock.stockCode];
+    if (stockData?.allStockData && stockData.allStockData.length > 0) {
+      const allDates = stockData.allStockData.map(item => item.date);
+      // 优先使用 minuteChartDate（单击K线设置的日期），其次使用 chartEndDate，最后使用最新日期
+      let targetDate;
+      if (minuteChartDate && allDates.includes(minuteChartDate)) {
+        targetDate = minuteChartDate;
+      } else if (chartEndDate && allDates.includes(chartEndDate)) {
+        targetDate = chartEndDate;
+      } else {
+        targetDate = allDates[allDates.length - 1];
+      }
+      
+      fetchMinuteData(currentStock.stockCode, targetDate);
+    }
+  }, [mode, currentStock?.stockCode, stocksData, minuteChartDate, chartEndDate, fetchMinuteData]);
+
+  // 切换股票时，重置分时图日期
+  useEffect(() => {
+    setMinuteChartDate(null);
+  }, [currentStock?.stockCode, baseIndex]);
+
   // 当 stocksData 加载完成后，自动获取分数（已移除，分数从stockDetail接口的totalScore中获取）
   // useEffect(() => {
   //   // 此useEffect已不再使用，分数在fetchStockDetail中从totalScore字段获取
@@ -1258,6 +1320,60 @@ const StockDetailGrid = () => {
   const renderGridCharts = (stock, gridIndex, rangeYearsParam) => {
     const stockCode = stock?.stockCode;
     if (!stockCode) return;
+
+    // MODE_1_STOCK 模式下，gridIndex 1 是分时图
+    if (mode === MODE_1_STOCK && rangeYearsParam === 'minute') {
+      // 渲染分时图
+      const minuteChartDomId = `minute-chart-${gridIndex}`;
+      const minuteChartDom = document.getElementById(minuteChartDomId);
+      
+      if (!minuteChartDom) {
+        setTimeout(() => {
+          renderGridCharts(stock, gridIndex, rangeYearsParam);
+        }, 200);
+        return;
+      }
+      
+      if (!minuteData || minuteData.length === 0) {
+        return;
+      }
+      
+      const chartKey = `${stockCode}-minute`;
+      
+      // 如果图表已存在，先清理
+      if (chartsRef.current[chartKey]) {
+        const existingGroup = chartsRef.current[chartKey];
+        if (existingGroup.cleanup) {
+          existingGroup.cleanup();
+        }
+      }
+      
+      const chartResult = renderMinuteChart({
+        chartDom: minuteChartDom,
+        minuteData,
+        chartKey,
+        chartsRef,
+        showVolume: true
+      });
+      
+      if (chartResult) {
+        chartsRef.current[chartKey] = {
+          ...chartsRef.current[chartKey],
+          cleanup: chartResult.cleanup,
+          minuteChart: chartResult.charts?.minuteChart
+        };
+      }
+      
+      // 渲染后立即resize
+      setTimeout(() => {
+        const chartGroup = chartsRef.current[chartKey];
+        if (chartGroup && chartGroup.minuteChart) {
+          chartGroup.minuteChart.resize();
+        }
+      }, 150);
+      
+      return;
+    }
 
     let chartData = [];
     let allStockData = [];
@@ -1373,13 +1489,13 @@ const StockDetailGrid = () => {
       return;
     }
     
-    // 对于 MODE_1_STOCK 的第一个网格（index 0），不显示交易量，volumeDom 可以为空
-    const isFirstGridNoVolume = mode === MODE_1_STOCK && gridIndex === 0;
+    // 对于 MODE_1_STOCK 模式，分时图不显示交易量，K线图显示交易量
+    const isMode1StockNoVolume = mode === MODE_1_STOCK && rangeYearsParam === 'minute';
     
-    // 如果隐藏交易量或第一个网格，volumeDom 可以为空
-    if ((!showVolume || isFirstGridNoVolume) && !volumeDom) {
+    // 如果隐藏交易量或分时图，volumeDom 可以为空
+    if ((!showVolume || isMode1StockNoVolume) && !volumeDom) {
       // 继续执行，只渲染 K 线图
-    } else if (showVolume && !isFirstGridNoVolume && !volumeDom) {
+    } else if (showVolume && !isMode1StockNoVolume && !volumeDom) {
       // 需要显示交易量但 DOM 不存在，延迟重试
       setTimeout(() => {
         renderGridCharts(stock, gridIndex, rangeYearsParam);
@@ -1398,15 +1514,26 @@ const StockDetailGrid = () => {
       }
     }
     
-    // 对于 MODE_1_STOCK 的第一个网格（index 0），不显示交易量
-    const shouldShowVolumeForThisGrid = mode === MODE_1_STOCK && gridIndex === 0 
-      ? false 
+    // MODE_1_STOCK 模式下，K线图显示交易量
+    const shouldShowVolumeForThisGrid = mode === MODE_1_STOCK 
+      ? (volumeDom !== null) 
       : (showVolume ? volumeDom !== null : false);
     
     // 双击K线切换日期的回调函数
     const handleDateChange = (date) => {
       if (date) {
         setChartEndDate(date);
+        // MODE_1_STOCK 模式下，双击也同步切换分时图日期
+        if (mode === MODE_1_STOCK) {
+          setMinuteChartDate(date);
+        }
+      }
+    };
+    
+    // 单击K线切换分时图日期的回调函数（仅 MODE_1_STOCK 模式）
+    const handleSingleClick = (date) => {
+      if (date && mode === MODE_1_STOCK) {
+        setMinuteChartDate(date);
       }
     };
     
@@ -1420,6 +1547,7 @@ const StockDetailGrid = () => {
       chartsRef,
       stockDetail,
       onDateChange: handleDateChange,
+      onSingleClick: mode === MODE_1_STOCK ? handleSingleClick : null,
       hideXAxisLabel: mode === MODE_9_STOCK && !showVolume // 9宫格模式且隐藏交易量时，隐藏X轴标签
     });
     
@@ -1447,18 +1575,27 @@ const StockDetailGrid = () => {
 
   // 渲染所有网格的图表
   useEffect(() => {
-    // 清理旧的图表实例
-    Object.values(chartsRef.current).forEach(chartGroup => {
+    // 清理旧的图表实例（MODE_1_STOCK 模式下保留分时图实例）
+    Object.keys(chartsRef.current).forEach(chartKey => {
+      const chartGroup = chartsRef.current[chartKey];
+      // 在 MODE_1_STOCK 模式下，跳过分时图的清理（分时图由单独的 useEffect 处理）
+      if (mode === MODE_1_STOCK && chartKey.endsWith('-minute')) {
+        return;
+      }
       if (chartGroup && chartGroup.cleanup) {
         chartGroup.cleanup();
       }
+      delete chartsRef.current[chartKey];
     });
-    chartsRef.current = {};
 
     // 延迟渲染，确保DOM完全更新后再渲染图表
     const renderTimer = setTimeout(() => {
       if (mode === MODE_1_STOCK && currentStock?.stockCode) {
         GRID_RANGES.forEach((rangeYears, index) => {
+          // 跳过分时图（index 1），分时图由单独的 useEffect 处理
+          if (rangeYears === 'minute') {
+            return;
+          }
           setTimeout(() => {
             renderGridCharts(currentStock, index, rangeYears);
           }, 100 * (index + 1));
@@ -1504,6 +1641,41 @@ const StockDetailGrid = () => {
     };
   }, [mode, stocksData, currentStock, baseIndex, rangeYearsTop, rangeYearsBottom, rangeYears, rangeYears9, stockDetails, showVolume, chartEndDate]);
 
+  // 单独处理分时图的渲染（MODE_1_STOCK 模式下）
+  useEffect(() => {
+    if (mode !== MODE_1_STOCK || !currentStock?.stockCode) {
+      return;
+    }
+    
+    // 找到分时图的 gridIndex
+    const minuteGridIndex = GRID_RANGES.findIndex(r => r === 'minute');
+    if (minuteGridIndex === -1) {
+      return;
+    }
+    
+    const chartKey = `${currentStock.stockCode}-minute`;
+    
+    // 如果 minuteData 为空，清理旧的分时图实例，显示空白
+    if (!minuteData || minuteData.length === 0) {
+      if (chartsRef.current[chartKey]) {
+        if (chartsRef.current[chartKey].cleanup) {
+          chartsRef.current[chartKey].cleanup();
+        }
+        delete chartsRef.current[chartKey];
+      }
+      return;
+    }
+    
+    // 延迟渲染分时图
+    const renderTimer = setTimeout(() => {
+      renderGridCharts(currentStock, minuteGridIndex, 'minute');
+    }, 200);
+
+    return () => {
+      clearTimeout(renderTimer);
+    };
+  }, [mode, currentStock?.stockCode, minuteData]);
+
   // 清理图表实例
   useEffect(() => {
     return () => {
@@ -1519,25 +1691,52 @@ const StockDetailGrid = () => {
   // 渲染网格内容
   const renderGridContent = () => {
     if (mode === MODE_1_STOCK) {
-      return GRID_RANGES.map((rangeYears, index) => {
+      return GRID_RANGES.map((rangeYearsOrMinute, index) => {
         const stockCode = currentStock?.stockCode;
         const stockData = stockCode ? stocksData[stockCode] : null;
-        const isLoading = stockData?.loading;
-        const hasError = stockData?.error;
+        const isMinuteChart = rangeYearsOrMinute === 'minute';
+        const isLoading = isMinuteChart ? minuteDataLoading : stockData?.loading;
+        const hasError = isMinuteChart ? null : stockData?.error;
         
         let hasData = false;
-        if (stockData?.allStockData && stockData.allStockData.length > 0) {
+        if (isMinuteChart) {
+          hasData = minuteData && minuteData.length > 0;
+        } else if (stockData?.allStockData && stockData.allStockData.length > 0) {
           const allDates = stockData.allStockData.map(item => item.date);
           const maxDate = allDates[allDates.length - 1];
           const minDate = allDates[0];
-          const startDate = getDateNDaysAgo(maxDate, rangeYears);
+          const startDate = getDateNDaysAgo(maxDate, rangeYearsOrMinute);
           const chartStartDate = startDate < minDate ? minDate : startDate;
           const chartData = stockData.allStockData.filter(item => item.date >= chartStartDate && item.date <= maxDate);
           hasData = chartData.length > 0;
         }
 
-        const gridKey = `${stockCode}-${rangeYears}`;
+        const gridKey = `${stockCode}-${rangeYearsOrMinute}`;
         const isSelected = selectedGrid === gridKey;
+        
+        // 获取分时图的日期标题
+        let displayMinuteDate = '';
+        if (isMinuteChart && stockData?.allStockData && stockData.allStockData.length > 0) {
+          const allDates = stockData.allStockData.map(item => item.date);
+          // 优先使用 minuteChartDate（单击K线设置的日期），其次使用 chartEndDate，最后使用最新日期
+          if (minuteChartDate && allDates.includes(minuteChartDate)) {
+            displayMinuteDate = minuteChartDate;
+          } else if (chartEndDate && allDates.includes(chartEndDate)) {
+            displayMinuteDate = chartEndDate;
+          } else {
+            displayMinuteDate = allDates[allDates.length - 1];
+          }
+        }
+        
+        // 确定标题
+        let gridTitle = '';
+        if (isMinuteChart) {
+          gridTitle = displayMinuteDate ? `分时图 (${displayMinuteDate})` : '分时图';
+        } else if (index === 0) {
+          gridTitle = '半年K线图';
+        } else {
+          gridTitle = `${rangeYearsOrMinute}年K线图`;
+        }
         
         return (
           <div
@@ -1553,7 +1752,7 @@ const StockDetailGrid = () => {
             }}
           >
             <GridHeader
-              title={index === 0 ? '半年K线图' : `${rangeYears}年K线图`}
+              title={gridTitle}
               stockCode={stockCode}
               isSelected={isSelected}
               gridKey={gridKey}
@@ -1571,7 +1770,7 @@ const StockDetailGrid = () => {
               scoreData={stockScoresMap[stockCode]}
               formatNumber={formatNumber}
             />
-            <div style={{ flex: (index === 0 || !showVolume) ? '100%' : '70%', position: 'relative' }}>
+            <div style={{ flex: isMinuteChart ? '100%' : '70%', position: 'relative' }}>
               {isLoading && (
                 <div style={{
                   position: 'absolute',
@@ -1611,9 +1810,13 @@ const StockDetailGrid = () => {
                   暂无数据
                 </div>
               )}
-              <div id={`kline-chart-${index}`} style={{ width: '100%', height: '100%' }}></div>
+              {isMinuteChart ? (
+                <div id={`minute-chart-${index}`} style={{ width: '100%', height: '100%' }}></div>
+              ) : (
+                <div id={`kline-chart-${index}`} style={{ width: '100%', height: '100%' }}></div>
+              )}
             </div>
-            {showVolume && index !== 0 && (
+            {!isMinuteChart && (
               <div style={{ flex: '30%', position: 'relative' }}>
                 <div id={`volume-chart-${index}`} style={{ width: '100%', height: '100%' }}></div>
               </div>
@@ -2291,7 +2494,7 @@ const StockDetailGrid = () => {
             {/* 重置按钮 */}
             <button
               onClick={handleResetChartEndDate}
-              disabled={!chartEndDate}
+              disabled={!chartEndDate && !minuteChartDate}
               style={{
                 marginRight: 6,
                 padding: '2px 8px',
@@ -2299,19 +2502,19 @@ const StockDetailGrid = () => {
                 color: '#fff',
                 border: '1px solid #444',
                 borderRadius: '3px',
-                cursor: !chartEndDate ? 'not-allowed' : 'pointer',
+                cursor: (!chartEndDate && !minuteChartDate) ? 'not-allowed' : 'pointer',
                 fontSize: '13px',
                 transition: 'background 0.2s',
-                opacity: !chartEndDate ? 0.5 : 1,
+                opacity: (!chartEndDate && !minuteChartDate) ? 0.5 : 1,
               }}
               onMouseOver={e => {
-                if (chartEndDate) {
+                if (chartEndDate || minuteChartDate) {
                   e.target.style.background = '#2a2f3a';
                   e.target.style.borderColor = '#1e90ff';
                 }
               }}
               onMouseOut={e => {
-                if (chartEndDate) {
+                if (chartEndDate || minuteChartDate) {
                   e.target.style.background = '#23263a';
                   e.target.style.borderColor = '#444';
                 }

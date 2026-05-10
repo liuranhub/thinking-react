@@ -34,7 +34,8 @@ const chenJiaoLiangConvert = (value) => {
  * @param {number} params.gridIndex - 网格索引
  * @param {Object} params.chartsRef - 图表实例引用对象
  * @param {Object} params.stockDetail - 股票详情数据（可选，包含标记点数据）
- * @param {Function} params.onDateChange - 日期变化回调
+ * @param {Function} params.onDateChange - 双击日期变化回调
+ * @param {Function} params.onSingleClick - 单击日期回调（用于切换分时图）
  * @param {boolean} params.hideXAxisLabel - 是否隐藏X轴标签（默认false）
  * @param {number} params.highVolumeTargetPrice - 目标价格（可选，优先使用此值，否则从stockDetail中获取）
  * @returns {Object} 返回清理函数和图表实例对象
@@ -49,6 +50,7 @@ export const renderKlineChart = ({
   chartsRef,
   stockDetail = null,
   onDateChange = null,
+  onSingleClick = null,
   hideXAxisLabel = false,
   highVolumeTargetPrice = null
 }) => {
@@ -554,13 +556,28 @@ export const renderKlineChart = ({
 
   // 双击K线切换日期功能
   let touchStartHandler = null;
+  let clickTimer = null;
+  const CLICK_DELAY = 250; // 单击延迟，用于区分单击和双击
+  
   if (onDateChange) {
     // 鼠标双击事件
     const dblclickHandler = (params) => {
+      // 清除单击定时器，防止双击时触发单击事件
+      if (clickTimer) {
+        clearTimeout(clickTimer);
+        clickTimer = null;
+      }
+      
       // 获取点击位置
       const pointInPixel = [params.offsetX, params.offsetY];
       // 转换为图表坐标系
       const pointInGrid = klineChart.convertFromPixel({ gridIndex: 0 }, pointInPixel);
+      
+      // 检查转换结果是否有效
+      if (!pointInGrid || pointInGrid[0] === undefined) {
+        return;
+      }
+      
       const xIndex = Math.round(pointInGrid[0]);
       
       // 获取对应索引的日期
@@ -590,12 +607,27 @@ export const renderKlineChart = ({
       );
       
       if (timeDiff < DOUBLE_TAP_DELAY && distance < DOUBLE_TAP_DISTANCE) {
+        // 清除单击定时器
+        if (clickTimer) {
+          clearTimeout(clickTimer);
+          clickTimer = null;
+        }
+        
         // 执行双击切换日期功能
         const rect = klineDom.getBoundingClientRect();
         const x = touch.clientX - rect.left;
         const y = touch.clientY - rect.top;
         const pointInPixel = [x, y];
         const pointInGrid = klineChart.convertFromPixel({ gridIndex: 0 }, pointInPixel);
+        
+        // 检查转换结果是否有效
+        if (!pointInGrid || pointInGrid[0] === undefined) {
+          firstTapTime = 0;
+          firstTapX = 0;
+          firstTapY = 0;
+          return;
+        }
+        
         const xIndex = Math.round(pointInGrid[0]);
         
         // 获取对应索引的日期
@@ -621,6 +653,39 @@ export const renderKlineChart = ({
     };
     
     klineDom.addEventListener('touchstart', touchStartHandler);
+  }
+  
+  // 单击K线切换分时图日期功能（需要传入 onSingleClick 回调）
+  let singleClickHandler = null;
+  if (onSingleClick) {
+    singleClickHandler = (params) => {
+      // 使用延迟来区分单击和双击
+      clickTimer = setTimeout(() => {
+        // 获取点击位置
+        const pointInPixel = [params.offsetX, params.offsetY];
+        // 转换为图表坐标系
+        const pointInGrid = klineChart.convertFromPixel({ gridIndex: 0 }, pointInPixel);
+        
+        // 检查转换结果是否有效
+        if (!pointInGrid || pointInGrid[0] === undefined) {
+          clickTimer = null;
+          return;
+        }
+        
+        const xIndex = Math.round(pointInGrid[0]);
+        
+        // 获取对应索引的日期
+        if (xIndex >= 0 && xIndex < dates.length) {
+          const targetDate = dates[xIndex];
+          if (targetDate) {
+            onSingleClick(targetDate);
+          }
+        }
+        clickTimer = null;
+      }, CLICK_DELAY);
+    };
+    
+    klineChart.getZr().on('click', singleClickHandler);
   }
 
   // 窗口大小变化时调整图表

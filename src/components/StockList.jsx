@@ -425,9 +425,10 @@ const StockList = () => {
   }, [getTabDefaultParams]);
 
 
-  // 重构：生成StockDetail链接 - 只传递tab标签
-  const generateStockDetailLink = useCallback((row) => {
-    return `/stock-detail/${row.stockCode}/${row.date}?tab=${activeTab}`;
+  // 重构：生成StockDetail链接 - 传递tab标签和索引
+  const generateStockDetailLink = useCallback((row, index) => {
+    // 传递索引参数，解决重复股票定位问题
+    return `/stock-detail/${row.stockCode}/${row.date}?tab=${activeTab}&idx=${index}`;
   }, [activeTab]);
 
   const getAllFieldConfigType = useCallback(async () => {
@@ -1126,9 +1127,9 @@ const StockList = () => {
                         console.error('Retry failed:', retryError);
                       }
                     }
-                    // 在新标签页打开详情页
+                    // 在新标签页打开详情页，传递索引参数
                     // const windowTitle = `${row.stockName || row.stockCode} - 股票详情`;
-                    openWindow(generateStockDetailLink(row), "股票详情");
+                    openWindow(generateStockDetailLink(row, index), "股票详情");
                   }}
                 >
                   {row[column.field]}
