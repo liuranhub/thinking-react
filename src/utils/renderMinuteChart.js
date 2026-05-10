@@ -134,7 +134,49 @@ export const renderMinuteChart = ({
       }
     },
     tooltip: {
-      show: false  // 不显示tooltip
+      show: true,
+      trigger: 'axis',
+      axisPointer: {
+        type: 'cross',
+        lineStyle: {
+          color: '#555',
+          width: 1,
+          type: 'dashed'
+        },
+        crossStyle: {
+          color: '#555',
+          width: 1,
+          type: 'dashed'
+        },
+        label: {
+          show: true,
+          backgroundColor: '#23263a',
+          color: '#fff',
+          borderColor: '#444',
+          borderWidth: 1
+        }
+      },
+      backgroundColor: 'rgba(24,28,38,0.9)',
+      borderColor: '#333',
+      textStyle: { color: TEXT_COLOR, fontSize: 12 },
+      formatter: function(params) {
+        if (!params || params.length === 0) return '';
+        const dataIndex = params[0].dataIndex;
+        const data = minuteData[dataIndex];
+        if (!data) return '';
+        
+        const price = data.closePrice || 0;
+        const changePercent = data.zhangDieFu || 0;
+        const volume = (data.chenJiaoLiang || 0) / 100;
+        const changeColor = changePercent >= 0 ? RED : GREEN;
+        
+        return `<div style="font-size:12px;line-height:1.6;">` +
+          `<div>时间: ${formatTime(data.tradeTime)}</div>` +
+          `<div>价格: <span style="color:${changeColor};font-weight:bold">${price.toFixed(2)}</span></div>` +
+          `<div>涨跌: <span style="color:${changeColor};font-weight:bold">${changePercent >= 0 ? '+' : ''}${changePercent.toFixed(2)}%</span></div>` +
+          `<div>成交量: ${formatVolume(volume)}手</div>` +
+          `</div>`;
+      }
     },
     xAxis: [
       {

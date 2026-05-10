@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Modal, Spin } from 'antd';
+import { useState, useEffect, useRef } from 'react';
+import { Modal, Spin, message } from 'antd';
 import * as echarts from 'echarts';
 import { post } from '../utils/httpClient';
 import { API_HOST } from '../config/config';
+import LoadingButton from './LoadingButton';
 
 const BG_COLOR = '#181c26';
 const TEXT_COLOR = '#fff';
@@ -26,10 +27,35 @@ const MinuteChartModal = ({ visible, onClose, stockCode, stockName, date, klineD
   const [minuteData, setMinuteData] = useState([]);
   const chartRef = useRef(null);
   const chartInstance = useRef(null);
+  const [calculateLoading, setCalculateLoading] = useState(false);
+  const [calculateResult, setCalculateResult] = useState(null); // true/false/null
+
+  // 计算股票数据
+  const handleCalculate = async () => {
+    if (!stockCode || !date) {
+      message.error('缺少股票代码或日期参数', 2);
+      return;
+    }
+    
+    setCalculateLoading(true);
+    setCalculateResult(null);
+    try {
+      const { protocol, hostname } = window.location;
+      const browserHostServer = `${protocol}//${hostname}:18888`;
+      const result = await post(`${browserHostServer}/stock/kline/stockScoreAnalyser/${stockCode}/${date}`);
+      setCalculateResult(!!result);
+    } catch (error) {
+      console.error('计算失败:', error);
+      setCalculateResult(false);
+    } finally {
+      setCalculateLoading(false);
+    }
+  };
 
   // 获取分时数据
   useEffect(() => {
     if (visible && stockCode && date) {
+      setCalculateResult(null);
       fetchMinuteData();
     }
     return () => {
@@ -147,13 +173,13 @@ const MinuteChartModal = ({ visible, onClose, stockCode, stockName, date, klineD
       grid: [
         {
           left: '40px',
-          right: '35px',
+          right: '40px',
           top: '5px',
           height: '75%'
         },
         {
           left: '40px',
-          right: '35px',
+          right: '40px',
           top: '80%',
           height: '18%'
         }
@@ -165,7 +191,48 @@ const MinuteChartModal = ({ visible, onClose, stockCode, stockName, date, klineD
         }
       },
       tooltip: {
-        show: false  // 不显示tooltip，顶部已有信息
+        show: true,
+        trigger: 'axis',
+        axisPointer: {
+          type: 'cross',
+          lineStyle: {
+            color: '#555',
+            width: 1,
+            type: 'dashed'
+          },
+          crossStyle: {
+            color: '#555',
+            width: 1,
+            type: 'dashed'
+          },
+          label: {
+            show: true,
+            backgroundColor: '#23263a',
+            color: '#fff',
+            borderColor: '#444',
+            borderWidth: 1
+          }
+        },
+        backgroundColor: 'rgba(24,28,38,0.9)',
+        borderColor: '#333',
+        textStyle: { color: '#fff', fontSize: 12 },
+        formatter: function(params) {
+          if (!params || params.length === 0) return '';
+          const dataIndex = params[0].dataIndex;
+          const data = minuteData[dataIndex];
+          if (!data) return '';
+          
+          const price = data.closePrice || 0;
+          const changePercent = data.zhangDieFu || 0;
+          const changeColor = changePercent >= 0 ? '#ef232a' : '#14b143';
+          
+          return `<div style="font-size:12px;line-height:1.6;">` +
+            `<div>时间: ${formatTime(data.tradeTime)}</div>` +
+            `<div>价格: <span style="color:${changeColor};font-weight:bold">${price.toFixed(2)}</span></div>` +
+            `<div>涨跌: <span style="color:${changeColor};font-weight:bold">${changePercent >= 0 ? '+' : ''}${changePercent.toFixed(2)}%</span></div>` +
+            `<div>成交量: ${formatVolume((data.chenJiaoLiang || 0) / 100)}手</div>` +
+            `</div>`;
+        }
       },
       xAxis: [
         {
@@ -330,23 +397,6 @@ const MinuteChartModal = ({ visible, onClose, stockCode, stockName, date, klineD
           barWidth: '60%'
         }
       ],
-      // 添加昨收价参考线
-      graphic: [
-        {
-          type: 'line',
-          shape: {
-            x1: 60,
-            y1: 0,
-            x2: chartRef.current.clientWidth - 60,
-            y2: 0
-          },
-          style: {
-            stroke: '#666',
-            lineDash: [4, 4]
-          },
-          z: 100
-        }
-      ]
     };
 
     // 添加昨收价水平线
@@ -429,20 +479,20 @@ const MinuteChartModal = ({ visible, onClose, stockCode, stockName, date, klineD
               {stockCode}
             </span>
           </div>
-          <div style={{ fontSize: '14px' }}>
-            <span style={{ marginRight: '16px' }}>{date}</span>
+          <div style={{ fontSize: '14px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <span>{date}</span>
             {klineData && (
               <>
-                <span style={{ marginRight: '8px' }}>
+                <span>
                   开: <span style={{ color: getChangeColor() }}>{klineData.openPrice?.toFixed(2)}</span>
                 </span>
-                <span style={{ marginRight: '8px' }}>
+                <span>
                   高: <span style={{ color: RED }}>{klineData.maxPrice?.toFixed(2)}</span>
                 </span>
-                <span style={{ marginRight: '8px' }}>
+                <span>
                   低: <span style={{ color: GREEN }}>{klineData.minPrice?.toFixed(2)}</span>
                 </span>
-                <span style={{ marginRight: '8px' }}>
+                <span>
                   收: <span style={{ color: getChangeColor() }}>{klineData.closePrice?.toFixed(2)}</span>
                 </span>
                 <span>
@@ -452,6 +502,26 @@ const MinuteChartModal = ({ visible, onClose, stockCode, stockName, date, klineD
                 </span>
               </>
             )}
+            <LoadingButton
+              onClick={handleCalculate}
+              loading={calculateLoading}
+              loadingText=""
+              style={{
+                width: '45px',
+                height: '20px',
+                marginLeft: 20,
+                marginRight: 50,
+                ...(calculateResult !== null && {
+                  borderColor: calculateResult ? GREEN : RED,
+                  borderWidth: '2px',
+                  borderStyle: 'solid',
+                }),
+              }}
+              title="计算股票数据"
+            >
+              计算
+            </LoadingButton>
+            
           </div>
         </div>
 

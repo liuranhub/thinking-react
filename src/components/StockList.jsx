@@ -1165,7 +1165,7 @@ const StockList = () => {
                       }
                     }
                     // 跳转到 StockDetailGrid，并传递当前股票信息
-                    openWindow('/stock-detail-grid', "股票网格视图");
+                    openWindow(`/stock-detail-grid?index=${index}`, "股票网格视图");
                   }}
                 >
                   {row[column.field]}
@@ -1206,6 +1206,45 @@ const StockList = () => {
                   }}
                 >
                   {row[column.field]}
+                </span>
+              ) : column.field.startsWith('link@') ? (
+                <span
+                  style={{
+                    color: '#1890ff',
+                    textDecoration: 'none',
+                    cursor: 'pointer'
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (column.field.startsWith('link@Intradaychart')) {
+                      // 存储股票列表到 sessionStorage
+                      const minimalStockList = data.map(item => ({
+                        stockCode: item.stockCode,
+                        stockName: item.stockName,
+                        date: item.date,
+                        tagDate: item.tagDate,
+                        priceLevel100: item.priceLevel100,
+                        priceLevel200: item.priceLevel200,
+                        priceLevel1000: item.priceLevel1000
+                      }));
+                      try {
+                        sessionStorage.setItem('stockList', JSON.stringify(minimalStockList));
+                      } catch (error) {
+                        console.error('Failed to save stockList to sessionStorage:', error);
+                        try {
+                          sessionStorage.removeItem('stockList');
+                          sessionStorage.setItem('stockList', JSON.stringify(minimalStockList));
+                        } catch (retryError) {
+                          console.error('Retry failed:', retryError);
+                        }
+                      }
+                      // 跳转到分时图查看模式，带上 tagDate 和 mode 参数
+                      const tagDate = row.tagDate || row.date || '';
+                      openWindow(`/stock-detail-grid?mode=4minute&tagDate=${tagDate}&index=${index}`, "分时图查看");
+                    }
+                  }}
+                >
+                  {column.fieldName}
                 </span>
               ) : (
                 row[column.field]
