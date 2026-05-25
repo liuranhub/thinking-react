@@ -59,7 +59,7 @@ const StockList = () => {
       key: 'latestMain',
       label: '主板',
       fieldConfigType: 'simple',
-      stockTypes: ['MAIN'],
+      stockTypes: ['MAIN', 'GEM'],
       orderByField: 'score',
       orderRule: 'desc',
       showDateSelector: false // 妖股Tab不显示日期选择器
@@ -111,63 +111,63 @@ const StockList = () => {
       key: 'preOrder',
       label: '预购',
       fieldConfigType: 'preOrder',
-      stockTypes: ['MAIN','TECH','GEM'],
+      stockTypes: ['MAIN','GEM'],
       showDateSelector: false // 妖股Tab不显示日期选择器
     },
     impulseWave: {
       key: 'impulseWave',
       label: '脉冲波动(分数)',
-      fieldConfigType: 'impulseWave',
-      stockTypes: ['MAIN'],
+      fieldConfigType: 'tagDefault',
+      stockTypes: ['MAIN', 'GEM'],
       showDateSelector: false // 妖股Tab不显示日期选择器
     },
     impulseWaveAll: {
       key: 'impulseWaveAll',
       label: '脉冲波动',
-      fieldConfigType: 'impulseWave',
-      stockTypes: ['MAIN'],
+      fieldConfigType: 'tagDefault',
+      stockTypes: ['MAIN', 'GEM'],
       showDateSelector: false // 妖股Tab不显示日期选择器
     },
     highvolume: {
       key: 'highvolume',
       label: '非涨停倍量',
       fieldConfigType: 'simple',
-      stockTypes: ['MAIN'],
+      stockTypes: ['MAIN', 'GEM'],
       showDateSelector: false // 妖股Tab不显示日期选择器
     },
     zthl: {
       key: 'zthl',
       label: '涨停回落',
       fieldConfigType: 'tagDefault',
-      stockTypes: ['MAIN'],
+      stockTypes: ['MAIN', 'GEM'],
       showDateSelector: false // 妖股Tab不显示日期选择器
     },
     abnormalChange: {
       key: 'abnormalChange',
       label: '异动分析',
-      fieldConfigType: 'abnormalChange',
-      stockTypes: ['MAIN'],
+      fieldConfigType: 'simple',
+      stockTypes: ['MAIN', 'GEM'],
       showDateSelector: false // 妖股Tab不显示日期选择器
     },
     continuousRedVolume: {
       key: 'continuousRedVolume',
       label: '连续红色',
       fieldConfigType: 'simple',
-      stockTypes: ['MAIN'],
+      stockTypes: ['MAIN', 'GEM'],
       showDateSelector: false // 妖股Tab不显示日期选择器
     },
     hammer: {
       key: 'hammer',
       label: 'Hammer',
-      fieldConfigType: 'hammer',
-      stockTypes: ['MAIN'],
+      fieldConfigType: 'tagAndDays',
+      stockTypes: ['MAIN', 'GEM'],
       showDateSelector: false // 妖股Tab不显示日期选择器
     },
     possibleHammer: {
       key: 'possibleHammer',
       label: 'PreHammer',
-      fieldConfigType: 'hammer',
-      stockTypes: ['MAIN'],
+      fieldConfigType: 'tagAndDays',
+      stockTypes: ['MAIN', 'GEM'],
       showDateSelector: false // 妖股Tab不显示日期选择器
     },
     incrementalDecline : {
@@ -180,7 +180,7 @@ const StockList = () => {
     favorites: {
       key: 'favorites',
       label: '收藏列表',
-      fieldConfigType: 'favorite',
+      fieldConfigType: 'simple',
       dateType: 'latest',
       showDateSelector: false,
       orderByField: 'stockCode',
@@ -191,16 +191,17 @@ const StockList = () => {
       label: '复盘',
       fieldConfigType: 'review',
       showDateSelector: false,
-      stockTypes: ['MAIN'],
+      stockTypes: ['MAIN', 'GEM'],
     },
     watched: {
       key: 'watched',
       label: '监控列表',
       fieldConfigType: 'watched',
       showDateSelector: false,
-      stockTypes: ['MAIN'],
+      stockTypes: ['MAIN', 'GEM'],
       orderByField: 'targetPriceIntervalPrecent',
-      orderRule: 'ASC'
+      orderRule: 'ASC',
+      hiddle: true,
     },
     latestTechGem: {
       key: 'latestTechGem',
@@ -227,7 +228,7 @@ const StockList = () => {
       key: 'hammerTest',
       label: 'TEST',
       fieldConfigType: 'simple',
-      stockTypes: ['MAIN'],
+      stockTypes: ['MAIN', 'GEM'],
       hiddle: true,
       showDateSelector: false // 妖股Tab不显示日期选择器
     }
@@ -559,7 +560,7 @@ const StockList = () => {
       response = await post(host + '/stock/stockDataAnalysisPageCommon', {
         pageSize: queryParams.pageSize,
         pageIndex: queryParams.pageIndex,
-        tableName: "stock_data_analysis_latest_impulse_wave_all",
+        tableName: "stock_data_analysis_impulse_wave_all",
         keywords: queryParams.keywords,
         stockTypes: currentStockTypes,
         orderByField: queryParams.orderByField,
@@ -1247,7 +1248,13 @@ const StockList = () => {
                   {column.fieldName}
                 </span>
               ) : (
-                row[column.field]
+                (() => {
+                  const val = row[column.field];
+                  if (typeof val === 'number' && !Number.isInteger(val) && String(val).includes('.') && String(val).split('.')[1].length > 2) {
+                    return val.toFixed(2);
+                  }
+                  return val;
+                })()
               )}
             </div>
           ))}

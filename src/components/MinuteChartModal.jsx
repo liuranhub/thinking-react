@@ -146,8 +146,9 @@ const MinuteChartModal = ({ visible, onClose, stockCode, stockName, date, klineD
       (lastData.closePrice / (1 + lastData.zhangDieFu / 100)) : 
       (prices[0] || 0);
 
-    // 计算价格范围
-    const allPrices = [...prices, ...avgPrices].filter(p => p > 0);
+    // 计算价格范围（使用maxPrice确定Y轴范围，确保最高价不被截断）
+    const maxPrices = minuteData.map(item => item.maxPrice || item.closePrice);
+    const allPrices = [...maxPrices, ...avgPrices].filter(p => p > 0);
     let minPrice = Math.min(...allPrices);
     let maxPrice = Math.max(...allPrices);
     
