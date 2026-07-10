@@ -21,12 +21,12 @@ dayjs.extend(isSameOrBefore);
 
 const MA_CONFIG = [
     { key: 5, label: 'MA5', color: '#e4c441', default: false },
-    { key: 10, label: 'MA10', color: '#ff00ff', default: false },
+    { key: 10, label: 'MA10', color: '#a417a4ff', default: false },
     { key: 20, label: 'MA20', color: '#ff00ff', default: true },
-    { key: 30, label: 'MA30', color: '#23b14d', default: false },
+    { key: 40, label: 'MA40', color: '#23b14d', default: true },
     { key: 60, label: 'MA60', color: '#ffffff', default: true },
-    { key: 120, label: 'MA120', color: '#1e90ff', default: false },
-    { key: 250, label: 'MA250', color: '#ffd700', default: false },
+    { key: 120, label: 'MA120', color: '#1e90ff', default: true },
+    { key: 250, label: 'MA250', color: '#ffd700', default: true },
     { key: 500, label: 'MA500', color: '#ffd700', default: false },
   ];
 
@@ -1944,43 +1944,33 @@ const getWarmUpStockCodes = () => {
       }
     });
     
-    // 鼠标单击K线图，弹出分时图（延时执行，避免与双击冲突）
-    klineChart.getZr().on('click', function (params) {
-      // 重置双击标记
-      isDoubleClick = false;
-      
-      // 延时执行单击逻辑，等待可能的双击事件
-      clickTimer = setTimeout(() => {
-        // 如果已经触发了双击，则不执行单击逻辑
-        if (isDoubleClick) {
-          return;
-        }
-        
-        // 直接使用ECharts的convertFromPixel方法获取对应的数据索引
-        const pointInGrid = klineChart.convertFromPixel({gridIndex: 0}, [params.offsetX, params.offsetY]);
-        if (!pointInGrid) return;
-        const xIndex = Math.round(pointInGrid[0]);
-        
-        // 直接获取对应索引的日期和K线数据
-        if (xIndex >= 0 && xIndex < dates.length) {
-          const targetDate = dates[xIndex];
-          const klineItem = chartData[xIndex];
-          if (targetDate && klineItem) {
-            setMinuteChartModal({
-              visible: true,
-              date: targetDate,
-              klineData: {
-                openPrice: klineItem.openPrice,
-                closePrice: klineItem.closePrice,
-                maxPrice: klineItem.maxPrice,
-                minPrice: klineItem.minPrice,
-                zhangDieFu: klineItem.zhangDieFu
-              }
-            });
-          }
-        }
-      }, 250); // 250ms延时，足够区分单击和双击
-    });
+    // [临时关闭] 鼠标单击K线图，弹出分时图（延时执行，避免与双击冲突）
+    // klineChart.getZr().on('click', function (params) {
+    //   isDoubleClick = false;
+    //   clickTimer = setTimeout(() => {
+    //     if (isDoubleClick) return;
+    //     const pointInGrid = klineChart.convertFromPixel({gridIndex: 0}, [params.offsetX, params.offsetY]);
+    //     if (!pointInGrid) return;
+    //     const xIndex = Math.round(pointInGrid[0]);
+    //     if (xIndex >= 0 && xIndex < dates.length) {
+    //       const targetDate = dates[xIndex];
+    //       const klineItem = chartData[xIndex];
+    //       if (targetDate && klineItem) {
+    //         setMinuteChartModal({
+    //           visible: true,
+    //           date: targetDate,
+    //           klineData: {
+    //             openPrice: klineItem.openPrice,
+    //             closePrice: klineItem.closePrice,
+    //             maxPrice: klineItem.maxPrice,
+    //             minPrice: klineItem.minPrice,
+    //             zhangDieFu: klineItem.zhangDieFu
+    //           }
+    //         });
+    //       }
+    //     }
+    //   }, 250);
+    // });
     
     // 重复的mouseout事件处理已移除，统一在上面处理
     // 成交量图

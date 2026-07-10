@@ -80,6 +80,7 @@ const StockList = () => {
       stockTypes: ['IDX'],
       orderByField: 'stockCode',
       orderRule: 'ASC',
+      hiddle: true,
       showDateSelector: false // 妖股Tab不显示日期选择器
     },
     stockSector: {
@@ -97,6 +98,7 @@ const StockList = () => {
       stockTypes: ['TECH','GEM', 'BJ', 'MAIN', 'ST'],
       orderByField: 'score',
       orderRule: 'desc',
+      hiddle: true,
       showDateSelector: false // 妖股Tab不显示日期选择器
     },
     all: {
@@ -139,7 +141,48 @@ const StockList = () => {
       key: 'zthl',
       label: '涨停回落',
       fieldConfigType: 'tagDefault',
-      stockTypes: ['MAIN', 'GEM'],
+      stockTypes: ['GEM', 'MAIN'],
+      tagTypes: ['ZTHL'],
+      showDateSelector: false // 妖股Tab不显示日期选择器
+    },
+    tag_common_sup: {
+      key: 'tag_common_sup',
+      label: '支撑位',
+      fieldConfigType: 'tagDefault',
+      stockTypes: ['GEM', 'MAIN'],
+      tagTypes: ['SUP'],
+      showDateSelector: false // 妖股Tab不显示日期选择器
+    },
+    tag_common_sta: {
+      key: 'tag_common_sta',
+      label: '启动',
+      fieldConfigType: 'tagDefault',
+      stockTypes: ['GEM', 'MAIN'],
+      tagTypes: ['STA'],
+      showDateSelector: false // 妖股Tab不显示日期选择器
+    },
+    tag_common_ac3: {
+      key: 'tag_common_ac3',
+      label: '一穿三',
+      fieldConfigType: 'tagDefault',
+      stockTypes: ['GEM', 'MAIN'],
+      tagTypes: ['AC3'],
+      showDateSelector: false // 妖股Tab不显示日期选择器
+    },
+    tag_common_bp: {
+      key: 'tag_common_pb',
+      label: '破前高',
+      fieldConfigType: 'tagDefault',
+      stockTypes: ['GEM', 'MAIN'],
+      tagTypes: ['BP'],
+      showDateSelector: false // 妖股Tab不显示日期选择器
+    },
+    tag_common_rbp: {
+      key: 'tag_common_rpb',
+      label: '破前高(近期)',
+      fieldConfigType: 'tagDefault',
+      stockTypes: ['GEM', 'MAIN'],
+      tagTypes: ['RBP'],
       showDateSelector: false // 妖股Tab不显示日期选择器
     },
     abnormalChange: {
@@ -184,7 +227,8 @@ const StockList = () => {
       dateType: 'latest',
       showDateSelector: false,
       orderByField: 'stockCode',
-      orderRule: 'ASC'
+      orderRule: 'ASC',
+      hiddle: true,
     },
      review: {
       key: 'review',
@@ -521,6 +565,8 @@ const StockList = () => {
     
     // 确定要使用的股票类型
     const currentStockTypes = TAB_CONFIG[activeTab]?.stockTypes || queryParams.stockTypes;
+    // 确定要使用的标签类型
+    const currentTagTypes = TAB_CONFIG[activeTab]?.tagTypes || [];
     
     if(activeTab === TAB_CONFIG.latestMain.key 
       || activeTab === TAB_CONFIG.latestIdx.key
@@ -553,6 +599,7 @@ const StockList = () => {
         tableName: "stock_data_analysis_latest_impulse_wave",
         keywords: queryParams.keywords,
         stockTypes: currentStockTypes,
+        tagTypes: currentTagTypes,
         orderByField: queryParams.orderByField,
         orderRule: queryParams.orderRule,
       });
@@ -563,6 +610,7 @@ const StockList = () => {
         tableName: "stock_data_analysis_impulse_wave_all",
         keywords: queryParams.keywords,
         stockTypes: currentStockTypes,
+        tagTypes: currentTagTypes,
         orderByField: queryParams.orderByField,
         orderRule: queryParams.orderRule,
       });
@@ -573,6 +621,7 @@ const StockList = () => {
         tableName: "stock_data_analysis_highvolume",
         keywords: queryParams.keywords,
         stockTypes: currentStockTypes,
+        tagTypes: currentTagTypes,
         orderByField: queryParams.orderByField,
         orderRule: queryParams.orderRule,
       });
@@ -583,6 +632,7 @@ const StockList = () => {
         tableName: "stock_data_analysis_latest_abnormal_change",
         keywords: queryParams.keywords,
         stockTypes: currentStockTypes,
+        tagTypes: currentTagTypes,
         orderByField: queryParams.orderByField,
         orderRule: queryParams.orderRule,
       });
@@ -594,6 +644,7 @@ const StockList = () => {
         tableName: "stock_data_analysis_continuous_red_volume",
         keywords: queryParams.keywords,
         stockTypes: currentStockTypes,
+        tagTypes: currentTagTypes,
         orderByField: queryParams.orderByField,
         orderRule: queryParams.orderRule,
       });
@@ -615,6 +666,7 @@ const StockList = () => {
         tableName: "stock_data_analysis_latest_hammer",
         keywords: queryParams.keywords,
         stockTypes: currentStockTypes,
+        tagTypes: currentTagTypes,
         orderByField: queryParams.orderByField,
         orderRule: queryParams.orderRule,
       });
@@ -622,9 +674,21 @@ const StockList = () => {
       response = await post(host + '/stock/stockDataAnalysisPageCommon', {
         pageSize: queryParams.pageSize,
         pageIndex: queryParams.pageIndex,
-        tableName: "stock_data_analysis_latest_zthl",
+        tableName: "stock_data_analysis_latest_tag_common",
         keywords: queryParams.keywords,
         stockTypes: currentStockTypes,
+        tagTypes: currentTagTypes,
+        orderByField: queryParams.orderByField,
+        orderRule: queryParams.orderRule,
+      });
+    } else if(activeTab.startsWith('tag_common')) {
+      response = await post(host + '/stock/stockDataAnalysisPageCommon', {
+        pageSize: queryParams.pageSize,
+        pageIndex: queryParams.pageIndex,
+        tableName: "stock_data_analysis_latest_tag_common",
+        keywords: queryParams.keywords,
+        stockTypes: currentStockTypes,
+        tagTypes: currentTagTypes,
         orderByField: queryParams.orderByField,
         orderRule: queryParams.orderRule,
       });
@@ -635,6 +699,7 @@ const StockList = () => {
         tableName: "stock_data_review_latest",
         keywords: queryParams.keywords,
         stockTypes: currentStockTypes,
+        tagTypes: currentTagTypes,
         orderByField: queryParams.orderByField,
         orderRule: queryParams.orderRule,
       });
@@ -645,6 +710,7 @@ const StockList = () => {
         tableName: "stock_data_analysis_latest_possible_hammer",
         keywords: queryParams.keywords,
         stockTypes: currentStockTypes,
+        tagTypes: currentTagTypes,
         orderByField: queryParams.orderByField,
         orderRule: queryParams.orderRule,
       });
@@ -655,6 +721,7 @@ const StockList = () => {
         tableName: "stock_data_analysis_pre_order",
         keywords: queryParams.keywords,
         stockTypes: currentStockTypes,
+        tagTypes: currentTagTypes,
         orderByField: queryParams.orderByField,
         orderRule: queryParams.orderRule,
       });
@@ -665,6 +732,7 @@ const StockList = () => {
         tableName: "stock_data_analysis_hammer",
         keywords: queryParams.keywords,
         stockTypes: currentStockTypes,
+        tagTypes: currentTagTypes,
         orderByField: queryParams.orderByField,
         orderRule: queryParams.orderRule,
       });

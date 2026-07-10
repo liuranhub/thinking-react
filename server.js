@@ -22,7 +22,7 @@ app.use((req, res, next) => {
 app.use(express.static(path.join(__dirname, 'build')));
 
 // 处理所有路由，返回 index.html
-app.get('*', (req, res) => {
+app.get('/{*splat}', (req, res) => {
   res.sendFile(path.join(__dirname, 'build', 'index.html'));
 });
 
